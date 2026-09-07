@@ -39,7 +39,7 @@ create table public.profiles (
 create table public.klashes (
   id                  uuid primary key default gen_random_uuid(),
   author_id           uuid not null references public.profiles (id),
-  location            geography(point, 4326) not null,
+  location            extensions.geography(point, 4326) not null,
   category            public.klash_category not null,
   urgency             public.klash_urgency not null default 'medium',
   status              public.klash_status not null default 'new',
