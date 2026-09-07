@@ -15,12 +15,18 @@ node_modules
 dist
 dist-ssr
 *.local
+*.tsbuildinfo
 
 # Cache et fichiers temporaires
 .vite
 .cache
 .temp
 .SWC
+coverage
+
+# Cloudflare / Wrangler
+.wrangler
+.dev.vars
 
 # Fichiers d'environnement (sécurité)
 .env
