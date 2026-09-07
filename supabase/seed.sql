@@ -1,0 +1,2 @@
+-- Seed data is introduced at build step 2 (map + read).
+-- Kept empty for step 1 so `supabase db reset` runs the migration only.
