@@ -71,6 +71,13 @@ export type Database = {
             referencedRelation: 'klashes'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'comments_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
+            referencedColumns: ['id']
+          },
         ]
       }
       confirmations: {
@@ -95,6 +102,13 @@ export type Database = {
             columns: ['klash_id']
             isOneToOne: false
             referencedRelation: 'klashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'confirmations_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
             referencedColumns: ['id']
           },
           {
@@ -147,6 +161,13 @@ export type Database = {
             columns: ['klash_id']
             isOneToOne: false
             referencedRelation: 'klashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'klash_photos_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
             referencedColumns: ['id']
           },
         ]
@@ -213,6 +234,13 @@ export type Database = {
             columns: ['duplicate_of']
             isOneToOne: false
             referencedRelation: 'klashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'klashes_duplicate_of_fkey'
+            columns: ['duplicate_of']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
             referencedColumns: ['id']
           },
         ]
@@ -302,16 +330,101 @@ export type Database = {
             referencedRelation: 'klashes'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'status_changes_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
+            referencedColumns: ['id']
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      klashes_public: {
+        Row: {
+          author_display_name: string | null
+          author_id: string | null
+          author_organization: string | null
+          author_role: Database['public']['Enums']['user_role'] | null
+          category: Database['public']['Enums']['klash_category'] | null
+          comments_count: number | null
+          confirmations_count: number | null
+          created_at: string | null
+          description: string | null
+          duplicate_of: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          resolved_at: string | null
+          status: Database['public']['Enums']['klash_status'] | null
+          title: string | null
+          updated_at: string | null
+          urgency: Database['public']['Enums']['klash_urgency'] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'klashes_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'klashes_duplicate_of_fkey'
+            columns: ['duplicate_of']
+            isOneToOne: false
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'klashes_duplicate_of_fkey'
+            columns: ['duplicate_of']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
       current_user_role: {
         Args: never
         Returns: Database['public']['Enums']['user_role']
+      }
+      klashes_in_bbox: {
+        Args: {
+          max_lat: number
+          max_lng: number
+          min_lat: number
+          min_lng: number
+        }
+        Returns: {
+          author_display_name: string | null
+          author_id: string | null
+          author_organization: string | null
+          author_role: Database['public']['Enums']['user_role'] | null
+          category: Database['public']['Enums']['klash_category'] | null
+          comments_count: number | null
+          confirmations_count: number | null
+          created_at: string | null
+          description: string | null
+          duplicate_of: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          resolved_at: string | null
+          status: Database['public']['Enums']['klash_status'] | null
+          title: string | null
+          updated_at: string | null
+          urgency: Database['public']['Enums']['klash_urgency'] | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'klashes_public'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
     }
     Enums: {
