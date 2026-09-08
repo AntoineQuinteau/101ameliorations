@@ -8,12 +8,15 @@ import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { formatDate } from '../../utils/formatDate'
+import { useAuth } from '../auth/useAuth'
 import { KlashMiniMap } from './KlashMiniMap'
 
-/** Read-only detail page (spec §6.3). No actions here — creation/edition/comments and
- * the confirmation toggle arrive with auth (step 3) and comments (step 6). */
+/** Read-only detail page (spec §6.3). No write actions here — the confirmation
+ * toggle, edit/delete, and comments arrive with creation (step 4) and comments
+ * (step 6). Step 3 only adds a signed-in/out indicator. */
 export function KlashDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
 
   const {
     data: klash,
@@ -28,9 +31,17 @@ export function KlashDetailPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
+          {fr.common.backToMap}
+        </Link>
+        <Link
+          to={user ? '/me' : '/login'}
+          className="text-sm font-medium text-teal-700 hover:underline"
+        >
+          {user ? fr.auth.mySpace : fr.auth.signIn}
+        </Link>
+      </div>
 
       {isLoading && <Spinner />}
 
