@@ -11,7 +11,8 @@ Cloudflare Worker + assets statiques.
 
 ## Prérequis
 
-- Node 20+
+- Node 22+ pour l'app (`nvm use` lit `.nvmrc`) ; Node 24 pour `wrangler` (`nvm use 24`
+  avant `npm run build`/`npx wrangler …` si la version par défaut est plus basse)
 - [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase`
 - Docker (pour `npx supabase start`)
 
@@ -54,9 +55,29 @@ migration : `npx supabase db reset` puis `npm run gen:types`.
 
 ## Déploiement (Cloudflare Worker + assets)
 
+Les variables `VITE_*` sont injectées dans le bundle **au build**, pas lues au
+runtime par le Worker : `.env.local` pointe volontairement vers la base locale
+(développement), donc un build destiné au déploiement doit utiliser les valeurs de
+prod. Créer `.env.production.local` (non versionné, lu automatiquement par Vite en
+mode production, prioritaire sur `.env.local`) :
+
 ```bash
+# .env.production.local
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --project-ref <ref>
+VITE_MAPTILER_KEY=…                              # même clé qu'en local
+```
+
+```bash
+nvm use 24                    # wrangler exige Node >= 22 ; la valeur par défaut peut être plus basse
 npm run build
-npx wrangler deploy
+npx wrangler versions upload  # déploiement preview, ne touche pas le trafic prod
+# npx wrangler versions deploy   # bascule une version preview en prod (validation humaine)
 ```
 
 Config : [`wrangler.jsonc`](wrangler.jsonc) (dossier d'assets `./dist`, fallback SPA).
+
+Nouvelle migration à pousser en prod : `npx supabase db push`. Rejouer `seed.sql` en
+prod (données de test) : `npx supabase db query --linked -f supabase/seed.sql` — le
+script est idempotent (voir son en-tête). Avant l'ouverture au public, supprimer ces
+données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.sql`.

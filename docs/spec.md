@@ -247,7 +247,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Front** : React 18, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
-- **Hébergement** : Cloudflare Pages connecté au repo GitHub (`main` → prod, branches → preview). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAP_TILES_URL`, `VITE_TURNSTILE_SITE_KEY`, `VITE_SERVICE_AREA_BBOX`.
+- **Hébergement** : Cloudflare Pages connecté au repo GitHub (`main` → prod, branches → preview). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_SERVICE_AREA_BBOX`.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.
