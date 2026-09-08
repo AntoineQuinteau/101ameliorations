@@ -28,22 +28,22 @@ npm run dev
 
 ### Variables d'environnement (`.env.local`, non versionné)
 
-| Variable | Rôle |
-|---|---|
-| `VITE_SUPABASE_URL` | URL de l'API Supabase (local : `http://127.0.0.1:54321`) |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`) |
-| `VITE_MAPTILER_KEY` | Clé API MapTiler |
-| `SUPABASE_SECRET_KEY` | Usage scripts/CLI uniquement — jamais lue par le front |
+| Variable                        | Rôle                                                     |
+| ------------------------------- | -------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)            |
+| `VITE_MAPTILER_KEY`             | Clé API MapTiler                                         |
+| `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front   |
 
 ## Scripts
 
-| Commande | Effet |
-|---|---|
-| `npm run dev` | Serveur de développement Vite |
-| `npm run build` | `tsc -b` puis build de production dans `dist/` |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | `tsc -b --noEmit` |
-| `npm test` | Vitest (une fois) |
+| Commande            | Effet                                                  |
+| ------------------- | ------------------------------------------------------ |
+| `npm run dev`       | Serveur de développement Vite                          |
+| `npm run build`     | `tsc -b` puis build de production dans `dist/`         |
+| `npm run lint`      | ESLint                                                 |
+| `npm run typecheck` | `tsc -b --noEmit`                                      |
+| `npm test`          | Vitest (une fois)                                      |
 | `npm run gen:types` | Régénère `src/types/database.ts` depuis la base locale |
 
 ## Base de données

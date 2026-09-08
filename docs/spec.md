@@ -19,21 +19,22 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action | anonyme | `user` | `moderator` (asso) | `authority` (agglo) | `admin` |
-|---|---|---|---|---|---|
-| Voir carte, klashs, photos, commentaires | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Créer un klash, ajouter des photos | | ✓ | ✓ | ✓ | ✓ |
-| Confirmer (+1) un klash | | ✓ | ✓ | ✓ | ✓ |
-| Commenter | | ✓ | ✓ | ✓ | ✓ |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires | | ✓ | ✓ | ✓ | ✓ |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire | | | ✓ | | ✓ |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new` | | | ✓ | | ✓ |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved` | | | | ✓ | ✓ |
-| Voir l'email de l'auteur d'un klash (pour le recontacter) | | | ✓ | ✓ | ✓ |
-| Export CSV / GeoJSON | ✓ (public) | ✓ | ✓ | ✓ | ✓ |
-| Gérer les rôles | | | | | ✓ |
+| Action                                                                      | anonyme    | `user` | `moderator` (asso) | `authority` (agglo) | `admin` |
+| --------------------------------------------------------------------------- | ---------- | ------ | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓      | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                          |            | ✓      | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                     |            | ✓      | ✓                  | ✓                   | ✓       |
+| Commenter                                                                   |            | ✓      | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓      | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |        | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |        | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |        |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |        | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                        | ✓ (public) | ✓      | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                             |            |        |                    |                     | ✓       |
 
 Règles :
+
 - Un `user` ne peut plus modifier catégorie/position/description de son klash une fois qu'il n'est plus en statut `new` (la collectivité a commencé à traiter). Il peut toujours commenter.
 - Les emails ne sont jamais exposés publiquement. On affiche `display_name` (pseudo choisi, sinon « Usager »). Pour `authority`, on affiche `organization` (ex. « CAPB »). Les rôles `moderator`, `authority` et `admin` peuvent consulter l'email de l'auteur d'un klash depuis la page détail (RPC `get_klash_author_contact(klash_id)`, security definer, journalisée). Cette consultation est mentionnée dans la politique de confidentialité.
 - Tout changement de statut est historisé avec l'auteur et une note optionnelle.
@@ -139,6 +140,7 @@ create table status_changes (
 ```
 
 Triggers et fonctions :
+
 - `handle_new_user()` : crée la ligne `profiles` à l'inscription.
 - `set_updated_at()` sur `klashes` et `comments`.
 - Compteurs `confirmations_count` / `comments_count` maintenus par trigger (les commentaires `hidden` ne comptent pas).
@@ -155,6 +157,7 @@ Triggers et fonctions :
 RLS activé sur toutes les tables. Fonction helper `current_user_role()` (security definer, stable) qui lit `profiles.role` de `auth.uid()`.
 
 Résumé des policies :
+
 - `profiles` : select public limité (id, display_name, role, organization via la vue) ; update de sa propre ligne sauf `role` ; `role` modifiable par `admin` uniquement.
 - `klashes` : select public ; insert si `auth.uid() = author_id` ; update par auteur si `status = 'new'`, par `moderator`/`admin` sans restriction, par `authority` uniquement sur `status` (contrôlé par trigger) ; delete par auteur ou `moderator`/`admin`.
 - `klash_photos` : select public ; insert par auteur du klash ; delete par auteur, `moderator`, `admin`.
@@ -164,6 +167,7 @@ Résumé des policies :
 - Storage bucket `klash-photos` : lecture publique, upload authentifié limité à `image/jpeg|png|webp` et 2 Mo, chemin préfixé par un `klash_id` dont l'utilisateur est l'auteur.
 
 Anti-abus :
+
 - Cloudflare Turnstile sur la demande d'OTP (vérification côté Supabase Edge Function ou via hook Auth).
 - Rate limits en base (voir triggers) + rate limit Supabase Auth sur les envois d'OTP.
 - Détection de doublons côté UX (voir §6.3), pas de blocage dur.
@@ -172,14 +176,14 @@ Anti-abus :
 
 Une seule application responsive. Routes :
 
-| Route | Contenu |
-|---|---|
-| `/` | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
-| `/k/:id` | Détail d'un klash |
-| `/new` | Création (feuille/modale par-dessus la carte) |
-| `/login` | Saisie email → saisie du code OTP |
-| `/me` | Mes klashs, mon pseudo |
-| `/admin` | Modération et traitement (rôles ≥ moderator) |
+| Route    | Contenu                                                                               |
+| -------- | ------------------------------------------------------------------------------------- |
+| `/`      | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
+| `/k/:id` | Détail d'un klash                                                                     |
+| `/new`   | Création (feuille/modale par-dessus la carte)                                         |
+| `/login` | Saisie email → saisie du code OTP                                                     |
+| `/me`    | Mes klashs, mon pseudo                                                                |
+| `/admin` | Modération et traitement (rôles ≥ moderator)                                          |
 
 ### 6.1 Carte (`/`)
 
@@ -252,13 +256,13 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 
 Chaque étape se termine par un déploiement preview testé sur téléphone réel.
 
-1. **Socle** — Repo, Vite/React/TS/Tailwind, Supabase CLI, migration initiale (types, tables, triggers, RLS), génération des types, Cloudflare Pages branché. *Critère : `supabase db reset` passe, page vide déployée en HTTPS.*
-2. **Carte + lecture** — Carte Leaflet, chargement par bbox, marqueurs, clustering, page détail en lecture seule. Données de test insérées par seed. *Critère : navigation fluide sur mobile avec 500 klashs seedés.*
-3. **Auth OTP** — Login, profil, pseudo, `/me`. *Critère : parcours email → code → session persistante.*
-4. **Création** — Feuille de création en 4 étapes, géoloc, pin, détection de doublons, confirmation +1, validation zod, rate limits. Sans photos. *Critère : klash créé en < 60 s depuis un téléphone.*
-5. **Photos** — Compression, EXIF GPS, upload Storage, galerie. *Critère : 3 photos de 4 Mo uploadées en < 10 s en 4G.*
+1. **Socle** — Repo, Vite/React/TS/Tailwind, Supabase CLI, migration initiale (types, tables, triggers, RLS), génération des types, Cloudflare Pages branché. _Critère : `supabase db reset` passe, page vide déployée en HTTPS._
+2. **Carte + lecture** — Carte Leaflet, chargement par bbox, marqueurs, clustering, page détail en lecture seule. Données de test insérées par seed. _Critère : navigation fluide sur mobile avec 500 klashs seedés._
+3. **Auth OTP** — Login, profil, pseudo, `/me`. _Critère : parcours email → code → session persistante._
+4. **Création** — Feuille de création en 4 étapes, géoloc, pin, détection de doublons, confirmation +1, validation zod, rate limits. Sans photos. _Critère : klash créé en < 60 s depuis un téléphone._
+5. **Photos** — Compression, EXIF GPS, upload Storage, galerie. _Critère : 3 photos de 4 Mo uploadées en < 10 s en 4G._
 6. **Commentaires + filtres + tri + URL partageable.**
-7. **Cycle de vie** — Transitions de statut, historique, notes, rôles `moderator`/`authority`, `/admin`. *Critère : tests SQL des transitions interdites.*
+7. **Cycle de vie** — Transitions de statut, historique, notes, rôles `moderator`/`authority`, `/admin`. _Critère : tests SQL des transitions interdites._
 8. **PWA + export + OG + Sentry.**
 9. **Durcissement** — Turnstile, revue RLS, suppression de compte, Playwright, mentions légales / politique de confidentialité.
 

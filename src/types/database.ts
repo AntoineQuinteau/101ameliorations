@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   graphql_public: {
@@ -64,18 +58,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "comments_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: 'comments_author_id_fkey'
+            columns: ['author_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "comments_klash_id_fkey"
-            columns: ["klash_id"]
+            foreignKeyName: 'comments_klash_id_fkey'
+            columns: ['klash_id']
             isOneToOne: false
-            referencedRelation: "klashes"
-            referencedColumns: ["id"]
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -97,18 +91,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "confirmations_klash_id_fkey"
-            columns: ["klash_id"]
+            foreignKeyName: 'confirmations_klash_id_fkey'
+            columns: ['klash_id']
             isOneToOne: false
-            referencedRelation: "klashes"
-            referencedColumns: ["id"]
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "confirmations_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'confirmations_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -142,25 +136,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "klash_photos_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: 'klash_photos_author_id_fkey'
+            columns: ['author_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "klash_photos_klash_id_fkey"
-            columns: ["klash_id"]
+            foreignKeyName: 'klash_photos_klash_id_fkey'
+            columns: ['klash_id']
             isOneToOne: false
-            referencedRelation: "klashes"
-            referencedColumns: ["id"]
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
           },
         ]
       }
       klashes: {
         Row: {
           author_id: string
-          category: Database["public"]["Enums"]["klash_category"]
+          category: Database['public']['Enums']['klash_category']
           comments_count: number
           confirmations_count: number
           created_at: string
@@ -169,14 +163,14 @@ export type Database = {
           id: string
           location: unknown
           resolved_at: string | null
-          status: Database["public"]["Enums"]["klash_status"]
+          status: Database['public']['Enums']['klash_status']
           title: string
           updated_at: string
-          urgency: Database["public"]["Enums"]["klash_urgency"]
+          urgency: Database['public']['Enums']['klash_urgency']
         }
         Insert: {
           author_id: string
-          category: Database["public"]["Enums"]["klash_category"]
+          category: Database['public']['Enums']['klash_category']
           comments_count?: number
           confirmations_count?: number
           created_at?: string
@@ -185,14 +179,14 @@ export type Database = {
           id?: string
           location: unknown
           resolved_at?: string | null
-          status?: Database["public"]["Enums"]["klash_status"]
+          status?: Database['public']['Enums']['klash_status']
           title: string
           updated_at?: string
-          urgency?: Database["public"]["Enums"]["klash_urgency"]
+          urgency?: Database['public']['Enums']['klash_urgency']
         }
         Update: {
           author_id?: string
-          category?: Database["public"]["Enums"]["klash_category"]
+          category?: Database['public']['Enums']['klash_category']
           comments_count?: number
           confirmations_count?: number
           created_at?: string
@@ -201,25 +195,25 @@ export type Database = {
           id?: string
           location?: unknown
           resolved_at?: string | null
-          status?: Database["public"]["Enums"]["klash_status"]
+          status?: Database['public']['Enums']['klash_status']
           title?: string
           updated_at?: string
-          urgency?: Database["public"]["Enums"]["klash_urgency"]
+          urgency?: Database['public']['Enums']['klash_urgency']
         }
         Relationships: [
           {
-            foreignKeyName: "klashes_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: 'klashes_author_id_fkey'
+            columns: ['author_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "klashes_duplicate_of_fkey"
-            columns: ["duplicate_of"]
+            foreignKeyName: 'klashes_duplicate_of_fkey'
+            columns: ['duplicate_of']
             isOneToOne: false
-            referencedRelation: "klashes"
-            referencedColumns: ["id"]
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -229,21 +223,21 @@ export type Database = {
           display_name: string | null
           id: string
           organization: string | null
-          role: Database["public"]["Enums"]["user_role"]
+          role: Database['public']['Enums']['user_role']
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database['public']['Enums']['user_role']
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
           organization?: string | null
-          role?: Database["public"]["Enums"]["user_role"]
+          role?: Database['public']['Enums']['user_role']
         }
         Relationships: []
       }
@@ -269,44 +263,44 @@ export type Database = {
         Row: {
           changed_by: string
           created_at: string
-          from_status: Database["public"]["Enums"]["klash_status"]
+          from_status: Database['public']['Enums']['klash_status']
           id: string
           klash_id: string
           note: string | null
-          to_status: Database["public"]["Enums"]["klash_status"]
+          to_status: Database['public']['Enums']['klash_status']
         }
         Insert: {
           changed_by: string
           created_at?: string
-          from_status: Database["public"]["Enums"]["klash_status"]
+          from_status: Database['public']['Enums']['klash_status']
           id?: string
           klash_id: string
           note?: string | null
-          to_status: Database["public"]["Enums"]["klash_status"]
+          to_status: Database['public']['Enums']['klash_status']
         }
         Update: {
           changed_by?: string
           created_at?: string
-          from_status?: Database["public"]["Enums"]["klash_status"]
+          from_status?: Database['public']['Enums']['klash_status']
           id?: string
           klash_id?: string
           note?: string | null
-          to_status?: Database["public"]["Enums"]["klash_status"]
+          to_status?: Database['public']['Enums']['klash_status']
         }
         Relationships: [
           {
-            foreignKeyName: "status_changes_changed_by_fkey"
-            columns: ["changed_by"]
+            foreignKeyName: 'status_changes_changed_by_fkey'
+            columns: ['changed_by']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "status_changes_klash_id_fkey"
-            columns: ["klash_id"]
+            foreignKeyName: 'status_changes_klash_id_fkey'
+            columns: ['klash_id']
             isOneToOne: false
-            referencedRelation: "klashes"
-            referencedColumns: ["id"]
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -317,25 +311,14 @@ export type Database = {
     Functions: {
       current_user_role: {
         Args: never
-        Returns: Database["public"]["Enums"]["user_role"]
+        Returns: Database['public']['Enums']['user_role']
       }
     }
     Enums: {
-      klash_category:
-        | "category_1"
-        | "category_2"
-        | "category_3"
-        | "category_4"
-        | "category_5"
-      klash_status:
-        | "new"
-        | "acknowledged"
-        | "in_progress"
-        | "resolved"
-        | "rejected"
-        | "duplicate"
-      klash_urgency: "low" | "medium" | "high"
-      user_role: "user" | "moderator" | "authority" | "admin"
+      klash_category: 'category_1' | 'category_2' | 'category_3' | 'category_4' | 'category_5'
+      klash_status: 'new' | 'acknowledged' | 'in_progress' | 'resolved' | 'rejected' | 'duplicate'
+      klash_urgency: 'low' | 'medium' | 'high'
+      user_role: 'user' | 'moderator' | 'authority' | 'admin'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -343,33 +326,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -378,23 +359,22 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -403,23 +383,22 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -428,36 +407,34 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
@@ -466,24 +443,10 @@ export const Constants = {
   },
   public: {
     Enums: {
-      klash_category: [
-        "category_1",
-        "category_2",
-        "category_3",
-        "category_4",
-        "category_5",
-      ],
-      klash_status: [
-        "new",
-        "acknowledged",
-        "in_progress",
-        "resolved",
-        "rejected",
-        "duplicate",
-      ],
-      klash_urgency: ["low", "medium", "high"],
-      user_role: ["user", "moderator", "authority", "admin"],
+      klash_category: ['category_1', 'category_2', 'category_3', 'category_4', 'category_5'],
+      klash_status: ['new', 'acknowledged', 'in_progress', 'resolved', 'rejected', 'duplicate'],
+      klash_urgency: ['low', 'medium', 'high'],
+      user_role: ['user', 'moderator', 'authority', 'admin'],
     },
   },
 } as const
-
