@@ -16,7 +16,7 @@ export function AuthBadge() {
     return (
       <Link
         to="/login"
-        className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-teal-700 shadow hover:bg-white"
+        className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-teal-700 shadow hover:bg-white"
       >
         {fr.auth.signIn}
       </Link>
@@ -26,7 +26,7 @@ export function AuthBadge() {
   return (
     <Link
       to="/me"
-      className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-teal-700 shadow hover:bg-white"
+      className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-teal-700 shadow hover:bg-white"
     >
       {profile?.displayName ?? fr.auth.mySpace}
     </Link>
