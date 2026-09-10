@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MapContainer } from 'react-leaflet'
 import type { LatLngBoundsExpression } from 'leaflet'
+import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
 import { KlashPreviewCard } from './KlashPreviewCard'
@@ -47,6 +48,8 @@ export function MapPage() {
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={klashes} onSelect={setSelectedKlash} />
       </MapContainer>
+
+      <AuthBadge />
 
       {isFetching && !isError && (
         <div className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs text-neutral-600 shadow">

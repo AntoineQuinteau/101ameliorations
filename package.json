@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "gen:types": "npx supabase gen types typescript --local > src/types/database.ts"
+    "gen:types": "npx supabase gen types typescript --local > src/types/database.ts",
+    "db:test": "npx supabase test db"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
