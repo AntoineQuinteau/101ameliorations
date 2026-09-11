@@ -90,9 +90,13 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
+          # These are not secrets: VITE_* are inlined into the client bundle
+          # by design (Supabase's "publishable" key and URL are meant to be
+          # public, RLS is the real access control; the MapTiler key is
+          # restricted by domain). Repo variables, not secrets.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
 
       - name: Upload preview version
         id: upload
@@ -160,9 +164,10 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_MAPTILER_KEY: ${{ secrets.VITE_MAPTILER_KEY }}
+          # Not secrets — see the preview job above for why.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
       - name: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

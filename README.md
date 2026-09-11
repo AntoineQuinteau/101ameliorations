@@ -140,15 +140,20 @@ local, cf. section Déploiement).
 ### Secrets et variables requis
 
 À saisir une fois, dans **Settings → Secrets and variables → Actions** du repo (ou via
-`gh`) :
+`gh`). Seuls les deux jetons Cloudflare sont de vrais secrets ; les trois `VITE_*` sont
+des **variables**, pas des secrets — elles sont conçues pour être publiques (clé
+« publishable » Supabase et URL d'API, RLS fait la vraie sécurité ; clé MapTiler
+restreinte par domaine) et se retrouvent de toute façon en clair dans le bundle JS livré
+au navigateur. Les mettre en `secret` les masquerait sans les protéger, et donnerait une
+fausse impression de confidentialité :
 
 ```bash
-gh secret set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
-gh secret set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
-gh secret set VITE_MAPTILER_KEY
-gh secret set CLOUDFLARE_API_TOKEN            # scope minimal : Workers Scripts:Edit
+gh variable set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
+gh variable set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
+gh variable set VITE_MAPTILER_KEY
+gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
 gh secret set CLOUDFLARE_ACCOUNT_ID
-gh variable set QR_WORKER_URL                 # URL du worker QR, voir ci-dessous
+gh variable set QR_WORKER_URL                   # URL du worker QR, voir ci-dessous
 ```
 
 Les trois `VITE_*` sont celles de `.env.production.local` (voir section Déploiement).
