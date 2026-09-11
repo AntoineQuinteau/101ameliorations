@@ -15,7 +15,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "gen:types": "npx supabase gen types typescript --local > src/types/database.ts",
+    "gen:types": "npx supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts",
     "db:test": "npx supabase test db"
   },
   "dependencies": {
