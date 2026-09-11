@@ -67,7 +67,7 @@ avant de tester le parcours sur un téléphone réel.
    qu'aux adresses des membres du projet — un code envoyé à une adresse
    personnelle n'arrive jamais, silencieusement.
 2. **DNS** : SPF + DKIM (et DMARC) sur le domaine d'envoi.
-3. **Authentication → Emails → Templates → Magic Link** (et *Confirm signup*) :
+3. **Authentication → Emails → Templates → Magic Link** (et _Confirm signup_) :
    coller le contenu de `supabase/templates/magic_link.html`, sujet FR. Vérifier
    la présence de `{{ .Token }}` — sans elle Supabase envoie un lien au lieu d'un
    code.
@@ -106,3 +106,77 @@ Nouvelle migration à pousser en prod : `npx supabase db push`. Rejouer `seed.sq
 prod (données de test) : `npx supabase db query --linked -f supabase/seed.sql` — le
 script est idempotent (voir son en-tête). Avant l'ouverture au public, supprimer ces
 données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.sql`.
+
+## CI (GitHub Actions)
+
+Le repo est aussi connecté à **Cloudflare Workers Builds** (intégration Git native).
+Son déclencheur Preview a un bug d'UI connu : les _Build variables and secrets_ saisies
+dans Settings → Build ne s'appliquent qu'au déclencheur de production, pas à celui de
+preview, et l'UI n'offre aucun emplacement pour en saisir sur ce scope. Résultat vérifié
+sur une preview de branche : le bundle ne contient aucune des trois `VITE_*` inlinées,
+`src/env.ts` lève « Invalid environment variables » et la page est blanche — alors que
+les builds de `main` contiennent bien les valeurs.
+
+C'est pour ça que `.github/workflows/ci.yml` construit les previews à la place : les
+valeurs viennent des secrets GitHub, dont le scope n'a pas cette limitation. Pour éviter
+deux builds concurrents par PR sur le même Worker, le déclencheur **Preview** de
+Cloudflare doit être désactivé (Worker → Settings → Builds), en ne gardant que
+`main` → production côté Cloudflare. **Action manuelle restant à faire dans le dashboard
+Cloudflare** — rien côté CI ne peut le faire à sa place.
+
+**Jobs (`.github/workflows/ci.yml`)** :
+
+| Job                 | Déclencheur             | Fait                                                                                                                |
+| ------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `quality`           | PR + push `main`        | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile) |
+| `database`          | PR + push `main`        | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour          |
+| `preview`           | PR (pas depuis un fork) | Build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N>`, commentaire de PR (URL + QR)      |
+| `deploy-production` | push `main`             | Build avec les vrais `VITE_*`, `wrangler deploy`                                                                    |
+
+Le job `preview` est sauté sur les PR venant d'un fork (les secrets ne leur sont pas
+exposés) — dans ce cas, tester avec le workflow habituel (`wrangler versions upload` en
+local, cf. section Déploiement).
+
+### Secrets et variables requis
+
+À saisir une fois, dans **Settings → Secrets and variables → Actions** du repo (ou via
+`gh`). Seuls les deux jetons Cloudflare sont de vrais secrets ; les trois `VITE_*` sont
+des **variables**, pas des secrets — elles sont conçues pour être publiques (clé
+« publishable » Supabase et URL d'API, RLS fait la vraie sécurité ; clé MapTiler
+restreinte par domaine) et se retrouvent de toute façon en clair dans le bundle JS livré
+au navigateur. Les mettre en `secret` les masquerait sans les protéger, et donnerait une
+fausse impression de confidentialité :
+
+```bash
+gh variable set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
+gh variable set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
+gh variable set VITE_MAPTILER_KEY
+gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
+gh secret set CLOUDFLARE_ACCOUNT_ID
+gh variable set QR_WORKER_URL                   # URL du worker QR, voir ci-dessous
+```
+
+Les trois `VITE_*` sont celles de `.env.production.local` (voir section Déploiement).
+
+### QR code de preview
+
+`workers/qr/` est un petit Worker Cloudflare séparé : il reçoit `?u=<url>`, valide que
+l'URL est en `https://` sur un hôte `*.workers.dev` (garde-fou anti-abus — sans ça,
+n'importe qui pourrait s'en servir comme générateur de QR ouvert), et renvoie un QR en
+SVG (`uqr`), caché indéfiniment côté client (l'alias de preview est stable pour toute la
+durée de vie de la PR).
+
+Déploiement (à refaire seulement si `workers/qr/src/index.ts` change) :
+
+```bash
+npx wrangler deploy --config workers/qr/wrangler.jsonc
+```
+
+Puis mettre à jour la variable de dépôt `QR_WORKER_URL` avec l'URL affichée.
+
+### Previews et base de données
+
+Les previews CI pointent vers la base de production Supabase (mêmes secrets que
+`deploy-production`). Acceptable tant que les étapes testées sont en lecture/auth
+seulement ; à revoir à partir de l'étape 4 du plan de construction (spec §9), où les
+previews commenceront à créer de vrais klashs en base de production.
