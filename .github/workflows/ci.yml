@@ -62,9 +62,12 @@ jobs:
           # .prettierrc.json and formats it the same way `npm run
           # gen:types` does locally — otherwise this diffs formatted
           # output against prettier's unconfigured defaults and always
-          # "fails" on style alone.
+          # "fails" on style alone. --ignore-path /dev/null is needed
+          # too: this exact path is in .gitignore (as a safety net in
+          # case this script is interrupted before the final rm), and
+          # prettier silently no-ops on a path its ignore file covers.
           supabase gen types typescript --local > src/types/database.generated.ts
-          npx prettier --write src/types/database.generated.ts
+          npx prettier --write --ignore-path /dev/null src/types/database.generated.ts
           diff -u src/types/database.ts src/types/database.generated.ts
           rm src/types/database.generated.ts
 
