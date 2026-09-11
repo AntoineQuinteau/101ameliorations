@@ -11,8 +11,7 @@ Cloudflare Worker + assets statiques.
 
 ## Prérequis
 
-- Node 22+ pour l'app (`nvm use` lit `.nvmrc`) ; Node 24 pour `wrangler` (`nvm use 24`
-  avant `npm run build`/`npx wrangler …` si la version par défaut est plus basse)
+- Node 24 (LTS) — `nvm use` lit `.nvmrc`
 - [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase`
 - Docker (pour `npx supabase start`)
 
@@ -95,7 +94,7 @@ VITE_MAPTILER_KEY=…                              # même clé qu'en local
 ```
 
 ```bash
-nvm use 24                    # wrangler exige Node >= 22 ; la valeur par défaut peut être plus basse
+nvm use                       # Node 24, cf. .nvmrc
 npm run build
 npx wrangler versions upload  # déploiement preview, ne touche pas le trafic prod
 # npx wrangler versions deploy   # bascule une version preview en prod (validation humaine)
