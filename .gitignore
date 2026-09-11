@@ -24,6 +24,9 @@ dist-ssr
 .SWC
 coverage
 
+# Scratch file used by the CI "generated types are up to date" check
+src/types/database.generated.ts
+
 # Cloudflare / Wrangler
 .wrangler
 .dev.vars
