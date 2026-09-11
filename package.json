@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "gen:types": "npx supabase gen types typescript --local > src/types/database.ts",

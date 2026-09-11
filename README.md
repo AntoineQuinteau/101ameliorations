@@ -67,7 +67,7 @@ avant de tester le parcours sur un téléphone réel.
    qu'aux adresses des membres du projet — un code envoyé à une adresse
    personnelle n'arrive jamais, silencieusement.
 2. **DNS** : SPF + DKIM (et DMARC) sur le domaine d'envoi.
-3. **Authentication → Emails → Templates → Magic Link** (et *Confirm signup*) :
+3. **Authentication → Emails → Templates → Magic Link** (et _Confirm signup_) :
    coller le contenu de `supabase/templates/magic_link.html`, sujet FR. Vérifier
    la présence de `{{ .Token }}` — sans elle Supabase envoie un lien au lieu d'un
    code.

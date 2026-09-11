@@ -1,0 +1,9 @@
+# Out of scope for this change; formatting it would be unrelated churn.
+docs/upgrade-react-19.md
+
+# Auth email HTML: hand-tuned for email client quirks, not app code.
+supabase/templates/*.html
+
+# Disposable copy-paste working prompt for this workstream (see its own
+# header: "Fichier de travail... Supprimable une fois le chantier terminé").
+docs/prompt-ci-preview-qr.md
