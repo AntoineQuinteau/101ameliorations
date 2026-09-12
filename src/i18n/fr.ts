@@ -47,6 +47,8 @@ export const fr = {
         : count === 1
           ? '1 confirmation'
           : `${count} confirmations`,
+    reportHere: 'Signaler ici',
+    longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
   },
   detail: {
     notFoundTitle: 'Signalement introuvable',
@@ -57,6 +59,9 @@ export const fr = {
     updatedOn: (date: string) => `Mis à jour le ${date}`,
     confirmations: 'Confirmations',
     duplicateOfNotice: "Ce signalement est marqué comme doublon d'un autre klash.",
+    confirm: 'Je confirme',
+    confirmed: 'Confirmé ✓',
+    confirmError: "Impossible d'enregistrer votre confirmation.",
   },
   auth: {
     signIn: 'Se connecter',
@@ -106,5 +111,54 @@ export const fr = {
     pseudoSave: 'Enregistrer',
     pseudoSaved: 'Pseudo enregistré.',
     signOut: 'Se déconnecter',
+  },
+  newKlash: {
+    title: 'Signaler un problème',
+    cancel: 'Annuler',
+    outOfArea: {
+      title: 'Hors zone de signalement',
+      body: "Ce point est hors du Pays basque et du sud des Landes, la zone couverte par l'application. Déplacez le repère pour continuer.",
+    },
+    position: {
+      title: 'Position du problème',
+      instructions: 'Déplacez le repère pour ajuster la position exacte.',
+      accuracyGood: (accuracyM: number) => `Précision GPS : ${Math.round(accuracyM)} m`,
+      accuracyPoor: 'Précision GPS insuffisante : affinez la position manuellement.',
+      geolocationDenied: 'Géolocalisation indisponible : placez le repère manuellement.',
+      continue: 'Continuer',
+    },
+    duplicates: {
+      title: 'Signalements à proximité',
+      body: 'Un ou plusieurs signalements existent déjà près de cette position. Est-ce le même problème ?',
+      sameProblem: "C'est le même problème → je confirme",
+      differentProblem: "Non, c'est un autre problème → continuer",
+      loadError: 'Impossible de vérifier les doublons.',
+      confirmed: 'Confirmation enregistrée. Merci !',
+    },
+    form: {
+      title: 'Décrire le problème',
+      categoryLabel: 'Catégorie',
+      urgencyLabel: 'Urgence',
+      titleLabel: 'Titre',
+      titlePlaceholder: 'Ex. : nid de poule sur la piste cyclable',
+      descriptionLabel: 'Description (facultative)',
+      descriptionPlaceholder: 'Précisez si besoin…',
+      invalidTitle: 'Le titre doit contenir entre 5 et 120 caractères.',
+      invalidDescription: 'La description ne peut pas dépasser 2000 caractères.',
+      submit: 'Continuer',
+    },
+    submit: {
+      loginIntro: 'Pour envoyer votre signalement, connectez-vous.',
+      submitting: 'Envoi du signalement…',
+      submitError: "Impossible d'envoyer ce signalement.",
+      outOfAreaError: 'Ce point est hors de la zone de signalement.',
+      rateLimitError: "Vous avez atteint la limite de signalements pour aujourd'hui.",
+      done: {
+        title: 'Signalement envoyé !',
+        body: 'Merci, votre signalement a été transmis.',
+        viewIt: 'Voir mon signalement',
+        backToMap: 'Retour à la carte',
+      },
+    },
   },
 } as const
