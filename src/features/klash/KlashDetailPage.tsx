@@ -10,10 +10,11 @@ import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
 import { KlashMiniMap } from './KlashMiniMap'
+import { useConfirmKlash } from './useConfirmKlash'
+import { useMyConfirmation } from './useMyConfirmation'
 
-/** Read-only detail page (spec §6.3). No write actions here — the confirmation
- * toggle, edit/delete, and comments arrive with creation (step 4) and comments
- * (step 6). Step 3 only adds a signed-in/out indicator. */
+/** Read-only detail page (spec §6.3), plus the confirm (+1) button added at
+ * step 4. Edit/delete and comments still arrive later (step 6/7). */
 export function KlashDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -28,6 +29,10 @@ export function KlashDetailPage() {
     queryFn: () => fetchKlashById(id as string),
     enabled: Boolean(id),
   })
+
+  const { data: hasConfirmed = false } = useMyConfirmation(id ?? '')
+  const confirmMutation = useConfirmKlash(id ?? '', hasConfirmed)
+  const isAuthor = Boolean(user) && user?.id === klash?.authorId
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
@@ -94,6 +99,19 @@ export function KlashDetailPage() {
               <dd className="font-medium text-neutral-900">{klash.confirmationsCount}</dd>
             </div>
           </dl>
+
+          <div>
+            <button
+              type="button"
+              disabled={!user || isAuthor || confirmMutation.isPending}
+              aria-busy={confirmMutation.isPending}
+              onClick={() => confirmMutation.mutate()}
+              className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+            >
+              {hasConfirmed ? fr.detail.confirmed : fr.detail.confirm}
+            </button>
+            {confirmMutation.isError && <ErrorMessage message={fr.detail.confirmError} />}
+          </div>
 
           <p className="text-xs text-neutral-500">
             {klash.status === 'resolved' && klash.resolvedAt
