@@ -12,7 +12,7 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 - Données publiques en lecture, fiables en écriture (email vérifié).
 - Éviter les doublons plutôt que les subir : proposer la confirmation d'un klash existant.
 - Cycle de vie explicite (nouveau → traité), avec traçabilité de qui a changé quoi.
-- Zéro serveur applicatif : Supabase (Postgres/PostGIS, Auth, Storage, RLS) + front statique sur Cloudflare Pages.
+- Zéro serveur applicatif : Supabase (Postgres/PostGIS, Auth, Storage, RLS) + front statique sur Cloudflare Workers.
 - Export des données pour le plaidoyer auprès des collectivités.
 
 ## 2. Rôles et permissions
@@ -247,7 +247,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Front** : React 18, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
-- **Hébergement** : Cloudflare Pages connecté au repo GitHub (`main` → prod, branches → preview). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_SERVICE_AREA_BBOX`.
+- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_SERVICE_AREA_BBOX`.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.
@@ -256,7 +256,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 
 Chaque étape se termine par un déploiement preview testé sur téléphone réel.
 
-1. **Socle** — Repo, Vite/React/TS/Tailwind, Supabase CLI, migration initiale (types, tables, triggers, RLS), génération des types, Cloudflare Pages branché. _Critère : `supabase db reset` passe, page vide déployée en HTTPS._
+1. **Socle** — Repo, Vite/React/TS/Tailwind, Supabase CLI, migration initiale (types, tables, triggers, RLS), génération des types, Cloudflare Worker branché. _Critère : `supabase db reset` passe, page vide déployée en HTTPS._
 2. **Carte + lecture** — Carte Leaflet, chargement par bbox, marqueurs, clustering, page détail en lecture seule. Données de test insérées par seed. _Critère : navigation fluide sur mobile avec 500 klashs seedés._
 3. **Auth OTP** — Login, profil, pseudo, `/me`. _Critère : parcours email → code → session persistante._
 4. **Création** — Feuille de création en 4 étapes, géoloc, pin, détection de doublons, confirmation +1, validation zod, rate limits. Sans photos. _Critère : klash créé en < 60 s depuis un téléphone._
@@ -278,7 +278,7 @@ Chaque étape se termine par un déploiement preview testé sur téléphone rée
 ## 11. Décisions prises (07/09/2026)
 
 1. **Catégories** : `category_1` à `category_5`, libellés « Catégorie 1 » à « Catégorie 5 » en attendant la liste de l'asso. Paramétrage par le rôle `moderator` : v2.
-2. **Nom** : « 101améliorations ». Domaine initial `101ameliorations.pages.dev` (gratuit Cloudflare), domaine personnalisé plus tard sans impact sur le code. Expéditeur des emails : « 101améliorations ».
+2. **Nom** : « 101améliorations ». Domaine initial `101ameliorations.workers.dev` (gratuit Cloudflare), puis domaine personnalisé `101ameliorations.org` sans impact sur le code. Expéditeur des emails : « 101améliorations ».
 3. **Tuiles** : MapTiler.
 4. **Conservation** : klashs `resolved` masqués de la carte par défaut après 90 jours, conservés en base et dans l'export.
 5. **Contact auteur** : `authority`, `moderator` et `admin` peuvent consulter l'email de l'auteur d'un klash (v1). Notifications automatiques : v2.
