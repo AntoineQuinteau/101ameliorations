@@ -5,9 +5,12 @@
 -- (as CI does). Uses a UUID range disjoint from the seed's 10000000-... range
 -- and the existing profiles_rls_test.sql's aaaaaaaa-... range.
 begin;
-select plan(9);
+select plan(14);
 
--- Two fixture users: one author, one confirmer.
+-- Three fixture users: one author, one confirmer, one dedicated to the
+-- duplicate-prevention tests (10-14) — the author is deliberately run into
+-- the rate limit by test 3's loop, so those tests need their own user to
+-- reach the duplicate trigger instead of failing on the rate limit first.
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
@@ -22,6 +25,11 @@ insert into auth.users (
   ('00000000-0000-0000-0000-000000000000',
    'bbbbbbbb-0000-4000-8000-000000000002', 'authenticated', 'authenticated',
    'klash-test-confirmer@101ameliorations.test', 'x', now(),
+   '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+   false, false, now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000',
+   'bbbbbbbb-0000-4000-8000-000000000003', 'authenticated', 'authenticated',
+   'klash-test-duplicate@101ameliorations.test', 'x', now(),
    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
    false, false, now(), now(), '', '', '', '');
 
@@ -138,6 +146,57 @@ select is(
       and title = 'Nid de poule test'),
   1,
   'confirmations_count is incremented after a non-author confirms'
+);
+
+-- 10-11. A double-submitted create_klash call (same author, title, category,
+-- position) is rejected the second time — the server-side backstop for the
+-- client-side double-submit fixes (submitGuard.ts, one caller in
+-- NewKlashPage, a disabled submit button), all of which are bypassable.
+select set_config('request.jwt.claims',
+  '{"sub":"bbbbbbbb-0000-4000-8000-000000000003","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$ select public.create_klash(
+       43.30, -1.75, 'category_2', 'high', 'Nid de poule doublon', null
+     ) $$,
+  'the first of two identical submits is accepted'
+);
+
+select throws_ok(
+  $$ select public.create_klash(
+       43.30, -1.75, 'category_2', 'high', 'Nid de poule doublon', null
+     ) $$,
+  'duplicate klash: an identical klash was created less than 60 seconds ago',
+  'an identical submit within 60 seconds is rejected'
+);
+
+-- 12. Same position and title but a different category is a different
+-- report, not a duplicate — the guard only blocks exact repeats.
+select lives_ok(
+  $$ select public.create_klash(
+       43.30, -1.75, 'category_3', 'high', 'Nid de poule doublon', null
+     ) $$,
+  'the same title and position but a different category is accepted'
+);
+
+-- 13. A tiny GPS jitter (~3cm, well under the 0.1m threshold) between two
+-- otherwise-identical submits still counts as the same position.
+select throws_ok(
+  $$ select public.create_klash(
+       43.3000003, -1.75, 'category_2', 'high', 'Nid de poule doublon', null
+     ) $$,
+  'duplicate klash: an identical klash was created less than 60 seconds ago',
+  'a sub-metre GPS jitter does not escape the duplicate guard'
+);
+
+-- 14. A genuinely different position (well beyond the duplicate-detection
+-- radius) is accepted even with the same author/title/category.
+select lives_ok(
+  $$ select public.create_klash(
+       43.60, -1.20, 'category_2', 'high', 'Nid de poule doublon', null
+     ) $$,
+  'the same title and category at a different position is accepted'
 );
 
 select * from finish();
