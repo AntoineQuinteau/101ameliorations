@@ -8,6 +8,7 @@ import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import type { Klash } from '../../types/klash'
+import { useAuth } from '../auth/useAuth'
 
 const DUPLICATE_RADIUS_M = 50
 
@@ -24,6 +25,7 @@ export function DuplicatesStep({
   onDifferentProblem: () => void
   onCancel: () => void
 }) {
+  const { user } = useAuth()
   const {
     data: nearby = [],
     isLoading,
@@ -53,26 +55,42 @@ export function DuplicatesStep({
       <p className="text-sm text-neutral-600">{fr.newKlash.duplicates.body}</p>
 
       <ul className="flex flex-col gap-2">
-        {nearby.map((klash) => (
-          <li
-            key={klash.id}
-            className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3"
-          >
-            <p className="text-sm font-medium text-neutral-900">{klash.title}</p>
-            <div className="flex flex-wrap gap-1.5">
-              <Badge label={fr.category[klash.category]} tone="gray" />
-              <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
-              <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
-            </div>
-            <button
-              type="button"
-              onClick={() => onSameProblem(klash)}
-              className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+        {nearby.map((klash) => {
+          const isOwn = Boolean(user) && klash.authorId === user?.id
+          return (
+            <li
+              key={klash.id}
+              className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3"
             >
-              {fr.newKlash.duplicates.sameProblem}
-            </button>
-          </li>
-        ))}
+              <p className="text-sm font-medium text-neutral-900">{klash.title}</p>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge label={fr.category[klash.category]} tone="gray" />
+                <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
+                <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
+              </div>
+              {isOwn ? (
+                // An author can't confirm their own klash (confirmations_insert_self
+                // rejects it server-side) — offer the equivalent of "Annuler" instead
+                // of a button that would fail.
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="inline-flex items-center justify-center rounded-md bg-amber-100 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-200"
+                >
+                  {fr.newKlash.duplicates.alreadyMine}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onSameProblem(klash)}
+                  className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+                >
+                  {fr.newKlash.duplicates.sameProblem}
+                </button>
+              )}
+            </li>
+          )
+        })}
       </ul>
 
       <div className="flex gap-2">

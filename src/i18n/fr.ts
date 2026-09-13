@@ -131,6 +131,7 @@ export const fr = {
       title: 'Signalements à proximité',
       body: 'Un ou plusieurs signalements existent déjà près de cette position. Est-ce le même problème ?',
       sameProblem: "C'est le même problème → je confirme",
+      alreadyMine: "Je l'ai déjà signalé → annuler",
       differentProblem: "Non, c'est un autre problème → continuer",
       loadError: 'Impossible de vérifier les doublons.',
       confirmed: 'Confirmation enregistrée. Merci !',
