@@ -11,10 +11,12 @@ import { useGeolocation } from './useGeolocation'
 import type { NewKlashForm } from './newKlashSchemas'
 import { confirmKlash } from '../../api/confirmations'
 import { createKlash } from '../../api/klashes'
+import { BboxWatcher } from '../map/BboxWatcher'
+import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
 import { MapTiles } from '../map/MapTiles'
+import { useKlashesInBbox } from '../map/useKlashesInBbox'
 import {
   INITIAL_MAP_CENTER,
-  INITIAL_MAP_ZOOM,
   MAX_MAP_ZOOM,
   MIN_MAP_ZOOM,
   SERVICE_AREA_BBOX,
@@ -22,7 +24,15 @@ import {
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import type { Klash } from '../../types/klash'
-import { expandBbox, isPointInBbox } from '../../utils/bbox'
+import { expandBbox, isPointInBbox, type Bbox } from '../../utils/bbox'
+
+const NEW_KLASH_MAP_ZOOM = MAX_MAP_ZOOM - 2
+
+function noop() {
+  // ClusteredKlashMarkers requires an onSelect handler, but markers here are
+  // purely contextual (showing what's already nearby while placing the pin)
+  // — the creation sheet already occupies the bottom of the screen.
+}
 
 type Step = 'position' | 'duplicates' | 'form' | 'submit' | 'done'
 
@@ -50,8 +60,10 @@ export function NewKlashPage() {
   const [confirmedKlashId, setConfirmedKlashId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
 
   const geolocation = useGeolocation()
+  const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox)
 
   // Only apply the geolocation result if the page opened without an explicit
   // ?lat=&lng= (e.g. from the "Signaler ici" floating button, which already
@@ -113,7 +125,7 @@ export function NewKlashPage() {
     <div className="relative h-dvh w-full">
       <MapContainer
         center={position}
-        zoom={INITIAL_MAP_ZOOM}
+        zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
         maxZoom={MAX_MAP_ZOOM}
         maxBounds={maxBounds}
@@ -121,17 +133,10 @@ export function NewKlashPage() {
         className="h-full w-full"
       >
         <MapTiles />
+        <BboxWatcher onChange={setViewportBbox} />
+        <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
         <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
       </MapContainer>
-
-      <button
-        type="button"
-        onClick={() => navigate('/')}
-        aria-label={fr.newKlash.cancel}
-        className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-neutral-700 shadow hover:bg-white"
-      >
-        {fr.newKlash.cancel}
-      </button>
 
       <div className="absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4">
         <div className="max-h-[70vh] overflow-y-auto rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
@@ -140,6 +145,7 @@ export function NewKlashPage() {
               accuracyM={geolocation.result?.accuracyM ?? null}
               isOutOfArea={isOutOfArea}
               onContinue={() => setStep('duplicates')}
+              onCancel={() => navigate('/')}
             />
           )}
 
@@ -153,7 +159,10 @@ export function NewKlashPage() {
           )}
 
           {step === 'form' && (
-            <KlashFormStep onSubmit={(form) => startAction({ type: 'create', form })} />
+            <KlashFormStep
+              onSubmit={(form) => startAction({ type: 'create', form })}
+              onCancel={() => navigate('/')}
+            />
           )}
 
           {step === 'submit' && pendingAction && (

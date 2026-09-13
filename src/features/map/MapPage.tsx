@@ -10,6 +10,7 @@ import { MapClickToReport } from './MapClickToReport'
 import { MapTiles } from './MapTiles'
 import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
+import { useHasHover } from './useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import {
@@ -25,10 +26,23 @@ import { expandBbox, type Bbox } from '../../utils/bbox'
 
 export function MapPage() {
   const navigate = useNavigate()
+  const hasHover = useHasHover()
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
   const [selectedKlash, setSelectedKlash] = useState<Klash | null>(null)
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const { data: klashes = [], isError, isFetching, refetch } = useKlashesInBbox(viewportBbox)
+
+  function handleMarkerSelect(klash: Klash) {
+    // On a fine-pointer device, hover already previews the klash (see
+    // onHover below) — a click there goes straight to the detail page,
+    // skipping the extra "voir le détail" tap that only makes sense as a
+    // second step on touch, where there's no hover to preview with first.
+    if (hasHover) {
+      navigate(`/k/${klash.id}`)
+    } else {
+      setSelectedKlash(klash)
+    }
+  }
 
   function goToNewKlash(lat: number, lng: number) {
     navigate(`/new?lat=${lat}&lng=${lng}`)
@@ -81,7 +95,11 @@ export function MapPage() {
       >
         <MapTiles />
         <BboxWatcher onChange={setViewportBbox} />
-        <ClusteredKlashMarkers klashes={klashes} onSelect={setSelectedKlash} />
+        <ClusteredKlashMarkers
+          klashes={klashes}
+          onSelect={handleMarkerSelect}
+          onHover={hasHover ? setSelectedKlash : undefined}
+        />
         <MapClickToReport onPick={(lat, lng) => setPendingPin({ lat, lng })} />
         {pendingPin && <PendingPinMarker position={[pendingPin.lat, pendingPin.lng]} />}
       </MapContainer>
@@ -120,7 +138,11 @@ export function MapPage() {
       )}
 
       {selectedKlash && (
-        <KlashPreviewCard klash={selectedKlash} onClose={() => setSelectedKlash(null)} />
+        <KlashPreviewCard
+          klash={selectedKlash}
+          onClose={() => setSelectedKlash(null)}
+          interactive={!hasHover}
+        />
       )}
     </div>
   )

@@ -4,10 +4,12 @@ export function PositionStep({
   accuracyM,
   isOutOfArea,
   onContinue,
+  onCancel,
 }: {
   accuracyM: number | null
   isOutOfArea: boolean
   onContinue: () => void
+  onCancel: () => void
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -22,19 +24,30 @@ export function PositionStep({
         </p>
       )}
 
-      {isOutOfArea ? (
+      {isOutOfArea && (
         <p role="alert" className="text-sm text-red-700">
           {fr.newKlash.outOfArea.body}
         </p>
-      ) : (
+      )}
+
+      <div className="flex gap-2">
         <button
           type="button"
-          onClick={onContinue}
-          className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          onClick={onCancel}
+          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
         >
-          {fr.newKlash.position.continue}
+          {fr.newKlash.cancel}
         </button>
-      )}
+        {!isOutOfArea && (
+          <button
+            type="button"
+            onClick={onContinue}
+            className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          >
+            {fr.newKlash.position.continue}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

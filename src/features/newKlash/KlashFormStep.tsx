@@ -13,7 +13,13 @@ const CATEGORIES: KlashCategory[] = [
 ]
 const URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
 
-export function KlashFormStep({ onSubmit }: { onSubmit: (form: NewKlashForm) => void }) {
+export function KlashFormStep({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (form: NewKlashForm) => void
+  onCancel: () => void
+}) {
   const [category, setCategory] = useState<KlashCategory>('category_1')
   const [urgency, setUrgency] = useState<KlashUrgency>('medium')
   const [title, setTitle] = useState('')
@@ -121,12 +127,21 @@ export function KlashFormStep({ onSubmit }: { onSubmit: (form: NewKlashForm) => 
 
       {validationError && <ErrorMessage message={validationError} />}
 
-      <button
-        type="submit"
-        className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
-      >
-        {fr.newKlash.form.submit}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          {fr.newKlash.cancel}
+        </button>
+        <button
+          type="submit"
+          className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+        >
+          {fr.newKlash.form.submit}
+        </button>
+      </div>
     </form>
   )
 }
