@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createSubmitGuard } from './submitGuard'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import type { KlashCategory, KlashUrgency } from '../../types/klash'
@@ -52,6 +53,15 @@ export function KlashFormStep({
   const [validationError, setValidationError] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+
+  // Guards against a double-tap submitting twice: onSubmit() below leads the
+  // parent to unmount this step, but that unmount only takes effect on the
+  // next render — a second click dispatched in the same tick would still
+  // reach handleSubmit first. A ref-backed guard (see submitGuard.ts) closes
+  // that gap synchronously; `hasSubmitted` state only drives the disabled
+  // button style.
+  const submitGuardRef = useRef(createSubmitGuard())
 
   // Object URLs are created as photos are added; revoke whatever's left on
   // unmount (e.g. the EXIF-GPS prompt sending the flow back through the
@@ -113,6 +123,7 @@ export function KlashFormStep({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
+    if (!submitGuardRef.current.claim()) return
     const result = newKlashFormSchema.safeParse({
       category: value.category,
       urgency: value.urgency,
@@ -126,9 +137,11 @@ export function KlashFormStep({
           ? fr.newKlash.form.invalidDescription
           : fr.newKlash.form.invalidTitle,
       )
+      submitGuardRef.current.release() // invalid — let the user fix it and resubmit
       return
     }
     setValidationError(null)
+    setHasSubmitted(true)
     onSubmit(result.data)
   }
 
@@ -288,7 +301,8 @@ export function KlashFormStep({
         </button>
         <button
           type="submit"
-          className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
+          disabled={hasSubmitted}
+          className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {fr.newKlash.form.submit}
         </button>

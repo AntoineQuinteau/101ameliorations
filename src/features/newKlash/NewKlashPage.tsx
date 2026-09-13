@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
@@ -10,6 +10,7 @@ import { PositionStep } from './PositionStep'
 import { SubmitStep } from './SubmitStep'
 import { useGeolocation } from './useGeolocation'
 import { emptyKlashFormDraft, type KlashFormDraft, type NewKlashForm } from './newKlashSchemas'
+import { createSubmitGuard } from './submitGuard'
 import { confirmKlash } from '../../api/confirmations'
 import { createKlash } from '../../api/klashes'
 import { uploadKlashPhoto } from '../../api/klashPhotos'
@@ -75,6 +76,12 @@ export function NewKlashPage() {
   const [failedPhotoCount, setFailedPhotoCount] = useState(0)
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
 
+  // Guards runPendingAction against firing more than once for the same
+  // pending action — see submitGuard.ts for the three ways that used to
+  // happen. A ref, not state: the guard must reject a second caller in the
+  // same synchronous tick, before a re-render could ever update state.
+  const submitGuardRef = useRef(createSubmitGuard())
+
   const geolocation = useGeolocation()
   const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox)
 
@@ -110,6 +117,10 @@ export function NewKlashPage() {
   }
 
   async function runPendingAction(action: PendingAction) {
+    // Both SubmitStep's onReady effect and startAction's own call below can
+    // reach here for the same tap; only the first is let through. Released
+    // on failure (below) so a retry after a real error isn't locked out.
+    if (!submitGuardRef.current.claim()) return
     setIsSubmitting(true)
     setSubmitError(null)
     try {
@@ -145,17 +156,23 @@ export function NewKlashPage() {
       }
       setStep('done')
     } catch (error) {
+      submitGuardRef.current.release()
       setSubmitError(mapSubmitError(error))
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  // Only trigger: mounting SubmitStep runs its onReady effect once signed in
+  // (immediately, if already signed in) — see SubmitStep's docblock. This
+  // used to also call runPendingAction directly here, racing that effect for
+  // the same action; the guard above would still have caught it, but one
+  // caller is simpler than two and a guard.
   function startAction(action: PendingAction) {
+    submitGuardRef.current = createSubmitGuard()
     setPendingAction(action)
     setSubmitError(null)
     setStep('submit')
-    if (user) void runPendingAction(action)
   }
 
   return (
@@ -240,6 +257,9 @@ function mapSubmitError(error: unknown): string {
   }
   if (message.includes('rate limit exceeded')) {
     return fr.newKlash.submit.rateLimitError
+  }
+  if (message.includes('duplicate klash')) {
+    return fr.newKlash.submit.duplicateError
   }
   return fr.newKlash.submit.submitError
 }
