@@ -6,6 +6,7 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { KlashDetailPage } from './features/klash/KlashDetailPage'
 import { MapPage } from './features/map/MapPage'
 import { MePage } from './features/me/MePage'
+import { NewKlashPage } from './features/newKlash/NewKlashPage'
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +15,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <MapPage /> },
       { path: 'k/:id', element: <KlashDetailPage /> },
+      { path: 'new', element: <NewKlashPage /> },
       { path: 'login', element: <LoginPage /> },
       {
         path: 'me',

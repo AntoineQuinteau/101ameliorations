@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import { useProfile } from '../auth/useProfile'
@@ -34,7 +34,11 @@ export function MePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <h1 className="text-xl font-semibold text-neutral-900">{fr.me.title}</h1>
+      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
+        {fr.common.backToMap}
+      </Link>
+
+      <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.me.title}</h1>
 
       <section className="mt-4 rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
         <DisplayNameForm

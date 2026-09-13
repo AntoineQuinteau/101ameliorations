@@ -23,16 +23,24 @@ export function expandBbox(bbox: Bbox, factor: number): Bbox {
   }
 }
 
-/** Rounds every bound to `decimals` places, so nearby viewports collapse onto the same
- * value and reuse the same query cache entry instead of refetching on every pixel of pan. */
+/** Snaps a bbox outwards onto a grid of `decimals` places, so nearby viewports collapse
+ * onto the same value and reuse the same query cache entry instead of refetching on every
+ * pixel of pan.
+ *
+ * Mins round down and maxes round up rather than every bound rounding to nearest: at 2
+ * decimals the grid is ~1.1 km, so a viewport narrower than that (zoom >= 17 on a phone,
+ * >= 18 on a desktop) had both bounds land on the same value, producing a zero-area bbox
+ * that matched no klash at all — the map went empty at high zoom. Snapping outwards can
+ * only ever grow the box, never close it. */
 export function roundBbox(bbox: Bbox, decimals: number): Bbox {
   const factor = 10 ** decimals
-  const round = (n: number) => Math.round(n * factor) / factor
+  const floor = (n: number) => Math.floor(n * factor) / factor
+  const ceil = (n: number) => Math.ceil(n * factor) / factor
   return {
-    minLat: round(bbox.minLat),
-    minLng: round(bbox.minLng),
-    maxLat: round(bbox.maxLat),
-    maxLng: round(bbox.maxLng),
+    minLat: floor(bbox.minLat),
+    minLng: floor(bbox.minLng),
+    maxLat: ceil(bbox.maxLat),
+    maxLng: ceil(bbox.maxLng),
   }
 }
 

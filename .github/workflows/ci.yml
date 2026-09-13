@@ -45,6 +45,8 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Start local Supabase
         run: supabase start
       - name: Replay every migration from scratch

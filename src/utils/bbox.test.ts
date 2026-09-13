@@ -35,14 +35,23 @@ describe('expandBbox', () => {
 })
 
 describe('roundBbox', () => {
-  it('rounds every bound to the given number of decimals', () => {
+  it('snaps mins down and maxes up to the given number of decimals', () => {
     const bbox: Bbox = { minLat: 43.49123, minLng: -1.47456, maxLat: 43.50789, maxLng: -1.46001 }
     expect(roundBbox(bbox, 2)).toEqual({
       minLat: 43.49,
-      minLng: -1.47,
+      minLng: -1.48,
       maxLat: 43.51,
       maxLng: -1.46,
     })
+  })
+
+  it('never collapses a narrow viewport into a zero-area bbox', () => {
+    // ~200m-wide viewport at high zoom: both bounds would round to the same
+    // 2-decimal (~1.1km) value, and the map would then match zero klashs.
+    const narrow: Bbox = { minLat: 43.49, minLng: -1.47, maxLat: 43.4918, maxLng: -1.4682 }
+    const rounded = roundBbox(narrow, 2)
+    expect(rounded.minLat).toBeLessThan(rounded.maxLat)
+    expect(rounded.minLng).toBeLessThan(rounded.maxLng)
   })
 
   it('collapses a small pan onto the same rounded bbox', () => {

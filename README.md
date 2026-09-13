@@ -177,6 +177,20 @@ Puis mettre à jour la variable de dépôt `QR_WORKER_URL` avec l'URL affichée.
 ### Previews et base de données
 
 Les previews CI pointent vers la base de production Supabase (mêmes secrets que
-`deploy-production`). Acceptable tant que les étapes testées sont en lecture/auth
-seulement ; à revoir à partir de l'étape 4 du plan de construction (spec §9), où les
-previews commenceront à créer de vrais klashs en base de production.
+`deploy-production`). Depuis l'étape 4 (création), tester une preview depuis un
+téléphone crée un vrai klash — et potentiellement un vrai compte — en base de
+production. Décision assumée plutôt qu'une base dédiée aux previews : le produit n'a
+pas encore d'utilisateurs réels, et dupliquer projet Supabase / migrations / seed pour
+cette seule raison serait disproportionné à ce stade.
+
+Après un test manuel de création (compte de test, ex. `test-<quelquechose>@<domaine
+que tu contrôles>`), nettoyer avec :
+
+```bash
+psql "$(npx supabase status -o env --linked | grep DB_URL | cut -d= -f2-)" \
+  -v email=<email-utilise-pour-le-test> \
+  -f scripts/cleanup-test-klash.sql
+```
+
+Supprime les klashs, confirmations et le compte de cet email uniquement. Distinct de
+`scripts/cleanup-seed-data.sql`, qui cible seulement les 12 utilisateurs de seed.

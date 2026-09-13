@@ -388,6 +388,42 @@ export type Database = {
       }
     }
     Functions: {
+      create_klash: {
+        Args: {
+          category: Database['public']['Enums']['klash_category']
+          description: string
+          lat: number
+          lng: number
+          title: string
+          urgency: Database['public']['Enums']['klash_urgency']
+        }
+        Returns: {
+          author_display_name: string | null
+          author_id: string | null
+          author_organization: string | null
+          author_role: Database['public']['Enums']['user_role'] | null
+          category: Database['public']['Enums']['klash_category'] | null
+          comments_count: number | null
+          confirmations_count: number | null
+          created_at: string | null
+          description: string | null
+          duplicate_of: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          resolved_at: string | null
+          status: Database['public']['Enums']['klash_status'] | null
+          title: string | null
+          updated_at: string | null
+          urgency: Database['public']['Enums']['klash_urgency'] | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'klashes_public'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_user_role: {
         Args: never
         Returns: Database['public']['Enums']['user_role']
@@ -399,6 +435,35 @@ export type Database = {
           min_lat: number
           min_lng: number
         }
+        Returns: {
+          author_display_name: string | null
+          author_id: string | null
+          author_organization: string | null
+          author_role: Database['public']['Enums']['user_role'] | null
+          category: Database['public']['Enums']['klash_category'] | null
+          comments_count: number | null
+          confirmations_count: number | null
+          created_at: string | null
+          description: string | null
+          duplicate_of: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          resolved_at: string | null
+          status: Database['public']['Enums']['klash_status'] | null
+          title: string | null
+          updated_at: string | null
+          urgency: Database['public']['Enums']['klash_urgency'] | null
+        }[]
+        SetofOptions: {
+          from: '*'
+          to: 'klashes_public'
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      klashes_nearby: {
+        Args: { origin_lat: number; origin_lng: number; radius_m: number }
         Returns: {
           author_display_name: string | null
           author_id: string | null
