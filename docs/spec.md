@@ -146,7 +146,7 @@ Triggers et fonctions :
 - Compteurs `confirmations_count` / `comments_count` maintenus par trigger (les commentaires `hidden` ne comptent pas).
 - `enforce_service_area()` : rejette un klash hors zone (bbox lat 43.25–43.80, lon -1.80 à -0.90, stockée en table `settings` pour être ajustable sans migration).
 - `enforce_status_transition()` : vérifie que la transition est autorisée pour le rôle courant, insère la ligne dans `status_changes`, renseigne `resolved_at`.
-- `enforce_rate_limit()` : max 10 klashs / 24 h et 50 commentaires / 24 h par utilisateur.
+- `enforce_rate_limit()` : max 250 klashs / 24 h et 50 commentaires / 24 h par utilisateur.
 - `enforce_photo_limit()` : max 3 photos par klash.
 - Vue publique `klashes_public` exposant `author_display_name` sans jamais joindre l'email.
 - RPC `klashes_nearby(lat, lng, radius_m)` : klashs actifs (hors `rejected`/`duplicate`/`resolved` depuis > 30 j) dans un rayon, pour la détection de doublons.

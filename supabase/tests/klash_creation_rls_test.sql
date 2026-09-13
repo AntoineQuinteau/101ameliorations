@@ -46,12 +46,12 @@ select throws_ok(
   'a klash outside the service area is rejected'
 );
 
--- 3. The rate limit blocks the 11th klash in 24h for the same author (1
--- already created in test 1, so 9 more reach the limit without asserting on
--- each one individually, then the 11th is rejected).
+-- 3. The rate limit blocks the 251st klash in 24h for the same author (1
+-- already created in test 1, so 249 more reach the limit without asserting
+-- on each one individually, then the 251st is rejected).
 do $$
 begin
-  for i in 2..10 loop
+  for i in 2..250 loop
     perform public.create_klash(
       43.49, -1.47, 'category_1', 'medium', 'Klash rate limit ' || i, null
     );
@@ -63,8 +63,8 @@ select throws_ok(
   $$ select public.create_klash(
        43.49, -1.47, 'category_1', 'medium', 'Klash au dela de la limite', null
      ) $$,
-  'rate limit exceeded: max 10 klashes per 24h',
-  'the 11th klash in 24h is rejected by the rate limit'
+  'rate limit exceeded: max 250 klashes per 24h',
+  'the 251st klash in 24h is rejected by the rate limit'
 );
 
 -- 4. klashes_nearby finds a klash close to a given point.
