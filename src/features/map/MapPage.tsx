@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type { LatLngBoundsExpression } from 'leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
+import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
+import { FiltersPanel } from './FiltersPanel'
+import { applyFilters, sortKlashes, type KlashFilters, type KlashSort } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
 import { MapClickToReport } from './MapClickToReport'
 import { MapTiles } from './MapTiles'
@@ -27,10 +30,29 @@ import { expandBbox, type Bbox } from '../../utils/bbox'
 export function MapPage() {
   const navigate = useNavigate()
   const hasHover = useHasHover()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
   const [selectedKlash, setSelectedKlash] = useState<Klash | null>(null)
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [{ filters, sort }, setFiltersAndSort] = useState(() =>
+    filtersFromSearchParams(searchParams),
+  )
   const { data: klashes = [], isError, isFetching, refetch } = useKlashesInBbox(viewportBbox)
+
+  const visibleKlashes = useMemo(
+    () => sortKlashes(applyFilters(klashes, filters, viewportBbox), sort),
+    [klashes, filters, sort, viewportBbox],
+  )
+
+  // Writes the URL whenever filters or sort change, so a shared link reopens
+  // the same view (spec §6.1). `replace: true` avoids stacking a browser
+  // history entry per chip toggle — only the map's own navigations (to /new,
+  // /k/:id) should be back-button stops.
+  function updateFiltersAndSort(nextFilters: KlashFilters, nextSort: KlashSort) {
+    setFiltersAndSort({ filters: nextFilters, sort: nextSort })
+    setSearchParams(filtersToSearchParams(nextFilters, nextSort), { replace: true })
+  }
 
   function handleMarkerSelect(klash: Klash) {
     // On a fine-pointer device, hover already previews the klash (see
@@ -96,7 +118,7 @@ export function MapPage() {
         <MapTiles />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers
-          klashes={klashes}
+          klashes={visibleKlashes}
           onSelect={handleMarkerSelect}
           onHover={hasHover ? setSelectedKlash : undefined}
         />
@@ -106,7 +128,17 @@ export function MapPage() {
 
       <AuthBadge />
 
-      {!pendingPin && !selectedKlash && (
+      {!isFiltersOpen && (
+        <button
+          type="button"
+          onClick={() => setIsFiltersOpen(true)}
+          className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow hover:bg-white"
+        >
+          {fr.map.filters.open}
+        </button>
+      )}
+
+      {!pendingPin && !selectedKlash && !isFiltersOpen && (
         <button
           type="button"
           onClick={handleReportHereButton}
@@ -116,7 +148,7 @@ export function MapPage() {
         </button>
       )}
 
-      {pendingPin && (
+      {pendingPin && !isFiltersOpen && (
         <PinConfirmCard
           onConfirm={() => goToNewKlash(pendingPin.lat, pendingPin.lng)}
           onCancel={() => setPendingPin(null)}
@@ -137,7 +169,18 @@ export function MapPage() {
         </div>
       )}
 
-      {selectedKlash && (
+      {isFiltersOpen && (
+        <FiltersPanel
+          filters={filters}
+          sort={sort}
+          resultsCount={visibleKlashes.length}
+          onChange={(nextFilters) => updateFiltersAndSort(nextFilters, sort)}
+          onSortChange={(nextSort) => updateFiltersAndSort(filters, nextSort)}
+          onClose={() => setIsFiltersOpen(false)}
+        />
+      )}
+
+      {!isFiltersOpen && selectedKlash && (
         <KlashPreviewCard
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}
