@@ -128,7 +128,7 @@ export function NewKlashPage() {
         type="button"
         onClick={() => navigate('/')}
         aria-label={fr.newKlash.cancel}
-        className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-neutral-700 shadow hover:bg-white"
+        className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-neutral-700 shadow hover:bg-white"
       >
         {fr.newKlash.cancel}
       </button>
