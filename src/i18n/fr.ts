@@ -168,6 +168,7 @@ export const fr = {
       submitError: "Impossible d'envoyer ce signalement.",
       outOfAreaError: 'Ce point est hors de la zone de signalement.',
       rateLimitError: "Vous avez atteint la limite de signalements pour aujourd'hui.",
+      duplicateError: 'Ce signalement vient déjà d’être envoyé.',
       done: {
         title: 'Signalement envoyé !',
         body: 'Merci, votre signalement a été transmis.',
