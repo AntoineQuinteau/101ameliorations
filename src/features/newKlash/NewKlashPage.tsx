@@ -155,6 +155,7 @@ export function NewKlashPage() {
               lng={position[1]}
               onSameProblem={(klash) => startAction({ type: 'confirm', klashId: klash.id })}
               onDifferentProblem={() => setStep('form')}
+              onCancel={() => navigate('/')}
             />
           )}
 

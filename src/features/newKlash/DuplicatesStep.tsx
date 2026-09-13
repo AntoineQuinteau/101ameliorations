@@ -16,11 +16,13 @@ export function DuplicatesStep({
   lng,
   onSameProblem,
   onDifferentProblem,
+  onCancel,
 }: {
   lat: number
   lng: number
   onSameProblem: (klash: Klash) => void
   onDifferentProblem: () => void
+  onCancel: () => void
 }) {
   const {
     data: nearby = [],
@@ -73,13 +75,22 @@ export function DuplicatesStep({
         ))}
       </ul>
 
-      <button
-        type="button"
-        onClick={onDifferentProblem}
-        className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-      >
-        {fr.newKlash.duplicates.differentProblem}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          {fr.newKlash.cancel}
+        </button>
+        <button
+          type="button"
+          onClick={onDifferentProblem}
+          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+        >
+          {fr.newKlash.duplicates.differentProblem}
+        </button>
+      </div>
     </div>
   )
 }
