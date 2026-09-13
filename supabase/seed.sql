@@ -71,6 +71,12 @@ update public.klashes set duplicate_of = null
 delete from public.confirmations
  where user_id in (select id from seed_users)
     or klash_id in (select id from public.klashes where author_id in (select id from seed_users));
+-- Comments authored by a seed user are covered by the klashes cascade below
+-- only when they're on a seed klash. Every klash here is seed-authored today,
+-- but this delete is kept independent so a seed user's comment on a
+-- non-seed klash (not possible yet, but not guaranteed to stay that way)
+-- doesn't survive a re-run.
+delete from public.comments where author_id in (select id from seed_users);
 delete from public.klashes where author_id in (select id from seed_users);
 delete from auth.users where id in (select id from seed_users); -- cascades profiles
 
@@ -255,10 +261,70 @@ where k.author_id in (select id from seed_users)
   and random() < 0.132
 on conflict (klash_id, user_id) do nothing;
 
+-- ---------- Comments ----------
+-- Word bank of short reactions a passer-by or the reporting association
+-- might leave, independent of the klash titles/descriptions above.
+drop table if exists seed_comment_bodies;
+create temporary table seed_comment_bodies (id serial primary key, body text not null);
+insert into seed_comment_bodies (body) values
+  ('Toujours pas réparé à ce jour.'),
+  ('Je confirme, je suis passé hier encore.'),
+  ('Ça devient vraiment dangereux le soir.'),
+  ('Un agent est passé constater le problème la semaine dernière.'),
+  ('Même souci un peu plus loin sur le même axe.'),
+  ('Merci pour le signalement, on relaie à la mairie.'),
+  ('Des travaux semblent avoir commencé.'),
+  ('J''ai failli tomber à cet endroit ce matin.'),
+  ('Le marquage a été refait mais le problème de fond reste.'),
+  ('Toujours d''actualité, à surveiller.');
+
+-- ~700-800 comments (varies with the RNG draw) spread unevenly over klashs
+-- authored by a seed user: each klash independently gets 0-3 comments
+-- (weighted toward fewer — roughly a third get none, a third get 1, the
+-- rest 2 or 3), which produces some empty klashs and some short threads
+-- instead of a flat one-comment-per-klash distribution — closer to how a
+-- real comment section looks. Each comment is posted by a different seed
+-- user than the klash's
+-- author (an author commenting on their own report is allowed by RLS, but
+-- this keeps the seed data closer to how the feature gets used) and after
+-- the klash's own created_at, with later comments in a thread further out.
+-- updated_at is set equal to created_at (not left at its now() default):
+-- these are freshly seeded, never-edited comments, and the detail page
+-- shows a "Modifié" notice whenever updated_at differs from created_at.
+insert into public.comments (klash_id, author_id, body, created_at, updated_at)
+select k.id, c.author_id, c.body, k.created_at + n * c.offset_interval, k.created_at + n * c.offset_interval
+from public.klashes k
+cross join lateral (
+  -- `where k.id is not null` correlates this subquery to the outer klash
+  -- row, forcing Postgres to re-run random() once per klash instead of once
+  -- for the whole query (see the identical note on `base` earlier in this
+  -- file) — without it every klash ends up with the same comment_count. The
+  -- single `r` draw (rather than a separate random() per `when` branch)
+  -- avoids re-rolling the dice for every comparison in the case expression.
+  select case
+    when r < 0.35 then 0
+    when r < 0.65 then 1
+    when r < 0.85 then 2
+    else 3
+  end as comment_count
+  from (select random() as r where k.id is not null) as roll
+) as thread
+cross join lateral generate_series(1, thread.comment_count) as n
+cross join lateral (
+  select
+    (select id from seed_users su where su.id <> k.author_id
+       order by random() limit 1) as author_id,
+    (select body from seed_comment_bodies order by random() limit 1) as body,
+    (floor(random() * 10) + 1) * interval '1 day'
+      + (floor(random() * 24)) * interval '1 hour' as offset_interval
+) as c
+where k.author_id in (select id from seed_users);
+
 drop table seed_users;
 drop table seed_hubs;
 drop table seed_phrases;
 drop table seed_streets;
 drop table seed_fillers;
+drop table seed_comment_bodies;
 
 commit;
