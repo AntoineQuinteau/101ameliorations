@@ -62,6 +62,11 @@ export const fr = {
     confirm: 'Je confirme',
     confirmed: 'Confirmé ✓',
     confirmError: "Impossible d'enregistrer votre confirmation.",
+    photosLoadError: 'Impossible de charger les photos.',
+    photoAlt: (index: number) => `Photo ${index} du signalement`,
+    closePhoto: 'Fermer la photo',
+    previousPhoto: 'Photo précédente',
+    nextPhoto: 'Photo suivante',
   },
   auth: {
     signIn: 'Se connecter',
@@ -146,6 +151,15 @@ export const fr = {
       descriptionPlaceholder: 'Précisez si besoin…',
       invalidTitle: 'Le titre doit contenir entre 5 et 120 caractères.',
       invalidDescription: 'La description ne peut pas dépasser 2000 caractères.',
+      photosLabel: 'Photos (facultatif)',
+      addPhoto: 'Ajouter une photo',
+      removePhoto: 'Retirer cette photo',
+      photoLimitReached: 'Vous avez atteint la limite de 3 photos.',
+      compressing: 'Traitement de la photo…',
+      photoError: "Cette photo n'a pas pu être utilisée. Réessayez avec une autre.",
+      exifGpsPrompt: (distanceM: number) =>
+        `Cette photo a été prise à environ ${Math.round(distanceM)} m de la position choisie.`,
+      exifGpsUsePosition: 'Utiliser la position de la photo',
       submit: 'Continuer',
     },
     submit: {
@@ -159,6 +173,10 @@ export const fr = {
         body: 'Merci, votre signalement a été transmis.',
         viewIt: 'Voir mon signalement',
         backToMap: 'Retour à la carte',
+        photoUploadPartialError: (failedCount: number) =>
+          failedCount === 1
+            ? "1 photo n'a pas pu être envoyée."
+            : `${failedCount} photos n'ont pas pu être envoyées.`,
       },
     },
   },

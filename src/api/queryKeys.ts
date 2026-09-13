@@ -8,6 +8,7 @@ export const klashKeys = {
   byAuthor: (authorId: string) => [...klashKeys.all, 'byAuthor', authorId] as const,
   nearby: (lat: number, lng: number, radiusM: number) =>
     [...klashKeys.all, 'nearby', lat, lng, radiusM] as const,
+  photos: (klashId: string) => [...klashKeys.all, 'photos', klashId] as const,
 }
 
 export const confirmationKeys = {

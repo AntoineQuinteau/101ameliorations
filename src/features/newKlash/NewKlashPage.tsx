@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type { LatLngBoundsExpression } from 'leaflet'
 import { DraggablePin } from './DraggablePin'
 import { DuplicatesStep } from './DuplicatesStep'
-import { KlashFormStep } from './KlashFormStep'
+import { KlashFormStep, type PendingPhoto } from './KlashFormStep'
 import { PositionStep } from './PositionStep'
 import { SubmitStep } from './SubmitStep'
 import { useGeolocation } from './useGeolocation'
-import type { NewKlashForm } from './newKlashSchemas'
+import { emptyKlashFormDraft, type KlashFormDraft, type NewKlashForm } from './newKlashSchemas'
 import { confirmKlash } from '../../api/confirmations'
 import { createKlash } from '../../api/klashes'
+import { uploadKlashPhoto } from '../../api/klashPhotos'
+import { klashKeys } from '../../api/queryKeys'
 import { BboxWatcher } from '../map/BboxWatcher'
 import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
 import { MapTiles } from '../map/MapTiles'
@@ -44,10 +47,17 @@ function parseCoord(value: string | null, fallback: number): number {
 }
 
 /** Creation sheet (spec §6.2), a real route with its own map so the pin stays
- * visible behind the sheet. No photos yet (step 5). */
+ * visible behind the sheet.
+ *
+ * The form draft and selected photos live here, not inside KlashFormStep,
+ * even though only KlashFormStep renders them: accepting a photo's EXIF GPS
+ * position (step 3) re-runs duplicate detection at the new position (step
+ * 2), which unmounts KlashFormStep. Lifting its state up is what lets the
+ * user land back on the form with everything they typed still there. */
 export function NewKlashPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
 
   const initialLat = parseCoord(searchParams.get('lat'), INITIAL_MAP_CENTER[0])
@@ -55,11 +65,14 @@ export function NewKlashPage() {
 
   const [position, setPosition] = useState<[number, number]>([initialLat, initialLng])
   const [step, setStep] = useState<Step>('position')
+  const [formDraft, setFormDraft] = useState<KlashFormDraft>(emptyKlashFormDraft)
+  const [photos, setPhotos] = useState<PendingPhoto[]>([])
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [createdKlash, setCreatedKlash] = useState<Klash | null>(null)
   const [confirmedKlashId, setConfirmedKlashId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [failedPhotoCount, setFailedPhotoCount] = useState(0)
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
 
   const geolocation = useGeolocation()
@@ -87,6 +100,15 @@ export function NewKlashPage() {
     ]
   }, [])
 
+  // A photo's EXIF position was accepted: move the pin and re-run duplicate
+  // detection there (its query key includes lat/lng, so this can't serve a
+  // stale answer from the old position) — the form draft and photos survive
+  // since they live in this component, not in the unmounted form step.
+  function handleUsePhotoPosition(lat: number, lng: number) {
+    setPosition([lat, lng])
+    setStep('duplicates')
+  }
+
   async function runPendingAction(action: PendingAction) {
     setIsSubmitting(true)
     setSubmitError(null)
@@ -96,6 +118,7 @@ export function NewKlashPage() {
         await confirmKlash(action.klashId, user.id)
         setConfirmedKlashId(action.klashId)
       } else {
+        if (!user) throw new Error('Cannot create a klash while signed out')
         const klash = await createKlash({
           lat: position[0],
           lng: position[1],
@@ -105,6 +128,20 @@ export function NewKlashPage() {
           description: action.form.description,
         })
         setCreatedKlash(klash)
+
+        // Photos upload after the klash exists (spec §6.2 step 4), in
+        // parallel so 3 photos don't serialize into 3x the wait — this and
+        // the compression web worker are what keep the whole flow under the
+        // acceptance criterion's 10s budget. A failed photo doesn't roll
+        // back the klash (a report without a photo still has value); the
+        // done screen reports how many failed instead.
+        const results = await Promise.allSettled(
+          photos.map((photo) => uploadKlashPhoto(klash.id, user.id, photo.compressed)),
+        )
+        const failedCount = results.filter((result) => result.status === 'rejected').length
+        setFailedPhotoCount(failedCount)
+
+        void queryClient.invalidateQueries({ queryKey: klashKeys.all })
       }
       setStep('done')
     } catch (error) {
@@ -161,6 +198,13 @@ export function NewKlashPage() {
 
           {step === 'form' && (
             <KlashFormStep
+              value={formDraft}
+              onChange={setFormDraft}
+              photos={photos}
+              onPhotosChange={setPhotos}
+              pinLat={position[0]}
+              pinLng={position[1]}
+              onUsePhotoPosition={handleUsePhotoPosition}
               onSubmit={(form) => startAction({ type: 'create', form })}
               onCancel={() => navigate('/')}
             />
@@ -178,6 +222,7 @@ export function NewKlashPage() {
             <DoneStep
               createdKlash={createdKlash}
               confirmedKlashId={confirmedKlashId}
+              failedPhotoCount={failedPhotoCount}
               onViewKlash={(id) => navigate(`/k/${id}`)}
               onBackToMap={() => navigate('/')}
             />
@@ -202,11 +247,13 @@ function mapSubmitError(error: unknown): string {
 function DoneStep({
   createdKlash,
   confirmedKlashId,
+  failedPhotoCount,
   onViewKlash,
   onBackToMap,
 }: {
   createdKlash: Klash | null
   confirmedKlashId: string | null
+  failedPhotoCount: number
   onViewKlash: (id: string) => void
   onBackToMap: () => void
 }) {
@@ -219,6 +266,11 @@ function DoneStep({
       </h2>
       {!isConfirmation && (
         <p className="text-sm text-neutral-600">{fr.newKlash.submit.done.body}</p>
+      )}
+      {!isConfirmation && failedPhotoCount > 0 && (
+        <p className="text-sm text-amber-700">
+          {fr.newKlash.submit.done.photoUploadPartialError(failedPhotoCount)}
+        </p>
       )}
       <div className="flex w-full flex-col gap-2">
         {(createdKlash ?? confirmedKlashId) && (
