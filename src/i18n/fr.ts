@@ -62,6 +62,11 @@ export const fr = {
     confirm: 'Je confirme',
     confirmed: 'Confirmé ✓',
     confirmError: "Impossible d'enregistrer votre confirmation.",
+    photosLoadError: 'Impossible de charger les photos.',
+    photoAlt: (index: number) => `Photo ${index} du signalement`,
+    closePhoto: 'Fermer la photo',
+    previousPhoto: 'Photo précédente',
+    nextPhoto: 'Photo suivante',
   },
   auth: {
     signIn: 'Se connecter',

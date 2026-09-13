@@ -10,6 +10,7 @@ import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
 import { KlashMiniMap } from './KlashMiniMap'
+import { KlashPhotoGallery } from './KlashPhotoGallery'
 import { useConfirmKlash } from './useConfirmKlash'
 import { useMyConfirmation } from './useMyConfirmation'
 
@@ -62,6 +63,8 @@ export function KlashDetailPage() {
       {klash && (
         <article className="mt-4 flex flex-col gap-4">
           <KlashMiniMap klash={klash} />
+
+          <KlashPhotoGallery klashId={klash.id} />
 
           <div className="flex flex-wrap gap-1.5">
             <Badge label={fr.category[klash.category]} tone="gray" />
