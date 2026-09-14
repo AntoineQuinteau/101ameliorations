@@ -5,12 +5,13 @@ import type { LatLngBoundsExpression } from 'leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
+import { DesktopFiltersCard } from './DesktopFiltersCard'
 import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
-import { FiltersPanel } from './FiltersPanel'
-import { applyFilters, sortKlashes, type KlashFilters, type KlashSort } from './klashFilters'
+import { applyFilters, type KlashFilters } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
 import { MapClickToReport } from './MapClickToReport'
 import { MapTiles } from './MapTiles'
+import { MobileFiltersSheet } from './MobileFiltersSheet'
 import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
 import { useHasHover } from './useHasHover'
@@ -35,29 +36,21 @@ export function MapPage() {
   const [selectedKlash, setSelectedKlash] = useState<Klash | null>(null)
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
-  const [{ filters, sort }, setFiltersAndSort] = useState(() =>
-    filtersFromSearchParams(searchParams),
-  )
+  const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const { data: klashes = [], isError, isFetching, refetch } = useKlashesInBbox(viewportBbox)
 
   const visibleKlashes = useMemo(
-    () => sortKlashes(applyFilters(klashes, filters, viewportBbox), sort),
-    [klashes, filters, sort, viewportBbox],
+    () => applyFilters(klashes, filters, viewportBbox),
+    [klashes, filters, viewportBbox],
   )
 
-  // Writes the URL whenever filters or sort change, so a shared link reopens
-  // the same view (spec §6.1). `replace: true` avoids stacking a browser
-  // history entry per chip toggle — only the map's own navigations (to /new,
-  // /k/:id) should be back-button stops.
-  //
-  // Takes both values together rather than as two setters called back to
-  // back: FiltersPanel commits filters and sort in the same "Appliquer"
-  // click, and two separate calls would each close over the *other* value
-  // as it was before either call — the second call's stale `filters` (or
-  // `sort`) would silently overwrite what the first call just set.
-  function updateFiltersAndSort(nextFilters: KlashFilters, nextSort: KlashSort) {
-    setFiltersAndSort({ filters: nextFilters, sort: nextSort })
-    setSearchParams(filtersToSearchParams(nextFilters, nextSort), { replace: true })
+  // Applies live and writes the URL on every change, so a shared link
+  // reopens the same view (spec §6.1). `replace: true` avoids stacking a
+  // browser history entry per chip toggle — only the map's own navigations
+  // (to /new, /k/:id) should be back-button stops.
+  function updateFilters(nextFilters: KlashFilters) {
+    setFilters(nextFilters)
+    setSearchParams(filtersToSearchParams(nextFilters), { replace: true })
   }
 
   function handleMarkerSelect(klash: Klash) {
@@ -124,7 +117,7 @@ export function MapPage() {
       >
         <MapTiles />
         {/* Moved off the default topleft: that's where the filters button
-            (and, on desktop, the docked filters panel) lives. */}
+            (and, on desktop, the filters card) lives. */}
         <ZoomControl position="bottomright" />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers
@@ -138,19 +131,19 @@ export function MapPage() {
 
       <AuthBadge />
 
-      {/* On mobile the filters panel is a near-full-height sheet that covers
-          everything behind it, so the other floating controls hide while
-          it's open. On desktop it's docked to the left edge and never covers
-          the map, so nothing else needs to hide for it. */}
-      {!isFiltersOpen && (
-        <button
-          type="button"
-          onClick={() => setIsFiltersOpen(true)}
-          className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow hover:bg-white"
-        >
-          {fr.map.filters.open}
-        </button>
-      )}
+      {/* On desktop the filters card is a small, semi-transparent overlay
+          that never covers the map, so the other floating controls stay
+          visible and usable regardless of isFiltersOpen. On mobile the
+          filters sheet takes over the whole screen, so they hide while it's
+          open (mirrored below). */}
+      <button
+        type="button"
+        onClick={() => setIsFiltersOpen((open) => !open)}
+        aria-pressed={isFiltersOpen}
+        className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow hover:bg-white"
+      >
+        {fr.map.filters.open}
+      </button>
 
       {!pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
         <button
@@ -183,14 +176,22 @@ export function MapPage() {
         </div>
       )}
 
-      {isFiltersOpen && (
-        <FiltersPanel
+      {hasHover ? (
+        <DesktopFiltersCard
+          isOpen={isFiltersOpen}
           filters={filters}
-          sort={sort}
           resultsCount={visibleKlashes.length}
-          onApply={updateFiltersAndSort}
-          onClose={() => setIsFiltersOpen(false)}
+          onChange={updateFilters}
         />
+      ) : (
+        isFiltersOpen && (
+          <MobileFiltersSheet
+            filters={filters}
+            resultsCount={visibleKlashes.length}
+            onChange={updateFilters}
+            onClose={() => setIsFiltersOpen(false)}
+          />
+        )
       )}
 
       {!isFiltersOpen && selectedKlash && (

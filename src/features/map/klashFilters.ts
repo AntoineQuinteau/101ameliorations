@@ -1,8 +1,6 @@
 import { isPointInBbox, type Bbox } from '../../utils/bbox'
 import type { Klash, KlashCategory, KlashStatus, KlashUrgency } from '../../types/klash'
 
-export type KlashSort = 'recent' | 'confirmed'
-
 export interface KlashFilters {
   categories: KlashCategory[]
   urgencies: KlashUrgency[]
@@ -39,8 +37,6 @@ export const ALL_CATEGORIES: KlashCategory[] = [
   'category_5',
 ]
 export const ALL_URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
-
-export const DEFAULT_SORT: KlashSort = 'recent'
 
 export const defaultFilters: KlashFilters = {
   categories: ALL_CATEGORIES,
@@ -91,16 +87,4 @@ export function applyFilters(
     }
     return true
   })
-}
-
-/** Sorts a list of klashs. Returns a new array; never mutates the input
- * (callers pass the query's cached data straight through). */
-export function sortKlashes(klashes: Klash[], sort: KlashSort): Klash[] {
-  const sorted = [...klashes]
-  if (sort === 'confirmed') {
-    sorted.sort((a, b) => b.confirmationsCount - a.confirmationsCount)
-  } else {
-    sorted.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0))
-  }
-  return sorted
 }

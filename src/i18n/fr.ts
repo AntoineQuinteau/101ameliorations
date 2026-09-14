@@ -58,7 +58,7 @@ export const fr = {
           : `${count} signalements affichés`,
     filters: {
       open: 'Filtres',
-      title: 'Filtres et tri',
+      title: 'Filtres',
       close: 'Fermer',
       categoryLabel: 'Catégorie',
       urgencyLabel: 'Urgence',
@@ -69,11 +69,9 @@ export const fr = {
       periodLast30Days: '30 derniers jours',
       periodLast90Days: '90 derniers jours',
       visibleAreaOnly: 'Uniquement la zone visible',
-      sortLabel: 'Tri',
-      sortRecent: 'Plus récent',
-      sortConfirmed: 'Plus confirmé',
       reset: 'Réinitialiser',
-      apply: 'Appliquer',
+      resetIconLabel: 'Réinitialiser les filtres',
+      viewOnMap: 'Voir sur la carte',
     },
   },
   detail: {

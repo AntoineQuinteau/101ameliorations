@@ -6,20 +6,13 @@ import {
   type KlashStatus,
   type KlashUrgency,
 } from '../../types/klash'
-import {
-  defaultFilters,
-  isDefaultFilters,
-  type KlashFilters,
-  type KlashSort,
-  DEFAULT_SORT,
-} from './klashFilters'
+import { defaultFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
 
 const CATEGORY_PARAM = 'category'
 const URGENCY_PARAM = 'urgency'
 const STATUS_PARAM = 'status'
 const CREATED_AFTER_PARAM = 'since'
 const VISIBLE_AREA_ONLY_PARAM = 'area'
-const SORT_PARAM = 'sort'
 
 /** Parses one comma-separated URL param into a list of values valid against
  * `schema`, silently dropping anything unknown or malformed — a hand-edited
@@ -42,37 +35,30 @@ function parseEnumList<T extends string>(
   return values.length > 0 ? values : null
 }
 
-/** Reconstructs filters + sort from the current URL, falling back to
- * defaults for anything absent or unparseable. */
-export function filtersFromSearchParams(params: URLSearchParams): {
-  filters: KlashFilters
-  sort: KlashSort
-} {
+/** Reconstructs filters from the current URL, falling back to defaults for
+ * anything absent or unparseable. */
+export function filtersFromSearchParams(params: URLSearchParams): KlashFilters {
   const categories = parseEnumList<KlashCategory>(params, CATEGORY_PARAM, klashCategorySchema)
   const urgencies = parseEnumList<KlashUrgency>(params, URGENCY_PARAM, klashUrgencySchema)
   const statuses = parseEnumList<KlashStatus>(params, STATUS_PARAM, klashStatusSchema)
   const createdAfter = params.get(CREATED_AFTER_PARAM)
-  const sortRaw = params.get(SORT_PARAM)
 
   return {
-    filters: {
-      categories: categories ?? defaultFilters.categories,
-      urgencies: urgencies ?? defaultFilters.urgencies,
-      statuses: statuses ?? defaultFilters.statuses,
-      createdAfter: createdAfter && /^\d{4}-\d{2}-\d{2}$/.test(createdAfter) ? createdAfter : null,
-      visibleAreaOnly: params.get(VISIBLE_AREA_ONLY_PARAM) === '1',
-    },
-    sort: sortRaw === 'confirmed' ? 'confirmed' : DEFAULT_SORT,
+    categories: categories ?? defaultFilters.categories,
+    urgencies: urgencies ?? defaultFilters.urgencies,
+    statuses: statuses ?? defaultFilters.statuses,
+    createdAfter: createdAfter && /^\d{4}-\d{2}-\d{2}$/.test(createdAfter) ? createdAfter : null,
+    visibleAreaOnly: params.get(VISIBLE_AREA_ONLY_PARAM) === '1',
   }
 }
 
-/** Serialises filters + sort into URL search params, writing only what
- * differs from the default so a plain visit to `/` stays a clean URL and a
- * shared link is as short as the choices that produced it. */
-export function filtersToSearchParams(filters: KlashFilters, sort: KlashSort): URLSearchParams {
+/** Serialises filters into URL search params, writing only what differs
+ * from the default so a plain visit to `/` stays a clean URL and a shared
+ * link is as short as the choices that produced it. */
+export function filtersToSearchParams(filters: KlashFilters): URLSearchParams {
   const params = new URLSearchParams()
 
-  if (isDefaultFilters(filters) && sort === DEFAULT_SORT) return params
+  if (isDefaultFilters(filters)) return params
 
   if (!sameSet(filters.categories, defaultFilters.categories)) {
     params.set(CATEGORY_PARAM, filters.categories.join(','))
@@ -85,7 +71,6 @@ export function filtersToSearchParams(filters: KlashFilters, sort: KlashSort): U
   }
   if (filters.createdAfter) params.set(CREATED_AFTER_PARAM, filters.createdAfter)
   if (filters.visibleAreaOnly) params.set(VISIBLE_AREA_ONLY_PARAM, '1')
-  if (sort !== DEFAULT_SORT) params.set(SORT_PARAM, sort)
 
   return params
 }

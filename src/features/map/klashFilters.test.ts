@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  applyFilters,
-  defaultFilters,
-  isDefaultFilters,
-  sortKlashes,
-  type KlashFilters,
-} from './klashFilters'
+import { applyFilters, defaultFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
 import type { Klash } from '../../types/klash'
 
 function makeKlash(overrides: Partial<Klash> = {}): Klash {
@@ -138,33 +132,5 @@ describe('isDefaultFilters', () => {
     expect(isDefaultFilters({ ...defaultFilters, statuses: ['new'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, createdAfter: '2026-01-01' })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, visibleAreaOnly: true })).toBe(false)
-  })
-})
-
-describe('sortKlashes', () => {
-  it('sorts by most recent first', () => {
-    const klashes = [
-      makeKlash({ id: 'old', createdAt: '2026-01-01T00:00:00.000Z' }),
-      makeKlash({ id: 'new', createdAt: '2026-06-01T00:00:00.000Z' }),
-    ]
-    expect(sortKlashes(klashes, 'recent').map((k) => k.id)).toEqual(['new', 'old'])
-  })
-
-  it('sorts by most confirmed first', () => {
-    const klashes = [
-      makeKlash({ id: 'few', confirmationsCount: 1 }),
-      makeKlash({ id: 'many', confirmationsCount: 10 }),
-    ]
-    expect(sortKlashes(klashes, 'confirmed').map((k) => k.id)).toEqual(['many', 'few'])
-  })
-
-  it('does not mutate the input array', () => {
-    const klashes = [
-      makeKlash({ id: 'a', createdAt: '2026-01-01T00:00:00.000Z' }),
-      makeKlash({ id: 'b', createdAt: '2026-06-01T00:00:00.000Z' }),
-    ]
-    const original = [...klashes]
-    sortKlashes(klashes, 'recent')
-    expect(klashes).toEqual(original)
   })
 })
