@@ -73,9 +73,9 @@ export function MapPage() {
   function viewportCenter(): { lat: number; lng: number } {
     return viewportBbox
       ? {
-          lat: (viewportBbox.minLat + viewportBbox.maxLat) / 2,
-          lng: (viewportBbox.minLng + viewportBbox.maxLng) / 2,
-        }
+        lat: (viewportBbox.minLat + viewportBbox.maxLat) / 2,
+        lng: (viewportBbox.minLng + viewportBbox.maxLng) / 2,
+      }
       : { lat: INITIAL_MAP_CENTER[0], lng: INITIAL_MAP_CENTER[1] }
   }
 
@@ -144,7 +144,7 @@ export function MapPage() {
           onClick={handleReportHereButton}
           className="absolute bottom-4 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
         >
-          {fr.map.reportHere}
+          {fr.map.reportWhereIAm}
         </button>
       )}
 

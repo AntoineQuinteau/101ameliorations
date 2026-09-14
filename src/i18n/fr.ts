@@ -48,6 +48,7 @@ export const fr = {
           ? '1 confirmation'
           : `${count} confirmations`,
     reportHere: 'Signaler ici',
+    reportWhereIAm: 'Signaler à ma position',
     longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
     resultsCount: (count: number) =>
       count === 0
