@@ -1,4 +1,3 @@
-import { isPointInBbox, type Bbox } from '../../utils/bbox'
 import type { Klash, KlashCategory, KlashStatus, KlashUrgency } from '../../types/klash'
 
 export interface KlashFilters {
@@ -9,10 +8,6 @@ export interface KlashFilters {
    * lower bound. An ISO date string (yyyy-mm-dd), not a full timestamp: the
    * period filter is a day-granularity choice in the UI. */
   createdAfter: string | null
-  /** When true, a klash outside the current map viewport is excluded even if
-   * it was fetched (see MapPage: the bbox query already over-fetches 25%
-   * beyond the visible viewport). */
-  visibleAreaOnly: boolean
 }
 
 // klashes_in_bbox already excludes rejected/duplicate and resolved-over-90-
@@ -43,7 +38,6 @@ export const defaultFilters: KlashFilters = {
   urgencies: ALL_URGENCIES,
   statuses: DEFAULT_STATUSES,
   createdAfter: null,
-  visibleAreaOnly: false,
 }
 
 /** Whether `filters` is exactly the default — used to decide what's worth
@@ -54,8 +48,7 @@ export function isDefaultFilters(filters: KlashFilters): boolean {
     sameMembers(filters.categories, defaultFilters.categories) &&
     sameMembers(filters.urgencies, defaultFilters.urgencies) &&
     sameMembers(filters.statuses, defaultFilters.statuses) &&
-    filters.createdAfter === defaultFilters.createdAfter &&
-    filters.visibleAreaOnly === defaultFilters.visibleAreaOnly
+    filters.createdAfter === defaultFilters.createdAfter
   )
 }
 
@@ -68,23 +61,12 @@ function sameMembers<T>(a: T[], b: T[]): boolean {
 /** Applies every active filter to a list of klashs already loaded for the
  * viewport (client-side: see the migration's plan for why — the seeded
  * volume doesn't justify a server round trip per filter change). */
-export function applyFilters(
-  klashes: Klash[],
-  filters: KlashFilters,
-  viewportBbox: Bbox | null,
-): Klash[] {
+export function applyFilters(klashes: Klash[], filters: KlashFilters): Klash[] {
   return klashes.filter((klash) => {
     if (!filters.categories.includes(klash.category)) return false
     if (!filters.urgencies.includes(klash.urgency)) return false
     if (!filters.statuses.includes(klash.status)) return false
     if (filters.createdAfter && klash.createdAt < filters.createdAfter) return false
-    if (
-      filters.visibleAreaOnly &&
-      viewportBbox &&
-      !isPointInBbox(klash.lat, klash.lng, viewportBbox)
-    ) {
-      return false
-    }
     return true
   })
 }

@@ -160,16 +160,6 @@ export function MobileFiltersSheet({
               })}
             </div>
           </div>
-
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
-            <input
-              type="checkbox"
-              checked={filters.visibleAreaOnly}
-              onChange={(event) => onChange({ ...filters, visibleAreaOnly: event.target.checked })}
-              className="h-4 w-4 rounded border-neutral-300 text-teal-700 focus:ring-teal-700"
-            />
-            {fr.map.filters.visibleAreaOnly}
-          </label>
         </div>
       </div>
 

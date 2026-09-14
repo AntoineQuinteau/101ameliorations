@@ -39,10 +39,7 @@ export function MapPage() {
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const { data: klashes = [], isError, isFetching, refetch } = useKlashesInBbox(viewportBbox)
 
-  const visibleKlashes = useMemo(
-    () => applyFilters(klashes, filters, viewportBbox),
-    [klashes, filters, viewportBbox],
-  )
+  const visibleKlashes = useMemo(() => applyFilters(klashes, filters), [klashes, filters])
 
   // Applies live and writes the URL on every change, so a shared link
   // reopens the same view (spec §6.1). `replace: true` avoids stacking a

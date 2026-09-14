@@ -12,7 +12,6 @@ const CATEGORY_PARAM = 'category'
 const URGENCY_PARAM = 'urgency'
 const STATUS_PARAM = 'status'
 const CREATED_AFTER_PARAM = 'since'
-const VISIBLE_AREA_ONLY_PARAM = 'area'
 
 /** Parses one comma-separated URL param into a list of values valid against
  * `schema`, silently dropping anything unknown or malformed — a hand-edited
@@ -48,7 +47,6 @@ export function filtersFromSearchParams(params: URLSearchParams): KlashFilters {
     urgencies: urgencies ?? defaultFilters.urgencies,
     statuses: statuses ?? defaultFilters.statuses,
     createdAfter: createdAfter && /^\d{4}-\d{2}-\d{2}$/.test(createdAfter) ? createdAfter : null,
-    visibleAreaOnly: params.get(VISIBLE_AREA_ONLY_PARAM) === '1',
   }
 }
 
@@ -70,7 +68,6 @@ export function filtersToSearchParams(filters: KlashFilters): URLSearchParams {
     params.set(STATUS_PARAM, filters.statuses.join(','))
   }
   if (filters.createdAfter) params.set(CREATED_AFTER_PARAM, filters.createdAfter)
-  if (filters.visibleAreaOnly) params.set(VISIBLE_AREA_ONLY_PARAM, '1')
 
   return params
 }

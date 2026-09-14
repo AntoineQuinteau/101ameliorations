@@ -70,100 +70,92 @@ export function DesktopFiltersCard({
         <button
           type="button"
           onClick={() => onChange(defaultFilters)}
-          aria-label={fr.map.filters.resetIconLabel}
-          title={fr.map.filters.resetIconLabel}
-          className="shrink-0 rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+          className="shrink-0 text-xs font-medium text-teal-700 hover:underline"
         >
-          <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" aria-hidden="true">
-            <path
-              d="M15.5 4.5A6.5 6.5 0 1 0 17 10"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            />
-            <path
-              d="M17 4v4h-4"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          {fr.map.filters.reset}
         </button>
       </div>
 
       <div className="mt-2 flex flex-col gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {ALL_CATEGORIES.map((option: KlashCategory) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() =>
-                onChange({ ...filters, categories: toggle(filters.categories, option) })
-              }
-              aria-pressed={filters.categories.includes(option)}
-              className={toggleButtonClass(filters.categories.includes(option))}
-            >
-              {fr.category[option]}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {ALL_URGENCIES.map((option: KlashUrgency) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onChange({ ...filters, urgencies: toggle(filters.urgencies, option) })}
-              aria-pressed={filters.urgencies.includes(option)}
-              className={toggleButtonClass(filters.urgencies.includes(option))}
-            >
-              {fr.urgency[option]}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {ALL_STATUSES.map((option: KlashStatus) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onChange({ ...filters, statuses: toggle(filters.statuses, option) })}
-              aria-pressed={filters.statuses.includes(option)}
-              className={toggleButtonClass(filters.statuses.includes(option))}
-            >
-              {fr.status[option]}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          {PERIOD_PRESETS.map((preset) => {
-            const value = preset.days === null ? null : daysAgoIsoDate(preset.days)
-            const active = filters.createdAfter === value
-            return (
+        <div>
+          <span className="text-xs font-medium text-neutral-500">
+            {fr.map.filters.categoryLabel}
+          </span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {ALL_CATEGORIES.map((option: KlashCategory) => (
               <button
-                key={preset.label}
+                key={option}
                 type="button"
-                onClick={() => onChange({ ...filters, createdAfter: value })}
-                aria-pressed={active}
-                className={toggleButtonClass(active)}
+                onClick={() =>
+                  onChange({ ...filters, categories: toggle(filters.categories, option) })
+                }
+                aria-pressed={filters.categories.includes(option)}
+                className={toggleButtonClass(filters.categories.includes(option))}
               >
-                {preset.label}
+                {fr.category[option]}
               </button>
-            )
-          })}
+            ))}
+          </div>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-neutral-700">
-          <input
-            type="checkbox"
-            checked={filters.visibleAreaOnly}
-            onChange={(event) => onChange({ ...filters, visibleAreaOnly: event.target.checked })}
-            className="h-4 w-4 rounded border-neutral-300 text-teal-700 focus:ring-teal-700"
-          />
-          {fr.map.filters.visibleAreaOnly}
-        </label>
+        <div>
+          <span className="text-xs font-medium text-neutral-500">
+            {fr.map.filters.urgencyLabel}
+          </span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {ALL_URGENCIES.map((option: KlashUrgency) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() =>
+                  onChange({ ...filters, urgencies: toggle(filters.urgencies, option) })
+                }
+                aria-pressed={filters.urgencies.includes(option)}
+                className={toggleButtonClass(filters.urgencies.includes(option))}
+              >
+                {fr.urgency[option]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <span className="text-xs font-medium text-neutral-500">{fr.map.filters.statusLabel}</span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {ALL_STATUSES.map((option: KlashStatus) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => onChange({ ...filters, statuses: toggle(filters.statuses, option) })}
+                aria-pressed={filters.statuses.includes(option)}
+                className={toggleButtonClass(filters.statuses.includes(option))}
+              >
+                {fr.status[option]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <span className="text-xs font-medium text-neutral-500">{fr.map.filters.periodLabel}</span>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {PERIOD_PRESETS.map((preset) => {
+              const value = preset.days === null ? null : daysAgoIsoDate(preset.days)
+              const active = filters.createdAfter === value
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => onChange({ ...filters, createdAfter: value })}
+                  aria-pressed={active}
+                  className={toggleButtonClass(active)}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </div>
   )

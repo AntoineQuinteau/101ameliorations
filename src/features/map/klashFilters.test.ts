@@ -28,7 +28,7 @@ function makeKlash(overrides: Partial<Klash> = {}): Klash {
 describe('applyFilters', () => {
   it('keeps every klash under the default filters', () => {
     const klashes = [makeKlash({ status: 'new' }), makeKlash({ id: 'k2', status: 'resolved' })]
-    expect(applyFilters(klashes, defaultFilters, null)).toHaveLength(2)
+    expect(applyFilters(klashes, defaultFilters)).toHaveLength(2)
   })
 
   it('filters by category', () => {
@@ -37,7 +37,7 @@ describe('applyFilters', () => {
       makeKlash({ id: 'k2', category: 'category_2' }),
     ]
     const filters: KlashFilters = { ...defaultFilters, categories: ['category_1'] }
-    expect(applyFilters(klashes, filters, null).map((k) => k.id)).toEqual(['k1'])
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
 
   it('filters by urgency', () => {
@@ -46,7 +46,7 @@ describe('applyFilters', () => {
       makeKlash({ id: 'k2', urgency: 'high' }),
     ]
     const filters: KlashFilters = { ...defaultFilters, urgencies: ['high'] }
-    expect(applyFilters(klashes, filters, null).map((k) => k.id)).toEqual(['k2'])
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k2'])
   })
 
   it('filters by status', () => {
@@ -55,7 +55,7 @@ describe('applyFilters', () => {
       makeKlash({ id: 'k2', status: 'rejected' }),
     ]
     const filters: KlashFilters = { ...defaultFilters, statuses: ['new'] }
-    expect(applyFilters(klashes, filters, null).map((k) => k.id)).toEqual(['k1'])
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
 
   it('filters by period (createdAfter)', () => {
@@ -64,7 +64,7 @@ describe('applyFilters', () => {
       makeKlash({ id: 'k2', createdAt: '2026-06-01T00:00:00.000Z' }),
     ]
     const filters: KlashFilters = { ...defaultFilters, createdAfter: '2026-03-01' }
-    expect(applyFilters(klashes, filters, null).map((k) => k.id)).toEqual(['k2'])
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k2'])
   })
 
   it('cumulates multiple active filters', () => {
@@ -78,35 +78,13 @@ describe('applyFilters', () => {
       categories: ['category_1'],
       urgencies: ['high'],
     }
-    expect(applyFilters(klashes, filters, null).map((k) => k.id)).toEqual(['k1'])
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
 
   it('returns an empty array when nothing matches', () => {
     const klashes = [makeKlash({ category: 'category_1' })]
     const filters: KlashFilters = { ...defaultFilters, categories: ['category_2'] }
-    expect(applyFilters(klashes, filters, null)).toEqual([])
-  })
-
-  describe('visibleAreaOnly', () => {
-    const bbox = { minLat: 43.0, minLng: -2.0, maxLat: 44.0, maxLng: -1.0 }
-
-    it('keeps a klash inside the viewport bbox', () => {
-      const klashes = [makeKlash({ lat: 43.5, lng: -1.5 })]
-      const filters: KlashFilters = { ...defaultFilters, visibleAreaOnly: true }
-      expect(applyFilters(klashes, filters, bbox)).toHaveLength(1)
-    })
-
-    it('excludes a klash outside the viewport bbox', () => {
-      const klashes = [makeKlash({ lat: 45.0, lng: -1.5 })]
-      const filters: KlashFilters = { ...defaultFilters, visibleAreaOnly: true }
-      expect(applyFilters(klashes, filters, bbox)).toEqual([])
-    })
-
-    it('has no effect when there is no known viewport yet', () => {
-      const klashes = [makeKlash({ lat: 45.0, lng: -1.5 })]
-      const filters: KlashFilters = { ...defaultFilters, visibleAreaOnly: true }
-      expect(applyFilters(klashes, filters, null)).toHaveLength(1)
-    })
+    expect(applyFilters(klashes, filters)).toEqual([])
   })
 })
 
@@ -121,7 +99,6 @@ describe('isDefaultFilters', () => {
       urgencies: [...defaultFilters.urgencies],
       statuses: [...defaultFilters.statuses],
       createdAfter: null,
-      visibleAreaOnly: false,
     }
     expect(isDefaultFilters(filters)).toBe(true)
   })
@@ -131,6 +108,5 @@ describe('isDefaultFilters', () => {
     expect(isDefaultFilters({ ...defaultFilters, urgencies: ['high'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, statuses: ['new'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, createdAfter: '2026-01-01' })).toBe(false)
-    expect(isDefaultFilters({ ...defaultFilters, visibleAreaOnly: true })).toBe(false)
   })
 })

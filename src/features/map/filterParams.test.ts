@@ -15,11 +15,6 @@ describe('filtersToSearchParams', () => {
     expect(params.has('urgency')).toBe(false)
     expect(params.has('status')).toBe(false)
   })
-
-  it('writes visibleAreaOnly as a short flag', () => {
-    const filters: KlashFilters = { ...defaultFilters, visibleAreaOnly: true }
-    expect(filtersToSearchParams(filters).get('area')).toBe('1')
-  })
 })
 
 describe('filtersFromSearchParams', () => {
@@ -34,7 +29,6 @@ describe('filtersFromSearchParams', () => {
       urgencies: ['high'],
       statuses: ['new', 'in_progress'],
       createdAfter: '2026-01-01',
-      visibleAreaOnly: true,
     }
     const params = filtersToSearchParams(original)
     const filters = filtersFromSearchParams(params)
