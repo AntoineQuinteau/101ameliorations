@@ -15,6 +15,7 @@ import { confirmKlash } from '../../api/confirmations'
 import { createKlash } from '../../api/klashes'
 import { uploadKlashPhoto } from '../../api/klashPhotos'
 import { klashKeys } from '../../api/queryKeys'
+import { BottomSheet } from '../../components/BottomSheet'
 import { BboxWatcher } from '../map/BboxWatcher'
 import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
 import { MapTiles } from '../map/MapTiles'
@@ -192,60 +193,58 @@ export function NewKlashPage() {
         <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
       </MapContainer>
 
-      <div className="absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4">
-        <div className="max-h-[70vh] overflow-y-auto rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
-          {step === 'position' && (
-            <PositionStep
-              accuracyM={geolocation.result?.accuracyM ?? null}
-              isOutOfArea={isOutOfArea}
-              onContinue={() => setStep('duplicates')}
-              onCancel={() => navigate('/')}
-            />
-          )}
+      <BottomSheet scrollable>
+        {step === 'position' && (
+          <PositionStep
+            accuracyM={geolocation.result?.accuracyM ?? null}
+            isOutOfArea={isOutOfArea}
+            onContinue={() => setStep('duplicates')}
+            onCancel={() => navigate('/')}
+          />
+        )}
 
-          {step === 'duplicates' && (
-            <DuplicatesStep
-              lat={position[0]}
-              lng={position[1]}
-              onSameProblem={(klash) => startAction({ type: 'confirm', klashId: klash.id })}
-              onDifferentProblem={() => setStep('form')}
-              onCancel={() => navigate('/')}
-            />
-          )}
+        {step === 'duplicates' && (
+          <DuplicatesStep
+            lat={position[0]}
+            lng={position[1]}
+            onSameProblem={(klash) => startAction({ type: 'confirm', klashId: klash.id })}
+            onDifferentProblem={() => setStep('form')}
+            onCancel={() => navigate('/')}
+          />
+        )}
 
-          {step === 'form' && (
-            <KlashFormStep
-              value={formDraft}
-              onChange={setFormDraft}
-              photos={photos}
-              onPhotosChange={setPhotos}
-              pinLat={position[0]}
-              pinLng={position[1]}
-              onUsePhotoPosition={handleUsePhotoPosition}
-              onSubmit={(form) => startAction({ type: 'create', form })}
-              onCancel={() => navigate('/')}
-            />
-          )}
+        {step === 'form' && (
+          <KlashFormStep
+            value={formDraft}
+            onChange={setFormDraft}
+            photos={photos}
+            onPhotosChange={setPhotos}
+            pinLat={position[0]}
+            pinLng={position[1]}
+            onUsePhotoPosition={handleUsePhotoPosition}
+            onSubmit={(form) => startAction({ type: 'create', form })}
+            onCancel={() => navigate('/')}
+          />
+        )}
 
-          {step === 'submit' && pendingAction && (
-            <SubmitStep
-              isPending={isSubmitting}
-              errorMessage={submitError}
-              onReady={() => void runPendingAction(pendingAction)}
-            />
-          )}
+        {step === 'submit' && pendingAction && (
+          <SubmitStep
+            isPending={isSubmitting}
+            errorMessage={submitError}
+            onReady={() => void runPendingAction(pendingAction)}
+          />
+        )}
 
-          {step === 'done' && (
-            <DoneStep
-              createdKlash={createdKlash}
-              confirmedKlashId={confirmedKlashId}
-              failedPhotoCount={failedPhotoCount}
-              onViewKlash={(id) => navigate(`/k/${id}`)}
-              onBackToMap={() => navigate('/')}
-            />
-          )}
-        </div>
-      </div>
+        {step === 'done' && (
+          <DoneStep
+            createdKlash={createdKlash}
+            confirmedKlashId={confirmedKlashId}
+            failedPhotoCount={failedPhotoCount}
+            onViewKlash={(id) => navigate(`/k/${id}`)}
+            onBackToMap={() => navigate('/')}
+          />
+        )}
+      </BottomSheet>
     </div>
   )
 }

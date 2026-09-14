@@ -1,3 +1,4 @@
+import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
 
 /** Bottom sheet shown after a candidate point is picked on the map (click or
@@ -12,8 +13,8 @@ export function PinConfirmCard({
   onCancel: () => void
 }) {
   return (
-    <div className="absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4">
-      <div className="flex items-center justify-between gap-3 rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
+    <BottomSheet>
+      <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onCancel}
@@ -30,6 +31,6 @@ export function PinConfirmCard({
           {fr.map.reportHere}
         </button>
       </div>
-    </div>
+    </BottomSheet>
   )
 }

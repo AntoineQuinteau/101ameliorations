@@ -9,13 +9,15 @@ import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
+import { CommentList } from './CommentList'
 import { KlashMiniMap } from './KlashMiniMap'
 import { KlashPhotoGallery } from './KlashPhotoGallery'
 import { useConfirmKlash } from './useConfirmKlash'
 import { useMyConfirmation } from './useMyConfirmation'
 
 /** Read-only detail page (spec §6.3), plus the confirm (+1) button added at
- * step 4. Edit/delete and comments still arrive later (step 6/7). */
+ * step 4 and comments added at step 6. Klash edit/delete still arrive at
+ * step 7 (moderator/authority actions). */
 export function KlashDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -121,6 +123,8 @@ export function KlashDetailPage() {
               ? fr.detail.resolvedOn(formatDate(klash.resolvedAt))
               : fr.detail.updatedOn(formatDate(klash.updatedAt))}
           </p>
+
+          <CommentList klashId={klash.id} />
         </article>
       )}
     </div>

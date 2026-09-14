@@ -21,3 +21,8 @@ export const profileKeys = {
   all: ['profiles'] as const,
   detail: (userId: string) => [...profileKeys.all, 'detail', userId] as const,
 }
+
+export const commentKeys = {
+  all: ['comments'] as const,
+  byKlash: (klashId: string) => [...commentKeys.all, 'byKlash', klashId] as const,
+}

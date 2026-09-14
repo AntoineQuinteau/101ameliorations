@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
+import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
 import type { Klash } from '../../types/klash'
@@ -24,8 +25,8 @@ export function KlashPreviewCard({
   interactive?: boolean
 }) {
   return (
-    <div className="absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4">
-      <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
+    <BottomSheet>
+      <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-sm font-semibold text-neutral-900">{klash.title}</h2>
           {interactive && (
@@ -56,6 +57,6 @@ export function KlashPreviewCard({
           </Link>
         )}
       </div>
-    </div>
+    </BottomSheet>
   )
 }

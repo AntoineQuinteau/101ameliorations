@@ -48,7 +48,29 @@ export const fr = {
           ? '1 confirmation'
           : `${count} confirmations`,
     reportHere: 'Signaler ici',
+    reportWhereIAm: 'Signaler à ma position',
     longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
+    resultsCount: (count: number) =>
+      count === 0
+        ? 'Aucun signalement affiché'
+        : count === 1
+          ? '1 signalement affiché'
+          : `${count} signalements affichés`,
+    filters: {
+      open: 'Filtres',
+      title: 'Filtres',
+      close: 'Fermer',
+      categoryLabel: 'Catégorie',
+      urgencyLabel: 'Urgence',
+      statusLabel: 'Statut',
+      periodLabel: 'Période',
+      periodAny: 'Toute période',
+      periodLast7Days: '7 derniers jours',
+      periodLast30Days: '30 derniers jours',
+      periodLast90Days: '90 derniers jours',
+      reset: 'Réinitialiser',
+      viewOnMap: 'Voir sur la carte',
+    },
   },
   detail: {
     notFoundTitle: 'Signalement introuvable',
@@ -67,6 +89,28 @@ export const fr = {
     closePhoto: 'Fermer la photo',
     previousPhoto: 'Photo précédente',
     nextPhoto: 'Photo suivante',
+  },
+  comments: {
+    title: 'Commentaires',
+    loadError: 'Impossible de charger les commentaires.',
+    empty: 'Aucun commentaire pour le moment.',
+    loginPrompt: 'Connectez-vous pour commenter.',
+    placeholder: 'Votre commentaire…',
+    submit: 'Publier',
+    submitting: 'Publication…',
+    submitError: 'Impossible de publier ce commentaire.',
+    rateLimitError: 'Vous avez atteint la limite de commentaires pour aujourd’hui.',
+    invalidBody: 'Le commentaire doit contenir entre 1 et 1000 caractères.',
+    edit: 'Modifier',
+    save: 'Enregistrer',
+    saving: 'Enregistrement…',
+    saveError: "Impossible d'enregistrer cette modification.",
+    cancel: 'Annuler',
+    delete: 'Supprimer',
+    deleting: 'Suppression…',
+    deleteError: 'Impossible de supprimer ce commentaire.',
+    deleteConfirm: 'Supprimer ce commentaire ?',
+    editedNotice: 'Modifié',
   },
   auth: {
     signIn: 'Se connecter',
