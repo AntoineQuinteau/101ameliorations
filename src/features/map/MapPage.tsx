@@ -79,9 +79,9 @@ export function MapPage() {
   function viewportCenter(): { lat: number; lng: number } {
     return viewportBbox
       ? {
-        lat: (viewportBbox.minLat + viewportBbox.maxLat) / 2,
-        lng: (viewportBbox.minLng + viewportBbox.maxLng) / 2,
-      }
+          lat: (viewportBbox.minLat + viewportBbox.maxLat) / 2,
+          lng: (viewportBbox.minLng + viewportBbox.maxLng) / 2,
+        }
       : { lat: INITIAL_MAP_CENTER[0], lng: INITIAL_MAP_CENTER[1] }
   }
 
