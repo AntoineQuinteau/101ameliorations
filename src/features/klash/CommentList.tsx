@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
@@ -17,6 +17,7 @@ import type { Comment } from '../../types/comment'
  * role, it only ever acts on the signed-in user's own comments. */
 export function CommentList({ klashId }: { klashId: string }) {
   const { user } = useAuth()
+  const location = useLocation()
   const { data: comments, isLoading, isError, refetch } = useComments(klashId)
   const createComment = useCreateComment(klashId)
 
@@ -68,7 +69,10 @@ export function CommentList({ klashId }: { klashId: string }) {
         />
       ) : (
         <p className="text-sm text-neutral-500">
-          <Link to="/login" className="font-medium text-teal-700 hover:underline">
+          <Link
+            to={`/login?next=${encodeURIComponent(location.pathname)}`}
+            className="font-medium text-teal-700 hover:underline"
+          >
             {fr.comments.loginPrompt}
           </Link>
         </p>

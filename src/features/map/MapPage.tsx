@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MapContainer } from 'react-leaflet'
+import { MapContainer, ZoomControl } from 'react-leaflet'
 import type { LatLngBoundsExpression } from 'leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
@@ -49,6 +49,12 @@ export function MapPage() {
   // the same view (spec §6.1). `replace: true` avoids stacking a browser
   // history entry per chip toggle — only the map's own navigations (to /new,
   // /k/:id) should be back-button stops.
+  //
+  // Takes both values together rather than as two setters called back to
+  // back: FiltersPanel commits filters and sort in the same "Appliquer"
+  // click, and two separate calls would each close over the *other* value
+  // as it was before either call — the second call's stale `filters` (or
+  // `sort`) would silently overwrite what the first call just set.
   function updateFiltersAndSort(nextFilters: KlashFilters, nextSort: KlashSort) {
     setFiltersAndSort({ filters: nextFilters, sort: nextSort })
     setSearchParams(filtersToSearchParams(nextFilters, nextSort), { replace: true })
@@ -113,9 +119,13 @@ export function MapPage() {
         maxZoom={MAX_MAP_ZOOM}
         maxBounds={maxBounds}
         maxBoundsViscosity={1}
+        zoomControl={false}
         className="h-full w-full"
       >
         <MapTiles />
+        {/* Moved off the default topleft: that's where the filters button
+            (and, on desktop, the docked filters panel) lives. */}
+        <ZoomControl position="bottomright" />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers
           klashes={visibleKlashes}
@@ -128,6 +138,10 @@ export function MapPage() {
 
       <AuthBadge />
 
+      {/* On mobile the filters panel is a near-full-height sheet that covers
+          everything behind it, so the other floating controls hide while
+          it's open. On desktop it's docked to the left edge and never covers
+          the map, so nothing else needs to hide for it. */}
       {!isFiltersOpen && (
         <button
           type="button"
@@ -138,7 +152,7 @@ export function MapPage() {
         </button>
       )}
 
-      {!pendingPin && !selectedKlash && !isFiltersOpen && (
+      {!pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
         <button
           type="button"
           onClick={handleReportHereButton}
@@ -148,7 +162,7 @@ export function MapPage() {
         </button>
       )}
 
-      {pendingPin && !isFiltersOpen && (
+      {pendingPin && (hasHover || !isFiltersOpen) && (
         <PinConfirmCard
           onConfirm={() => goToNewKlash(pendingPin.lat, pendingPin.lng)}
           onCancel={() => setPendingPin(null)}
@@ -174,8 +188,7 @@ export function MapPage() {
           filters={filters}
           sort={sort}
           resultsCount={visibleKlashes.length}
-          onChange={(nextFilters) => updateFiltersAndSort(nextFilters, sort)}
-          onSortChange={(nextSort) => updateFiltersAndSort(filters, nextSort)}
+          onApply={updateFiltersAndSort}
           onClose={() => setIsFiltersOpen(false)}
         />
       )}
