@@ -1,9 +1,15 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "101ameliorations",
+  "main": "workers/app/src/index.ts",
   "compatibility_date": "2026-09-08",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
+    // Only /k/:id needs the Worker (see workers/app/src/index.ts, which
+    // rewrites its Open Graph tags); every other route keeps going straight
+    // to the asset pipeline exactly as before.
+    "run_worker_first": ["/k/*"],
   },
 }

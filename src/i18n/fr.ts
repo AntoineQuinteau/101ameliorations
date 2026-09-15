@@ -117,6 +117,10 @@ export const fr = {
     deleteKlashConfirm: 'Supprimer définitivement ce signalement ?',
     deleteKlashError: 'Impossible de supprimer ce signalement.',
     deleting: 'Suppression…',
+    share: 'Partager',
+    shareTitle: (title: string) => `${title} — 101améliorations`,
+    linkCopied: 'Lien copié dans le presse-papiers.',
+    shareError: 'Impossible de partager ce signalement.',
   },
   comments: {
     title: 'Commentaires',
