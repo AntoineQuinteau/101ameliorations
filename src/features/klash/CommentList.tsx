@@ -5,18 +5,26 @@ import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
+import { useRole } from '../auth/useRole'
 import { CommentForm } from './CommentForm'
 import { mapCommentError } from './commentSchemas'
-import { useCreateComment, useDeleteComment, useUpdateComment } from './useCommentMutations'
+import {
+  useCreateComment,
+  useDeleteComment,
+  useHideComment,
+  useUpdateComment,
+} from './useCommentMutations'
 import { useComments } from './useComments'
 import type { Comment } from '../../types/comment'
 
 /** Comment list + posting form for a klash's detail page (spec §6.3):
- * chronological, with edit/delete of one's own comments. Moderator hiding
- * is a step-7 concern (it needs role-aware UI); this page never reads a
- * role, it only ever acts on the signed-in user's own comments. */
+ * chronological, with edit/delete of one's own comments, and — since step 7
+ * — hide/unhide for moderator/admin (`comments_guard_hidden` on the DB side
+ * already restricted this to staff; this is the client function and
+ * button). */
 export function CommentList({ klashId }: { klashId: string }) {
   const { user } = useAuth()
+  const { canModerate } = useRole()
   const location = useLocation()
   const { data: comments, isLoading, isError, refetch } = useComments(klashId)
   const createComment = useCreateComment(klashId)
@@ -44,6 +52,7 @@ export function CommentList({ klashId }: { klashId: string }) {
                 klashId={klashId}
                 comment={comment}
                 isOwn={comment.authorId === user?.id}
+                canModerate={canModerate}
               />
             </li>
           ))}
@@ -85,14 +94,17 @@ function CommentItem({
   klashId,
   comment,
   isOwn,
+  canModerate,
 }: {
   klashId: string
   comment: Comment
   isOwn: boolean
+  canModerate: boolean
 }) {
   const [isEditing, setIsEditing] = useState(false)
   const updateComment = useUpdateComment(klashId)
   const deleteComment = useDeleteComment(klashId)
+  const hideComment = useHideComment(klashId)
 
   function handleSave(body: string) {
     updateComment.mutate({ commentId: comment.id, body }, { onSuccess: () => setIsEditing(false) })
@@ -101,6 +113,10 @@ function CommentItem({
   function handleDelete() {
     if (!window.confirm(fr.comments.deleteConfirm)) return
     deleteComment.mutate(comment.id)
+  }
+
+  function handleToggleHidden() {
+    hideComment.mutate({ commentId: comment.id, hidden: !comment.hidden })
   }
 
   if (isEditing) {
@@ -136,27 +152,44 @@ function CommentItem({
           {comment.updatedAt !== comment.createdAt && ` · ${fr.comments.editedNotice}`}
         </span>
       </div>
+      {comment.hidden && (
+        <p className="text-xs text-neutral-500 italic">{fr.comments.hiddenNotice}</p>
+      )}
       <p className="text-sm whitespace-pre-wrap text-neutral-700">{comment.body}</p>
-      {isOwn && (
+      {(isOwn || canModerate) && (
         <div className="mt-1 flex gap-3">
-          <button
-            type="button"
-            onClick={() => setIsEditing(true)}
-            className="text-xs font-medium text-teal-700 hover:underline"
-          >
-            {fr.comments.edit}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleteComment.isPending}
-            className="text-xs font-medium text-red-700 hover:underline disabled:opacity-60"
-          >
-            {deleteComment.isPending ? fr.comments.deleting : fr.comments.delete}
-          </button>
-          {deleteComment.isError && (
+          {isOwn && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="text-xs font-medium text-teal-700 hover:underline"
+            >
+              {fr.comments.edit}
+            </button>
+          )}
+          {(isOwn || canModerate) && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteComment.isPending}
+              className="text-xs font-medium text-red-700 hover:underline disabled:opacity-60"
+            >
+              {deleteComment.isPending ? fr.comments.deleting : fr.comments.delete}
+            </button>
+          )}
+          {canModerate && (
+            <button
+              type="button"
+              onClick={handleToggleHidden}
+              disabled={hideComment.isPending}
+              className="text-xs font-medium text-neutral-700 hover:underline disabled:opacity-60"
+            >
+              {comment.hidden ? fr.comments.unhide : fr.comments.hide}
+            </button>
+          )}
+          {(deleteComment.isError || hideComment.isError) && (
             <span role="alert" className="text-xs text-red-700">
-              {fr.comments.deleteError}
+              {deleteComment.isError ? fr.comments.deleteError : fr.comments.hideError}
             </span>
           )}
         </div>

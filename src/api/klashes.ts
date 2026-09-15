@@ -71,3 +71,13 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
   if (error) throw error
   return klashFromRow(data)
 }
+
+/** Deletes a klash. Allowed for its own author while `new`, or for staff
+ * (`klashes_delete_author_or_staff`); this app only ever calls it from
+ * `/k/:id`'s role-gated action bar. Cascades klash_photos, confirmations,
+ * comments and status_changes in the database, and (since step 7) the
+ * underlying Storage photo objects via klashes_delete_photo_objects. */
+export async function deleteKlash(id: string): Promise<void> {
+  const { error } = await supabase.from('klashes').delete().eq('id', id)
+  if (error) throw error
+}

@@ -38,8 +38,8 @@ export async function createComment(
 
 /** Edits a comment's body. Only the comment's own author may call this in
  * practice (`comments_update_author_or_staff`); a moderator/admin could also
- * reach this policy, but hiding is a separate action (`hideComment` below,
- * step 7), not this one. */
+ * reach this policy, but hiding is a separate action (`hideComment` below),
+ * not this one. */
 export async function updateComment(commentId: string, body: string): Promise<Comment> {
   const { data, error } = await supabase
     .from('comments')
@@ -57,4 +57,18 @@ export async function updateComment(commentId: string, body: string): Promise<Co
 export async function deleteComment(commentId: string): Promise<void> {
   const { error } = await supabase.from('comments').delete().eq('id', commentId)
   if (error) throw error
+}
+
+/** Hides or un-hides a comment (spec §5, §6.3). Reserved to moderator/admin:
+ * `comments_guard_hidden` rejects anyone else changing this column, no
+ * matter what RLS itself would otherwise allow. */
+export async function hideComment(commentId: string, hidden: boolean): Promise<Comment> {
+  const { data, error } = await supabase
+    .from('comments')
+    .update({ hidden })
+    .eq('id', commentId)
+    .select(COMMENT_SELECT)
+    .single()
+  if (error) throw error
+  return commentFromRow(data)
 }

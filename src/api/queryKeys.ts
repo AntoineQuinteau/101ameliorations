@@ -26,3 +26,13 @@ export const commentKeys = {
   all: ['comments'] as const,
   byKlash: (klashId: string) => [...commentKeys.all, 'byKlash', klashId] as const,
 }
+
+export const statusChangeKeys = {
+  all: ['statusChanges'] as const,
+  byKlash: (klashId: string) => [...statusChangeKeys.all, 'byKlash', klashId] as const,
+}
+
+export const adminKlashKeys = {
+  all: ['adminKlashes'] as const,
+  triage: () => [...adminKlashKeys.all, 'triage'] as const,
+}
