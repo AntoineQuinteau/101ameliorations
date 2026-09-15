@@ -1,7 +1,37 @@
+import { z } from 'zod'
 import { supabase } from '../lib/supabase'
 import { klashFromRow, type Klash, type KlashCategory, type KlashStatus } from '../types/klash'
-import { profileFromRow, type Profile } from '../types/profile'
+import { profileFromRow, userRoleSchema, type Profile } from '../types/profile'
 import type { UserRole } from '../types/profile'
+
+// find_profile_by_email() (unlike a plain `profiles` row) deliberately
+// returns only what's needed to act on the account — no created_at, no
+// email — so it gets its own schema rather than reusing profileFromRow's,
+// which requires created_at.
+export const foundProfileSchema = z.object({
+  id: z.string(),
+  displayName: z.string().nullable(),
+  role: userRoleSchema,
+  organization: z.string().nullable(),
+})
+export type FoundProfile = z.infer<typeof foundProfileSchema>
+
+const foundProfileRowSchema = z.object({
+  id: z.string(),
+  display_name: z.string().nullable(),
+  role: userRoleSchema,
+  organization: z.string().nullable(),
+})
+
+function foundProfileFromRow(row: unknown): FoundProfile {
+  const parsed = foundProfileRowSchema.parse(row)
+  return {
+    id: parsed.id,
+    displayName: parsed.display_name,
+    role: parsed.role,
+    organization: parsed.organization,
+  }
+}
 
 export const ADMIN_PAGE_SIZE = 25
 
@@ -66,10 +96,10 @@ export async function fetchTriageQueue(): Promise<Klash[]> {
  * (spec §6.6, admin only) via the `find_profile_by_email` RPC — the email
  * itself lives in `auth.users`, unreachable from the client directly.
  * Returns `null` when no account matches. */
-export async function findProfileByEmail(email: string): Promise<Profile | null> {
+export async function findProfileByEmail(email: string): Promise<FoundProfile | null> {
   const { data, error } = await supabase.rpc('find_profile_by_email', { email })
   if (error) throw error
-  return data[0] ? profileFromRow(data[0]) : null
+  return data[0] ? foundProfileFromRow(data[0]) : null
 }
 
 /** Updates a profile's role and/or organization (admin only —
