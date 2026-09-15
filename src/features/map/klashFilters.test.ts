@@ -21,6 +21,7 @@ function makeKlash(overrides: Partial<Klash> = {}): Klash {
     resolvedAt: null,
     authorDisplayName: null,
     authorOrganization: null,
+    authorRole: 'user',
     ...overrides,
   }
 }

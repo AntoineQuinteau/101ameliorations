@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { userRoleSchema } from './profile'
 
 // Mirrors the database enums (src/types/database.ts, generated from
 // supabase/migrations). Kept as a separate zod source of truth so klash
@@ -49,6 +50,7 @@ export const klashSchema = z.object({
   resolvedAt: z.string().nullable(),
   authorDisplayName: z.string().nullable(),
   authorOrganization: z.string().nullable(),
+  authorRole: userRoleSchema,
 })
 export type Klash = z.infer<typeof klashSchema>
 
@@ -72,6 +74,7 @@ const klashRowSchema = z.object({
   resolved_at: z.string().nullable(),
   author_display_name: z.string().nullable(),
   author_organization: z.string().nullable(),
+  author_role: userRoleSchema,
 })
 
 /** Validates and maps one raw `klashes_public` row into the app's `Klash` shape. */
@@ -95,5 +98,6 @@ export function klashFromRow(row: unknown): Klash {
     resolvedAt: parsed.resolved_at,
     authorDisplayName: parsed.author_display_name,
     authorOrganization: parsed.author_organization,
+    authorRole: parsed.author_role,
   }
 }

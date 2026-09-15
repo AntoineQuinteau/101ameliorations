@@ -64,3 +64,24 @@ export async function uploadKlashPhoto(
 
   return klashPhotoFromRow(data)
 }
+
+/** Removes every Storage object belonging to a klash, for use just before
+ * deleting the klash itself (deleting the row cascades its `klash_photos`
+ * rows, but Storage objects are not reachable from SQL: Supabase guards
+ * `storage.objects` with a trigger that rejects direct deletes and demands
+ * the Storage API — see
+ * supabase/migrations/20260916001117_drop_klash_photo_objects_trigger.sql).
+ *
+ * Best-effort by design: a failure here is reported to the caller, which
+ * deletes the klash anyway rather than leaving a klash nobody can remove
+ * because its photos are stuck. Leftover objects are unreferenced, not
+ * user-visible. */
+export async function removeKlashPhotoObjects(klashId: string): Promise<void> {
+  const photos = await fetchKlashPhotos(klashId)
+  if (photos.length === 0) return
+
+  const { error } = await supabase.storage
+    .from(PHOTOS_BUCKET)
+    .remove(photos.map((photo) => photo.storagePath))
+  if (error) throw error
+}

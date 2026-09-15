@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createComment, deleteComment, updateComment } from '../../api/comments'
+import { createComment, deleteComment, hideComment, updateComment } from '../../api/comments'
 import { commentKeys, klashKeys } from '../../api/queryKeys'
 import { useAuth } from '../auth/useAuth'
 
@@ -41,6 +41,17 @@ export function useDeleteComment(klashId: string) {
 
   return useMutation({
     mutationFn: (commentId: string) => deleteComment(commentId),
+    onSuccess: () => invalidateComments(queryClient, klashId),
+  })
+}
+
+/** Hides or un-hides a comment (moderator/admin only — spec §5, §6.3). */
+export function useHideComment(klashId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ commentId, hidden }: { commentId: string; hidden: boolean }) =>
+      hideComment(commentId, hidden),
     onSuccess: () => invalidateComments(queryClient, klashId),
   })
 }

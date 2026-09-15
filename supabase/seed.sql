@@ -37,7 +37,12 @@ insert into seed_users (id, email, display_name) values
   ('10000000-0000-4000-8000-000000000009', 'seed-09@101ameliorations.test', 'Claire M.'),
   ('10000000-0000-4000-8000-000000000010', 'seed-10@101ameliorations.test', 'Mikel'),
   ('10000000-0000-4000-8000-000000000011', 'seed-11@101ameliorations.test', null),
-  ('10000000-0000-4000-8000-000000000012', 'seed-12@101ameliorations.test', null);
+  ('10000000-0000-4000-8000-000000000012', 'seed-12@101ameliorations.test', null),
+  -- Step 7: one staff account per non-'user' role, so /admin and the
+  -- role-gated actions on /k/:id have someone to log in as locally.
+  ('10000000-0000-4000-8000-000000000013', 'seed-moderator@101ameliorations.test', 'Association (modération)'),
+  ('10000000-0000-4000-8000-000000000014', 'seed-authority@101ameliorations.test', 'CAPB'),
+  ('10000000-0000-4000-8000-000000000015', 'seed-admin@101ameliorations.test', 'Admin');
 
 drop table if exists seed_hubs;
 create temporary table seed_hubs (
@@ -77,6 +82,12 @@ delete from public.confirmations
 -- non-seed klash (not possible yet, but not guaranteed to stay that way)
 -- doesn't survive a re-run.
 delete from public.comments where author_id in (select id from seed_users);
+-- status_changes rows are written by the staff seed accounts (moderator/
+-- authority/admin) on klashs authored by other seed accounts, so this
+-- delete is independent of the klashes cascade below for the same reason as
+-- the comments delete above: a staff seed user's history entry survives
+-- only as long as this explicit delete removes it.
+delete from public.status_changes where changed_by in (select id from seed_users);
 delete from public.klashes where author_id in (select id from seed_users);
 delete from auth.users where id in (select id from seed_users); -- cascades profiles
 
@@ -101,6 +112,20 @@ update public.profiles p
 set display_name = su.display_name
 from seed_users su
 where p.id = su.id and su.display_name is not null;
+
+-- Step 7: promote the three staff seed accounts. profiles_guard_role reads
+-- current_user_role(), i.e. auth.uid() from the JWT claim, not the Postgres
+-- session role, so `set local role postgres` alone does not bypass it —
+-- disabling the trigger for these statements is the same pattern used by
+-- every pgTAP fixture in supabase/tests/ (e.g. comments_rls_test.sql).
+alter table public.profiles disable trigger profiles_guard_role;
+update public.profiles set role = 'moderator'
+ where id = '10000000-0000-4000-8000-000000000013';
+update public.profiles set role = 'authority', organization = 'CAPB'
+ where id = '10000000-0000-4000-8000-000000000014';
+update public.profiles set role = 'admin'
+ where id = '10000000-0000-4000-8000-000000000015';
+alter table public.profiles enable trigger profiles_guard_role;
 
 -- ---------- Klashs ----------
 -- Word bank used to compose plausible French titles/descriptions.
@@ -248,6 +273,40 @@ set duplicate_of = (
 )
 where k.status = 'duplicate'
   and k.author_id in (select id from seed_users);
+
+-- ---------- Status history (step 7) ----------
+-- Klashs above are inserted with an explicit status (an INSERT, so
+-- klashes_enforce_status_transition never fires) rather than reaching it
+-- through change_klash_status(), so they would otherwise carry no
+-- status_changes rows — leaving the "Historique des statuts" section on
+-- /k/:id empty for every seeded klash. This synthesises one plausible
+-- change_by/note per non-'new' klash, direct-inserted as postgres (bypasses
+-- RLS; status_changes has no INSERT policy for anyone else).
+--
+-- Only the single most recent transition into the seeded status is
+-- reconstructed (not the full path through intermediate statuses) — enough
+-- to exercise the UI, not a full lifecycle replay.
+drop table if exists seed_staff_notes;
+create temporary table seed_staff_notes (
+  status  public.klash_status primary key,
+  actor   uuid not null,
+  note    text
+);
+insert into seed_staff_notes (status, actor, note) values
+  ('acknowledged', '10000000-0000-4000-8000-000000000014', 'Pris en compte, transmis aux services techniques.'),
+  ('in_progress',  '10000000-0000-4000-8000-000000000014', 'Intervention programmée.'),
+  ('resolved',     '10000000-0000-4000-8000-000000000014', 'Travaux réalisés.'),
+  ('rejected',     '10000000-0000-4000-8000-000000000013', 'Hors périmètre du dispositif.'),
+  ('duplicate',    '10000000-0000-4000-8000-000000000013', 'Doublon d''un signalement existant.');
+
+insert into public.status_changes (klash_id, changed_by, from_status, to_status, note, created_at)
+select k.id, sn.actor, 'new'::public.klash_status, k.status, sn.note,
+       coalesce(k.resolved_at, k.updated_at)
+from public.klashes k
+join seed_staff_notes sn on sn.status = k.status
+where k.author_id in (select id from seed_users);
+
+drop table seed_staff_notes;
 
 -- ---------- Confirmations ----------
 -- ~13% of (klash, non-author seed user) pairs, which lands around 900 rows
