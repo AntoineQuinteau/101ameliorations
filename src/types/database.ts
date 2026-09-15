@@ -388,6 +388,47 @@ export type Database = {
       }
     }
     Functions: {
+      can_change_klash_status: {
+        Args: {
+          from_status: Database['public']['Enums']['klash_status']
+          role: Database['public']['Enums']['user_role']
+          to_status: Database['public']['Enums']['klash_status']
+        }
+        Returns: boolean
+      }
+      change_klash_status: {
+        Args: {
+          klash_id: string
+          note?: string
+          to_status: Database['public']['Enums']['klash_status']
+        }
+        Returns: {
+          author_display_name: string | null
+          author_id: string | null
+          author_organization: string | null
+          author_role: Database['public']['Enums']['user_role'] | null
+          category: Database['public']['Enums']['klash_category'] | null
+          comments_count: number | null
+          confirmations_count: number | null
+          created_at: string | null
+          description: string | null
+          duplicate_of: string | null
+          id: string | null
+          lat: number | null
+          lng: number | null
+          resolved_at: string | null
+          status: Database['public']['Enums']['klash_status'] | null
+          title: string | null
+          updated_at: string | null
+          urgency: Database['public']['Enums']['klash_urgency'] | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'klashes_public'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_klash: {
         Args: {
           category: Database['public']['Enums']['klash_category']

@@ -92,11 +92,23 @@ select is_empty(
   'klashes_nearby excludes a klash far from the given point'
 );
 
--- 6. klashes_nearby excludes a klash resolved more than 30 days ago.
+-- 6. klashes_nearby excludes a klash resolved more than 30 days ago. Since
+-- step 7, a direct `status` UPDATE is rejected by
+-- klashes_enforce_status_transition regardless of role (it isn't an RLS
+-- check, so running as postgres alone doesn't bypass it) unless it comes
+-- through change_klash_status() — irrelevant to what this test exercises
+-- (klashes_nearby's own filter), so this fixture setup disables the trigger
+-- for one statement, the same pattern profiles_guard_role fixtures use.
+set local role postgres;
+alter table public.klashes disable trigger klashes_enforce_status_transition;
 update public.klashes
    set status = 'resolved', resolved_at = now() - interval '31 days'
  where author_id = 'bbbbbbbb-0000-4000-8000-000000000001'
    and title = 'Nid de poule test';
+alter table public.klashes enable trigger klashes_enforce_status_transition;
+select set_config('request.jwt.claims',
+  '{"sub":"bbbbbbbb-0000-4000-8000-000000000001","role":"authenticated"}', true);
+set local role authenticated;
 
 select is_empty(
   $$ select id from public.klashes_nearby(43.49, -1.47, 50)
