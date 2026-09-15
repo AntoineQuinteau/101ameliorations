@@ -16,6 +16,7 @@ import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
 import { useHasHover } from './useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
+import { AppFooterLinks } from '../../components/AppFooterLinks'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import {
   INITIAL_MAP_CENTER,
@@ -127,6 +128,8 @@ export function MapPage() {
       </MapContainer>
 
       <AuthBadge />
+
+      {(hasHover || !isFiltersOpen) && <AppFooterLinks />}
 
       {/* On desktop the filters card is a small, semi-transparent overlay
           that never covers the map, so the other floating controls stay
