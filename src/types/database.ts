@@ -469,6 +469,15 @@ export type Database = {
         Args: never
         Returns: Database['public']['Enums']['user_role']
       }
+      find_profile_by_email: {
+        Args: { email: string }
+        Returns: {
+          display_name: string
+          id: string
+          organization: string
+          role: Database['public']['Enums']['user_role']
+        }[]
+      }
       klashes_in_bbox: {
         Args: {
           max_lat: number

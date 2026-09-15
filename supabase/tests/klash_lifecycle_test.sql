@@ -18,7 +18,7 @@
 -- which is asserted with is(...) on the unchanged value (same idiom as
 -- profiles_rls_test.sql and comments_rls_test.sql).
 begin;
-select plan(51);
+select plan(55);
 
 -- Four fixture users: a klash author (plain 'user'), a moderator, an
 -- authority, and an admin. Roles set directly as postgres with
@@ -622,6 +622,49 @@ select ok(
   and public.can_change_klash_status('admin', 'new', 'rejected')
   and not public.can_change_klash_status(null, 'new', 'acknowledged'),
   '50. can_change_klash_status matches the spec §3 graph directly'
+);
+
+-- ========================================================================
+-- H. find_profile_by_email (spec §6.6, admin-only role management RPC)
+-- ========================================================================
+
+-- 51. a moderator (non-admin staff) cannot search by email
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000002","role":"authenticated"}', true);
+set local role authenticated;
+
+select throws_ok(
+  $$ select * from find_profile_by_email('lifecycle-test-author@101ameliorations.test') $$,
+  'only an admin can search for a profile by email',
+  '51. a moderator cannot call find_profile_by_email'
+);
+
+-- 52. an admin finds the matching profile by email
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000004","role":"authenticated"}', true);
+set local role authenticated;
+
+select is(
+  (select id from find_profile_by_email('lifecycle-test-author@101ameliorations.test')),
+  'eeeeeeee-0000-4000-8000-000000000001'::uuid,
+  '52. an admin finds a profile by its exact email'
+);
+
+-- 53. an admin gets no rows for an email that doesn't exist
+select is_empty(
+  $$ select * from find_profile_by_email('nobody-at-all@101ameliorations.test') $$,
+  '53. find_profile_by_email returns nothing for an unknown email'
+);
+
+-- 54. an anonymous visitor cannot call it at all (blocked at the grant layer)
+reset role;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+
+select throws_ok(
+  $$ select * from find_profile_by_email('lifecycle-test-author@101ameliorations.test') $$,
+  'permission denied for function find_profile_by_email',
+  '54. an anonymous visitor cannot call find_profile_by_email'
 );
 
 select * from finish();
