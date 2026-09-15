@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { App } from './App'
+import { AppErrorPage } from './components/AppErrorPage'
 import { NotFoundPage } from './components/NotFoundPage'
 import { AdminPage } from './features/admin/AdminPage'
 import { LoginPage } from './features/auth/LoginPage'
@@ -15,6 +16,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    errorElement: <AppErrorPage />,
     children: [
       { index: true, element: <MapPage /> },
       { path: 'k/:id', element: <KlashDetailPage /> },

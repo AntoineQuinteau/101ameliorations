@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+// VITE_SENTRY_DSN is deliberately not listed here: it's optional (see
+// src/lib/sentry.ts) and must never make the app fail to start.
 const schema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),

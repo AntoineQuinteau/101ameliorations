@@ -44,6 +44,12 @@ export const fr = {
     title: 'Page introuvable',
     body: "Cette page n'existe pas.",
   },
+  errorPage: {
+    title: 'Une erreur est survenue',
+    body: "Quelque chose s'est mal passé. Vous pouvez recharger la page ou revenir à la carte.",
+    reload: 'Recharger la page',
+    backToMap: 'Retour à la carte',
+  },
   map: {
     loadError: 'Impossible de charger les klashs de cette zone.',
     viewDetail: 'Voir le détail',
