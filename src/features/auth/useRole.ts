@@ -20,11 +20,16 @@ export interface RoleInfo {
  * §2). `moderator`/`admin` can sort (`new` <-> `rejected`/`duplicate`) and
  * moderate content; `authority`/`admin` can run the processing pipeline. */
 export function useRole(): RoleInfo {
-  const { isInitializing } = useAuth()
+  const { user, isInitializing } = useAuth()
   const profileQuery = useProfile()
 
   const role = profileQuery.data?.role ?? null
-  const isResolved = !isInitializing && !profileQuery.isPending
+  // A signed-out visitor is fully resolved as soon as auth settles: their
+  // profile query is `enabled: false`, and a disabled query stays `pending`
+  // forever — waiting on it would hang the guard on an answer that never
+  // comes (this is what made /admin spin indefinitely for anonymous
+  // visitors instead of redirecting them).
+  const isResolved = !isInitializing && (!user || !profileQuery.isPending)
 
   return {
     role,
