@@ -18,7 +18,7 @@
 -- which is asserted with is(...) on the unchanged value (same idiom as
 -- profiles_rls_test.sql and comments_rls_test.sql).
 begin;
-select plan(55);
+select plan(62);
 
 -- Four fixture users: a klash author (plain 'user'), a moderator, an
 -- authority, and an admin. Roles set directly as postgres with
@@ -665,6 +665,84 @@ select throws_ok(
   $$ select * from find_profile_by_email('lifecycle-test-author@101ameliorations.test') $$,
   'permission denied for function find_profile_by_email',
   '54. an anonymous visitor cannot call find_profile_by_email'
+);
+
+-- ========================================================================
+-- I. Klash deletion (spec §2). Regression cover for a bug these tests
+-- originally missed entirely: nothing here deleted a klash, so an AFTER
+-- DELETE trigger added alongside them (delete_klash_photo_objects, since
+-- removed) broke deletion for *everyone* without a single test failing.
+-- ========================================================================
+
+-- 55. an author can delete their own klash while it is still 'new'
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000001","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$ delete from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000018' $$,
+  '55. an author can delete their own new klash'
+);
+
+-- 56. the klash is really gone (a DELETE blocked by RLS matches no row and
+-- raises nothing, so liveness alone would not prove the row went away)
+select is_empty(
+  $$ select 1 from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000018' $$,
+  '56. the deleted klash no longer exists'
+);
+
+-- 57. a moderator can delete someone else's klash, whatever its status
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000002","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$ delete from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000007' $$,
+  '57. a moderator can delete any klash'
+);
+
+-- 58. deleting a klash cascades its status history (status_changes has
+-- `on delete cascade`), so no orphaned history survives
+select is_empty(
+  $$ select 1 from public.status_changes
+      where klash_id = 'eeeeeeee-1111-4000-8000-000000000007' $$,
+  '58. deleting a klash cascades its status_changes rows'
+);
+
+-- 59. a plain user cannot delete someone else's klash: RLS matches no row,
+-- so this is a silent no-op asserted on the row still being there
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000005","role":"authenticated"}', true);
+set local role authenticated;
+
+delete from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000012';
+
+select isnt_empty(
+  $$ select 1 from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000012' $$,
+  '59. a user cannot delete someone else''s klash'
+);
+
+-- 60. deleting a klash that another klash points to as its duplicate target
+-- succeeds and nulls the pointer, rather than raising a foreign key
+-- violation (the FK was switched to `on delete set null` this step)
+set local role postgres;
+update public.klashes set duplicate_of = 'eeeeeeee-1111-4000-8000-000000000011'
+ where id = 'eeeeeeee-1111-4000-8000-000000000010';
+reset role;
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000002","role":"authenticated"}', true);
+set local role authenticated;
+
+select lives_ok(
+  $$ delete from public.klashes where id = 'eeeeeeee-1111-4000-8000-000000000011' $$,
+  '60. deleting a klash referenced as a duplicate target does not raise'
+);
+
+select is(
+  (select duplicate_of from public.klashes
+    where id = 'eeeeeeee-1111-4000-8000-000000000010'),
+  null,
+  '61. the referencing klash''s duplicate_of is nulled, not left dangling'
 );
 
 select * from finish();

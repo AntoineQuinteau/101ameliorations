@@ -1,0 +1,32 @@
+-- Fix: delete_klash_photo_objects() made every klash deletion fail.
+--
+-- 20260915075244_klash_lifecycle.sql added an AFTER DELETE trigger on
+-- klashes that deleted the klash's photo objects straight out of
+-- storage.objects, to close the orphaned-object debt flagged in
+-- 20260913140000_klash_photos_storage.sql. That is not possible on this
+-- platform: Supabase Storage guards its own tables with a BEFORE DELETE
+-- trigger (storage.protect_objects_delete -> storage.protect_delete()),
+-- which raises
+--
+--   Direct deletion from storage tables is not allowed.
+--   Use the Storage API instead.
+--
+-- Because that raise happens inside the klashes AFTER DELETE trigger, it
+-- aborted the whole statement — so *no* klash could be deleted by anyone,
+-- author or staff. Verified locally: the same DELETE succeeds immediately
+-- with this trigger disabled.
+--
+-- The orphan cleanup therefore moves to the client, which is where the
+-- Storage API lives: deleteKlashWithPhotos() in src/api/klashes.ts removes
+-- the objects via supabase.storage.remove() before deleting the klash row
+-- — the same call uploadKlashPhoto() already uses to clean up an orphaned
+-- object when its klash_photos insert fails.
+--
+-- This restores the debt noted in the storage migration to being a known
+-- gap rather than a broken feature: a klash deleted by some path that
+-- doesn't go through the client (a direct SQL delete, say) still leaves its
+-- objects behind. Closing it properly needs a scheduled job or an Edge
+-- Function using the Storage API, which belongs with the step 9 hardening
+-- work, not here.
+drop trigger if exists klashes_delete_photo_objects on public.klashes;
+drop function if exists public.delete_klash_photo_objects();

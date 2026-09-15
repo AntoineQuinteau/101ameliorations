@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
 import type { Bbox } from '../utils/bbox'
 import { klashFromRow, type Klash, type KlashCategory, type KlashUrgency } from '../types/klash'
+import { removeKlashPhotoObjects } from './klashPhotos'
 
 /** Klashs visible in a map viewport, via the `klashes_in_bbox` RPC (already excludes
  * rejected/duplicate and resolved-over-90-days — see the migration). */
@@ -74,10 +75,21 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
 
 /** Deletes a klash. Allowed for its own author while `new`, or for staff
  * (`klashes_delete_author_or_staff`); this app only ever calls it from
- * `/k/:id`'s role-gated action bar. Cascades klash_photos, confirmations,
- * comments and status_changes in the database, and (since step 7) the
- * underlying Storage photo objects via klashes_delete_photo_objects. */
+ * `/k/:id`'s role-gated action bar. Deleting the row cascades klash_photos,
+ * confirmations, comments and status_changes in the database.
+ *
+ * The Storage objects have to be removed first, from here: they are not
+ * reachable from SQL (Supabase rejects direct deletes on storage.objects),
+ * so a trigger cannot do it. Their removal is best-effort — if it fails,
+ * the klash is still deleted rather than becoming undeletable, leaving
+ * unreferenced objects behind, which is the pre-existing known gap. */
 export async function deleteKlash(id: string): Promise<void> {
+  try {
+    await removeKlashPhotoObjects(id)
+  } catch {
+    // Deliberately swallowed: see the docblock above.
+  }
+
   const { error } = await supabase.from('klashes').delete().eq('id', id)
   if (error) throw error
 }

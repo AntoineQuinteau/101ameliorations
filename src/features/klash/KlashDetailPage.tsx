@@ -58,11 +58,14 @@ export function KlashDetailPage() {
 
   function handleDelete() {
     if (!klash || !window.confirm(fr.detail.deleteKlashConfirm)) return
-    // Navigate away first: RequireAuth/RequireRole guards react to query
-    // invalidation, and staying on a page whose data just disappeared would
-    // otherwise race the redirect (same hazard MePage's sign-out documents).
-    navigate('/')
-    deleteMutation.mutate(klash.id)
+    // Navigate only once the delete has actually succeeded. Navigating
+    // first unmounts this page and with it the mutation, so the request
+    // never completed and any failure was invisible — the klash silently
+    // stayed put. (MePage navigates before signOut() for the opposite
+    // reason: signOut lives on the auth context, which outlives the page.)
+    deleteMutation.mutate(klash.id, {
+      onSuccess: () => navigate('/', { replace: true }),
+    })
   }
 
   return (
