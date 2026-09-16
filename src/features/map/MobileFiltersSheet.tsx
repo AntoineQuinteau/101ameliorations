@@ -79,7 +79,7 @@ export function MobileFiltersSheet({
             <span className="text-sm font-medium text-neutral-700">
               {fr.map.filters.categoryLabel}
             </span>
-            <div className="mt-1 grid grid-cols-5 gap-2">
+            <div className="mt-1 grid grid-cols-2 gap-2">
               {ALL_CATEGORIES.map((option: KlashCategory) => (
                 <button
                   key={option}

@@ -3,7 +3,7 @@ import { Badge } from '../../components/Badge'
 import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
-import type { Klash } from '../../types/klash'
+import { klashCategoryLabel, type Klash } from '../../types/klash'
 
 /** Bottom sheet shown for a klash: summary, and (unless `interactive` is false) a close
  * button and a link to the full detail page. Deliberately not a Leaflet popup — mixing
@@ -41,7 +41,7 @@ export function KlashPreviewCard({
           )}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Badge label={fr.category[klash.category]} tone="gray" />
+          <Badge label={klashCategoryLabel(klash)} tone="gray" />
           <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
           <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
         </div>

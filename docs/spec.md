@@ -59,11 +59,12 @@ create extension if not exists postgis;
 
 create type user_role as enum ('user', 'moderator', 'authority', 'admin');
 
--- Placeholder categories: real ones will be defined with the association.
--- Labels and icons live in the i18n messages file, so renaming them later
--- only requires a migration (enum rename) and a label change.
+-- Labels live in the i18n messages file (fr.category), keyed by these enum
+-- values. 'category_7' ("Autre (préciser)") pairs with klashes.category_other,
+-- a required free-text precision (forbidden for every other category).
 create type klash_category as enum (
-  'category_1', 'category_2', 'category_3', 'category_4', 'category_5'
+  'category_1', 'category_2', 'category_3', 'category_4', 'category_5',
+  'category_6', 'category_7'
 );
 
 create type klash_urgency as enum ('low', 'medium', 'high');
@@ -86,10 +87,12 @@ create table klashes (
   author_id           uuid not null references profiles (id),
   location            geography(point, 4326) not null,
   category            klash_category not null,
+  category_other      text check (char_length(category_other) <= 120),
   urgency             klash_urgency not null default 'medium',
   status              klash_status not null default 'new',
   title               text not null check (char_length(title) between 5 and 120),
   description         text check (char_length(description) <= 2000),
+  proposed_solution   text check (char_length(proposed_solution) <= 2000),
   duplicate_of        uuid references klashes (id),
   confirmations_count integer not null default 0,
   comments_count      integer not null default 0,
@@ -144,10 +147,10 @@ Triggers et fonctions :
 - `handle_new_user()` : crée la ligne `profiles` à l'inscription.
 - `set_updated_at()` sur `klashes` et `comments`.
 - Compteurs `confirmations_count` / `comments_count` maintenus par trigger (les commentaires `hidden` ne comptent pas).
-- `enforce_service_area()` : rejette un klash hors zone (bbox lat 43.25–43.80, lon -1.80 à -0.90, stockée en table `settings` pour être ajustable sans migration).
+- `enforce_service_area()` : rejette un klash hors zone (bbox lat 42.70–45.00, lon -2.30 à 0.50, stockée en table `settings` pour être ajustable sans migration). Le front lit aussi cette ligne au runtime (`useServiceArea()`), avec la constante compilée `SERVICE_AREA_BBOX` comme repli pour la première frame — éditer la ligne dans Supabase change donc le comportement de l'app sans redéploiement.
 - `enforce_status_transition()` : vérifie que la transition est autorisée pour le rôle courant, insère la ligne dans `status_changes`, renseigne `resolved_at`.
 - `enforce_rate_limit()` : max 250 klashs / 24 h et 50 commentaires / 24 h par utilisateur.
-- `enforce_photo_limit()` : max 3 photos par klash.
+- `enforce_photo_limit()` : max 12 photos par klash.
 - Vue publique `klashes_public` exposant `author_display_name` sans jamais joindre l'email.
 - RPC `klashes_nearby(lat, lng, radius_m)` : klashs actifs (hors `rejected`/`duplicate`/`resolved` depuis > 30 j) dans un rayon, pour la détection de doublons.
 - RPC `klashes_in_bbox(min_lat, min_lng, max_lat, max_lng, filters)` pour la carte.
@@ -187,7 +190,7 @@ Une seule application responsive. Routes :
 
 ### 6.1 Carte (`/`)
 
-- Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, contrainte aux bounds de la zone de service.
+- Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), contrainte aux bounds de la zone de service.
 - Marqueurs colorés par urgence, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
 - Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), urgence (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
@@ -200,14 +203,14 @@ Une seule application responsive. Routes :
 
 1. **Position** : pin déplaçable, adresse approximative affichée (reverse geocoding Nominatim, facultatif, avec cache). Précision GPS affichée si < 50 m sinon avertissement « affinez la position ».
 2. **Doublons** : appel `klashes_nearby(50 m)`. S'il y a des résultats : liste avec « C'est le même problème → je confirme » (crée une `confirmation` et termine) ou « Non, c'est un autre problème → continuer ».
-3. **Formulaire** : catégorie (grille d'icônes), urgence (3 boutons), titre, description, photos (jusqu'à 3 : caméra ou fichier ; compression côté client à 1600 px max / qualité 0.8 avec `browser-image-compression` ; EXIF supprimé sauf lecture préalable du GPS pour proposer « utiliser la position de la photo ? »).
+3. **Formulaire** : catégorie (liste déroulante obligatoire, sans valeur par défaut ; « Autre (préciser) » ouvre un champ libre requis), urgence (3 boutons), titre, description, proposition de solution (facultative), photos (jusqu'à 12 : caméra ou fichier ; compression côté client à 1600 px max / qualité 0.8 avec `browser-image-compression`, avec un maximum de 4 compressions/uploads en parallèle ; EXIF supprimé sauf lecture préalable du GPS pour proposer « utiliser la position de la photo ? »).
 4. **Envoi** : si non connecté, étape login inline (email → code), le brouillon est conservé en mémoire pendant l'auth. Insert du klash puis upload des photos puis insert `klash_photos`. Écran de confirmation avec lien de partage.
 
 Hors zone de service : message clair et blocage avant le formulaire.
 
 ### 6.3 Détail (`/k/:id`)
 
-- Carte réduite, photos (galerie), catégorie, urgence, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur).
+- Carte réduite, photos (galerie), catégorie, urgence, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.
 - Historique des statuts avec notes (ex. « CAPB — intervention programmée semaine 38 »).
 - Commentaires chronologiques, formulaire pour les connectés. Édition/suppression de ses propres commentaires.
 - Actions contextuelles selon rôle : Modifier / Supprimer (auteur si `new`, moderator, admin) ; Changer le statut (authority, moderator selon §3) avec note ; Masquer un commentaire (moderator, admin).
@@ -225,7 +228,7 @@ Liste de mes klashs avec statut, mes confirmations, modification du pseudo, supp
 
 ### 6.6 Administration (`/admin`, rôles ≥ moderator)
 
-- Table paginée de tous les klashs avec filtres (statut, catégorie, période, zone), tri, recherche texte.
+- Table paginée de tous les klashs avec filtres (statut, catégorie, période, zone), tri, recherche texte. Pastille « Solution proposée » sur les klashs qui en ont une.
 - Actions par lot : changer le statut, marquer doublon (sélection de l'original), supprimer.
 - File « à trier » : klashs `new` de plus de 7 jours.
 - `admin` uniquement : gestion des rôles (rechercher un profil par email via RPC security definer, changer le rôle, renseigner `organization`).
@@ -247,7 +250,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Front** : React 18, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
-- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_SERVICE_AREA_BBOX`.
+- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`. Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.
@@ -260,7 +263,7 @@ Chaque étape se termine par un déploiement preview testé sur téléphone rée
 2. **Carte + lecture** — Carte Leaflet, chargement par bbox, marqueurs, clustering, page détail en lecture seule. Données de test insérées par seed. _Critère : navigation fluide sur mobile avec 500 klashs seedés._
 3. **Auth OTP** — Login, profil, pseudo, `/me`. _Critère : parcours email → code → session persistante._
 4. **Création** — Feuille de création en 4 étapes, géoloc, pin, détection de doublons, confirmation +1, validation zod, rate limits. Sans photos. _Critère : klash créé en < 60 s depuis un téléphone._
-5. **Photos** — Compression, EXIF GPS, upload Storage, galerie. _Critère : 3 photos de 4 Mo uploadées en < 10 s en 4G._
+5. **Photos** — Compression, EXIF GPS, upload Storage, galerie. _Critère : 12 photos de 4 Mo uploadées en < 10 s en 4G._
 6. **Commentaires + filtres + tri + URL partageable.**
 7. **Cycle de vie** — Transitions de statut, historique, notes, rôles `moderator`/`authority`, `/admin`. _Critère : tests SQL des transitions interdites._
 8. **PWA + export + OG + Sentry.**
@@ -277,7 +280,7 @@ Chaque étape se termine par un déploiement preview testé sur téléphone rée
 
 ## 11. Décisions prises (07/09/2026)
 
-1. **Catégories** : `category_1` à `category_5`, libellés « Catégorie 1 » à « Catégorie 5 » en attendant la liste de l'asso. Paramétrage par le rôle `moderator` : v2.
+1. **Catégories** (mises à jour le 17/09/2026, remplace la liste placeholder) : `category_1` « Trou / bosse ou chaussée abîmée », `category_2` « Obstacle sur la piste », `category_3` « Problème de signalisation / marquage », `category_4` « Rupture de continuité », `category_5` « Zone de conflit avec automobiliste », `category_6` « Zone de conflit avec autres usagers », `category_7` « Autre (préciser) » — avec un champ `category_other` requis pour ce dernier. Sélection par liste déroulante obligatoire, sans valeur par défaut. Paramétrage par le rôle `moderator` : v2.
 2. **Nom** : « 101améliorations ». Domaine initial `101ameliorations.workers.dev` (gratuit Cloudflare), puis domaine personnalisé `101ameliorations.org` sans impact sur le code. Expéditeur des emails : « 101améliorations ».
 3. **Tuiles** : MapTiler.
 4. **Conservation** : klashs `resolved` masqués de la carte par défaut après 90 jours, conservés en base et dans l'export.

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { userRoleSchema } from './profile'
+import { fr } from '../i18n/fr'
 
 // Mirrors the database enums (src/types/database.ts, generated from
 // supabase/migrations). Kept as a separate zod source of truth so klash
@@ -10,6 +11,8 @@ export const klashCategorySchema = z.enum([
   'category_3',
   'category_4',
   'category_5',
+  'category_6',
+  'category_7',
 ])
 export type KlashCategory = z.infer<typeof klashCategorySchema>
 
@@ -38,10 +41,12 @@ export const klashSchema = z.object({
   lat: z.number(),
   lng: z.number(),
   category: klashCategorySchema,
+  categoryOther: z.string().nullable(),
   urgency: klashUrgencySchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
+  proposedSolution: z.string().nullable(),
   duplicateOf: z.string().nullable(),
   confirmationsCount: z.number(),
   commentsCount: z.number(),
@@ -62,10 +67,12 @@ const klashRowSchema = z.object({
   lat: z.number(),
   lng: z.number(),
   category: klashCategorySchema,
+  category_other: z.string().nullable(),
   urgency: klashUrgencySchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
+  proposed_solution: z.string().nullable(),
   duplicate_of: z.string().nullable(),
   confirmations_count: z.number(),
   comments_count: z.number(),
@@ -86,10 +93,12 @@ export function klashFromRow(row: unknown): Klash {
     lat: parsed.lat,
     lng: parsed.lng,
     category: parsed.category,
+    categoryOther: parsed.category_other,
     urgency: parsed.urgency,
     status: parsed.status,
     title: parsed.title,
     description: parsed.description,
+    proposedSolution: parsed.proposed_solution,
     duplicateOf: parsed.duplicate_of,
     confirmationsCount: parsed.confirmations_count,
     commentsCount: parsed.comments_count,
@@ -161,4 +170,13 @@ export function exportKlashFromRow(row: unknown): ExportKlash {
     updatedAt: parsed.updated_at,
     resolvedAt: parsed.resolved_at,
   }
+}
+
+/** The category label to display for a klash: the reporter's own precision for
+ * 'category_7' ("Autre (préciser)") when there is one, the fixed i18n label
+ * otherwise. Centralises the rule so every badge (map, detail, duplicates, admin)
+ * renders it the same way. */
+export function klashCategoryLabel(klash: Pick<Klash, 'category' | 'categoryOther'>): string {
+  if (klash.category === 'category_7' && klash.categoryOther) return klash.categoryOther
+  return fr.category[klash.category]
 }

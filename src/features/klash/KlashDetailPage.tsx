@@ -9,7 +9,7 @@ import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { displayActor, statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { allowedNextStatuses } from '../../lib/klashTransitions'
-import type { KlashStatus } from '../../types/klash'
+import { klashCategoryLabel, type KlashStatus } from '../../types/klash'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
 import { useRole } from '../auth/useRole'
@@ -102,7 +102,7 @@ export function KlashDetailPage() {
           <KlashPhotoGallery klashId={klash.id} />
 
           <div className="flex flex-wrap gap-1.5">
-            <Badge label={fr.category[klash.category]} tone="gray" />
+            <Badge label={klashCategoryLabel(klash)} tone="gray" />
             <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
             <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
           </div>
@@ -111,6 +111,17 @@ export function KlashDetailPage() {
 
           {klash.description && (
             <p className="text-sm whitespace-pre-wrap text-neutral-700">{klash.description}</p>
+          )}
+
+          {klash.proposedSolution && (
+            <div>
+              <h2 className="text-sm font-medium text-neutral-700">
+                {fr.detail.proposedSolutionLabel}
+              </h2>
+              <p className="text-sm whitespace-pre-wrap text-neutral-700">
+                {klash.proposedSolution}
+              </p>
+            </div>
           )}
 
           {klash.status === 'duplicate' && klash.duplicateOf && (

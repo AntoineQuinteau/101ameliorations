@@ -102,20 +102,29 @@ select lives_ok(
     $$ insert into public.klash_photos (klash_id, author_id, storage_path)
        values ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p1.jpg'),
               ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p2.jpg'),
-              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p3.jpg') $$,
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p3.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p4.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p5.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p6.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p7.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p8.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p9.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p10.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p11.jpg'),
+              ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p12.jpg') $$,
     'cccccccc-0000-4000-8000-000000000001'
   ),
-  'the klash author can insert up to 3 photos'
+  'the klash author can insert up to 12 photos'
 );
 
 select throws_ok(
   format(
     $$ insert into public.klash_photos (klash_id, author_id, storage_path)
-       values ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p4.jpg') $$,
+       values ('cccccccc-1111-4000-8000-000000000001', '%1$s', 'cccccccc-1111-4000-8000-000000000001/p13.jpg') $$,
     'cccccccc-0000-4000-8000-000000000001'
   ),
-  'photo limit exceeded: max 3 photos per klash',
-  'a 4th photo on the same klash is rejected by enforce_photo_limit'
+  'photo limit exceeded: max 12 photos per klash',
+  'a 13th photo on the same klash is rejected by enforce_photo_limit'
 );
 
 -- 5. A non-author cannot insert a klash_photos row for someone else's klash

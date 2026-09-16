@@ -49,9 +49,11 @@ export interface CreateKlashInput {
   lat: number
   lng: number
   category: KlashCategory
+  categoryOther: string | null
   urgency: KlashUrgency
   title: string
   description: string | null
+  proposedSolution: string | null
 }
 
 /** Creates a klash via the `create_klash` RPC (builds the PostGIS point
@@ -67,7 +69,10 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
     // The generated type has `description: string` (gen_types doesn't mark a
     // plain `text` SQL parameter as nullable), but the column and the RPC's
     // plpgsql body both accept null — the DB, not this type, is authoritative.
+    // Same reasoning for category_other and proposed_solution below.
     description: input.description as string,
+    category_other: input.categoryOther as string,
+    proposed_solution: input.proposedSolution as string,
   })
   if (error) throw error
   return klashFromRow(data)
