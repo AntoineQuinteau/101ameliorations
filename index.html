@@ -4,7 +4,31 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f766e" />
+    <meta
+      name="description"
+      content="Signalement des problèmes sur les voies cyclables du Pays basque et du sud des Landes."
+    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <title>101améliorations</title>
+
+    <!-- Default Open Graph / Twitter tags, served as-is on every route
+         except /k/:id: there, workers/app/src/index.ts rewrites this whole
+         block with the klash's own title, description and photo before the
+         page reaches the browser (a SPA can't do that itself — crawlers
+         don't run its JS). Relative image paths here are resolved by
+         crawlers against the page's own URL; the Worker's per-klash
+         rewrite builds an absolute one instead, since it knows the real
+         origin at request time and this static file cannot. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="101améliorations" />
+    <meta property="og:title" content="101améliorations" />
+    <meta
+      property="og:description"
+      content="Signalement des problèmes sur les voies cyclables du Pays basque et du sud des Landes."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

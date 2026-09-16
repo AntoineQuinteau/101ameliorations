@@ -102,6 +102,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
+          # Optional — see src/lib/sentry.ts. Empty is fine: the build
+          # behaves identically either way, which is exactly what the
+          # `quality` job's smoke build (no Sentry var at all) already covers.
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
 
       - name: Upload preview version
         id: upload
@@ -109,10 +113,18 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PR: ${{ github.event.number }}
+          # Runtime vars for workers/app/src/index.ts (the per-klash Open
+          # Graph rewrite) — distinct from the VITE_* build-time vars above,
+          # which get inlined into the client bundle and are invisible to
+          # the Worker. Not secrets, same reasoning as the VITE_* ones.
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
           npx wrangler versions upload \
             --preview-alias "pr-${PR}" \
+            --var "SUPABASE_URL:${SUPABASE_URL}" \
+            --var "SUPABASE_PUBLISHABLE_KEY:${SUPABASE_PUBLISHABLE_KEY}" \
             --message "PR #${PR} — ${GITHUB_SHA::7}" | tee upload.log
 
           # The alias URL shape (https://<alias>-<worker>.<subdomain>.workers.dev)
@@ -173,8 +185,15 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
       - name: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx wrangler deploy
+          # Runtime vars for the Worker — see the preview job above.
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          npx wrangler deploy \
+            --var "SUPABASE_URL:${SUPABASE_URL}" \
+            --var "SUPABASE_PUBLISHABLE_KEY:${SUPABASE_PUBLISHABLE_KEY}"

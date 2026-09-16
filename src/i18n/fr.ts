@@ -44,6 +44,12 @@ export const fr = {
     title: 'Page introuvable',
     body: "Cette page n'existe pas.",
   },
+  errorPage: {
+    title: 'Une erreur est survenue',
+    body: "Quelque chose s'est mal passé. Vous pouvez recharger la page ou revenir à la carte.",
+    reload: 'Recharger la page',
+    backToMap: 'Retour à la carte',
+  },
   map: {
     loadError: 'Impossible de charger les klashs de cette zone.',
     viewDetail: 'Voir le détail',
@@ -117,6 +123,10 @@ export const fr = {
     deleteKlashConfirm: 'Supprimer définitivement ce signalement ?',
     deleteKlashError: 'Impossible de supprimer ce signalement.',
     deleting: 'Suppression…',
+    share: 'Partager',
+    shareTitle: (title: string) => `${title} — 101améliorations`,
+    linkCopied: 'Lien copié dans le presse-papiers.',
+    shareError: 'Impossible de partager ce signalement.',
   },
   comments: {
     title: 'Commentaires',
@@ -313,5 +323,20 @@ export const fr = {
       selfDemoteWarning:
         "Vous êtes sur le point de retirer votre propre rôle d'administrateur. Vous perdrez l'accès à cette page.",
     },
+  },
+  pwa: {
+    installPrompt: 'Installez 101améliorations pour un accès plus rapide, même hors connexion.',
+    install: 'Installer',
+    iosInstallHint:
+      "Pour installer l'application : appuyez sur le bouton de partage, puis « Sur l'écran d'accueil ».",
+  },
+  export: {
+    title: 'Export des données',
+    body: 'Tous les signalements publics de 101améliorations, sans donnée personnelle : statut, catégorie, urgence, position, compteurs. Généré depuis les données publiques de la carte.',
+    downloadCsv: 'Télécharger en CSV',
+    downloadGeoJson: 'Télécharger en GeoJSON',
+    preparing: (loaded: number) => `Préparation de l'export… (${loaded} signalements)`,
+    error: "Impossible de générer l'export.",
+    footerLink: 'Export des données',
   },
 } as const

@@ -33,18 +33,21 @@ npm run dev
 | `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`) |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)            |
 | `VITE_MAPTILER_KEY`             | Clé API MapTiler                                         |
+| `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans         |
 | `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front   |
 
 ## Scripts
 
-| Commande            | Effet                                                  |
-| ------------------- | ------------------------------------------------------ |
-| `npm run dev`       | Serveur de développement Vite                          |
-| `npm run build`     | `tsc -b` puis build de production dans `dist/`         |
-| `npm run lint`      | ESLint                                                 |
-| `npm run typecheck` | `tsc -b --noEmit`                                      |
-| `npm test`          | Vitest (une fois)                                      |
-| `npm run gen:types` | Régénère `src/types/database.ts` depuis la base locale |
+| Commande               | Effet                                                   |
+| ---------------------- | ------------------------------------------------------- |
+| `npm run dev`          | Serveur de développement Vite                           |
+| `npm run build`        | `tsc -b` puis build de production dans `dist/`          |
+| `npm run lint`         | ESLint                                                  |
+| `npm run typecheck`    | `tsc -b --noEmit`                                       |
+| `npm test`             | Vitest (une fois)                                       |
+| `npm run gen:types`    | Régénère `src/types/database.ts` depuis la base locale  |
+| `npm run gen:icons`    | Régénère les icônes PWA depuis `public/icon-source.svg` |
+| `npm run gen:og-image` | Régénère `public/og-image.png` depuis l'icône 512×512   |
 
 ## Base de données
 
@@ -78,6 +81,48 @@ avant de tester le parcours sur un téléphone réel.
 6. **Authentication → Rate Limits** : relever la limite d'envoi d'emails au-delà
    de 2/h une fois le SMTP applicatif en place (2/h est global au projet).
 
+## PWA
+
+`vite-plugin-pwa` en mode `generateSW` / `registerType: 'autoUpdate'` (voir
+`vite.config.ts`) : manifest, service worker, mise en cache des tuiles MapTiler et
+des photos de klash (`CacheFirst`, 7 jours), et de la lecture `klashes_public`
+(`NetworkFirst`, 5 min — la seule lecture Supabase dont la réponse est identique
+pour `anon` et `authenticated`, le service worker ne pouvant pas lire la session
+dans `localStorage`). Bandeau d'installation (`src/features/pwa/`) : flux natif
+`beforeinstallprompt` sur Android/desktop, instructions manuelles sur iOS (qui ne
+déclenche jamais cet évènement).
+
+Icônes et image Open Graph générées depuis `public/icon-source.svg` — voir le
+tableau des scripts ci-dessus. Ne jamais éditer les PNG générés à la main.
+
+## Export des données
+
+`/export` (spec §6.7) : CSV et GeoJSON de tous les klashs publics, sans donnée
+personnelle, paginés côté client sur `klashes_public` (`src/api/export.ts`) — pas
+de RPC dédiée, la vue est déjà lisible publiquement et PostgREST impose de toute
+façon la pagination (`max_rows = 1000`).
+
+## Open Graph (aperçus de lien)
+
+Un lien `/k/:id` partagé affiche le titre, la description et la photo du klash
+dans son aperçu (WhatsApp, Slack, etc.). Une SPA ne peut pas produire ça seule
+(les robots n'exécutent pas son JS) : `workers/app/src/index.ts` s'exécute avant
+le service d'assets sur `/k/*` (`wrangler.jsonc` → `assets.run_worker_first`),
+lit le klash via PostgREST (clé anon) et réécrit les balises `<title>`/`og:*`
+avec `HTMLRewriter`. Toute erreur (klash introuvable, Supabase injoignable,
+timeout) renvoie la coquille par défaut telle quelle — jamais un point de panne
+pour la page elle-même. Toutes les autres routes ne passent pas par ce Worker.
+
+## Monitoring (Sentry)
+
+`src/lib/sentry.ts` : optionnel, activé uniquement si `VITE_SENTRY_DSN` est
+définie. Sans elle, l'app démarre normalement (voir le tableau des variables
+ci-dessus). Erreurs de rendu (`src/components/AppErrorPage.tsx`, l'`errorElement`
+racine du routeur) et toute requête/mutation TanStack Query en échec
+(`src/lib/queryClient.ts`) sont remontées. Pas de tracing ni de session replay
+(offre gratuite), et `sendDefaultPii: false` — les emails ne doivent jamais
+sortir de l'app (spec §2).
+
 ## Déploiement (Cloudflare Worker + assets)
 
 Les variables `VITE_*` sont injectées dans le bundle **au build**, pas lues au
@@ -91,16 +136,24 @@ mode production, prioritaire sur `.env.local`) :
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --project-ref <ref>
 VITE_MAPTILER_KEY=…                              # même clé qu'en local
+VITE_SENTRY_DSN=…                                # facultative
 ```
 
 ```bash
 nvm use                       # Node 24, cf. .nvmrc
 npm run build
-npx wrangler versions upload  # déploiement preview, ne touche pas le trafic prod
+# --var : variables d'exécution du Worker (workers/app/src/index.ts, l'Open
+# Graph par klash) — distinctes des VITE_* ci-dessus, inlinées dans le bundle
+# au build et donc invisibles pour le Worker.
+npx wrangler versions upload \
+  --var "SUPABASE_URL:https://<project-ref>.supabase.co" \
+  --var "SUPABASE_PUBLISHABLE_KEY:sb_publishable_…"
+# déploiement preview, ne touche pas le trafic prod
 # npx wrangler versions deploy   # bascule une version preview en prod (validation humaine)
 ```
 
-Config : [`wrangler.jsonc`](wrangler.jsonc) (dossier d'assets `./dist`, fallback SPA).
+Config : [`wrangler.jsonc`](wrangler.jsonc) (dossier d'assets `./dist`, fallback SPA,
+Worker `workers/app/src/index.ts` sur `/k/*` seulement).
 
 Nouvelle migration à pousser en prod : `npx supabase db push`. Rejouer `seed.sql` en
 prod (données de test) : `npx supabase db query --linked -f supabase/seed.sql` — le
@@ -126,12 +179,12 @@ Cloudflare** — rien côté CI ne peut le faire à sa place.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
-| Job                 | Déclencheur             | Fait                                                                                                                |
-| ------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `quality`           | PR + push `main`        | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile) |
-| `database`          | PR + push `main`        | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour          |
-| `preview`           | PR (pas depuis un fork) | Build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N>`, commentaire de PR (URL + QR)      |
-| `deploy-production` | push `main`             | Build avec les vrais `VITE_*`, `wrangler deploy`                                                                    |
+| Job                 | Déclencheur             | Fait                                                                                                                                    |
+| ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`           | PR + push `main`        | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                     |
+| `database`          | PR + push `main`        | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                              |
+| `preview`           | PR (pas depuis un fork) | Build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR) |
+| `deploy-production` | push `main`             | Build avec les vrais `VITE_*`, `wrangler deploy --var …`                                                                                |
 
 Le job `preview` est sauté sur les PR venant d'un fork (les secrets ne leur sont pas
 exposés) — dans ce cas, tester avec le workflow habituel (`wrangler versions upload` en
@@ -151,12 +204,17 @@ fausse impression de confidentialité :
 gh variable set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
 gh variable set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
 gh variable set VITE_MAPTILER_KEY
+gh variable set VITE_SENTRY_DSN                 # facultative — voir la section Monitoring
 gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
 gh secret set CLOUDFLARE_ACCOUNT_ID
 gh variable set QR_WORKER_URL                   # URL du worker QR, voir ci-dessous
 ```
 
-Les trois `VITE_*` sont celles de `.env.production.local` (voir section Déploiement).
+Les `VITE_*` sont celles de `.env.production.local` (voir section Déploiement).
+`VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` sont aussi réutilisées, sans
+variable de dépôt supplémentaire, comme variables d'exécution du Worker (voir
+Open Graph ci-dessus) — passées via `wrangler --var` par la CI, jamais lues au
+build.
 
 ### QR code de preview
 

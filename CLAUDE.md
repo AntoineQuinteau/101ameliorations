@@ -11,7 +11,7 @@ A PWA for reporting cycling-infrastructure issues ("klashs") in the Basque Count
 
 ## Stack (do not substitute)
 
-React 18 + Vite + TypeScript (strict) + Tailwind, react-router, TanStack Query, zod, react-leaflet + leaflet.markercluster, MapTiler tiles, `@supabase/supabase-js`, vite-plugin-pwa, `browser-image-compression`, `exifr`. Backend: Supabase (Postgres + PostGIS, Auth email OTP, Storage, RLS). No custom server. Hosting: Cloudflare Pages via GitHub.
+React 18 + Vite + TypeScript (strict) + Tailwind, react-router, TanStack Query, zod, react-leaflet + leaflet.markercluster, MapTiler tiles, `@supabase/supabase-js`, vite-plugin-pwa, `browser-image-compression`, `exifr`. Backend: Supabase (Postgres + PostGIS, Auth email OTP, Storage, RLS). Hosting: a Cloudflare Worker serving static assets, deployed via GitHub Actions CI (see `README.md`) — plus a minimal per-route Worker (`workers/app/`) for `/k/:id`'s Open Graph tags; everything else is served as static assets, no application server.
 
 ## Workflow
 

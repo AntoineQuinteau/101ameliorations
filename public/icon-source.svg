@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Browser-tab favicon (referenced from index.html). Kept identical to
-       public/icon-source.svg, the source the whole icon set (see
-       pwa-assets.config.ts) and the Open Graph image (scripts/generate-og-image.mjs)
-       are generated from — edit that file and copy it here, not the other
-       way round. -->
-
+  <!-- Source icon for the PWA/OG image pipeline (npm run gen:icons, npm run
+       gen:og-image). "101" drawn as plain geometric shapes rather than text:
+       a font glyph would not survive rasterization by @vite-pwa/assets-generator
+       or sharp, and a raster @font-face can't be guaranteed to load in either
+       tool's headless renderer. Regenerate every derived asset after editing
+       this file — do not hand-edit the PNGs it produces. -->
   <rect width="512" height="512" rx="96" fill="#0f766e" />
   <!-- Two bars for the "1"s and a ring for the "0", sized so the whole mark's
        bounding box stays inside the ~80% maskable-icon safe zone. -->

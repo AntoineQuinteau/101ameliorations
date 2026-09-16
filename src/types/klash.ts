@@ -101,3 +101,64 @@ export function klashFromRow(row: unknown): Klash {
     authorRole: parsed.author_role,
   }
 }
+
+// Row shape for the public export (spec §6.7): the same `klashes_public`
+// view, but selected without any author column — `klashFromRow` above can't
+// be reused for it, since `klashRowSchema` requires `author_id`/`author_role`
+// to be present. A separate, narrower schema is the same pattern
+// `foundProfileRowSchema` uses in src/api/admin.ts for the same reason.
+const exportKlashRowSchema = z.object({
+  id: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  category: klashCategorySchema,
+  urgency: klashUrgencySchema,
+  status: klashStatusSchema,
+  title: z.string(),
+  description: z.string().nullable(),
+  duplicate_of: z.string().nullable(),
+  confirmations_count: z.number(),
+  comments_count: z.number(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  resolved_at: z.string().nullable(),
+})
+
+export const exportKlashSchema = z.object({
+  id: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  category: klashCategorySchema,
+  urgency: klashUrgencySchema,
+  status: klashStatusSchema,
+  title: z.string(),
+  description: z.string().nullable(),
+  duplicateOf: z.string().nullable(),
+  confirmationsCount: z.number(),
+  commentsCount: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  resolvedAt: z.string().nullable(),
+})
+export type ExportKlash = z.infer<typeof exportKlashSchema>
+
+/** Validates and maps one raw export row (no author columns) into `ExportKlash`. */
+export function exportKlashFromRow(row: unknown): ExportKlash {
+  const parsed = exportKlashRowSchema.parse(row)
+  return {
+    id: parsed.id,
+    lat: parsed.lat,
+    lng: parsed.lng,
+    category: parsed.category,
+    urgency: parsed.urgency,
+    status: parsed.status,
+    title: parsed.title,
+    description: parsed.description,
+    duplicateOf: parsed.duplicate_of,
+    confirmationsCount: parsed.confirmations_count,
+    commentsCount: parsed.comments_count,
+    createdAt: parsed.created_at,
+    updatedAt: parsed.updated_at,
+    resolvedAt: parsed.resolved_at,
+  }
+}

@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    // DOM is needed for a real `URL` type (with `hostname`/`pathname`, etc.):
+    // esbuild's own .d.ts (pulled in transitively through `vite`) declares an
+    // empty global `interface URL {}` for its own purposes, which becomes the
+    // *only* definition of `URL` in this project's scope without DOM's fuller
+    // one to merge with — used here by the PWA plugin's runtime-caching
+    // `urlPattern` callbacks (see vite.config.ts).
+    "lib": ["ES2023", "DOM"],
     "module": "ESNext",
     "skipLibCheck": true,
 

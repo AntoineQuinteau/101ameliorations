@@ -22,6 +22,7 @@ import { useChangeKlashStatus } from './useChangeKlashStatus'
 import { useConfirmKlash } from './useConfirmKlash'
 import { useDeleteKlash } from './useDeleteKlash'
 import { useMyConfirmation } from './useMyConfirmation'
+import { useShareKlash } from './useShareKlash'
 
 /** Detail page (spec §6.3): read-only content, the confirm (+1) button
  * (step 4), comments (step 6), and — since step 7 — the status history and
@@ -48,6 +49,7 @@ export function KlashDetailPage() {
   const confirmMutation = useConfirmKlash(id ?? '', hasConfirmed)
   const changeStatusMutation = useChangeKlashStatus(id ?? '')
   const deleteMutation = useDeleteKlash()
+  const { share, feedback: shareFeedback } = useShareKlash(klash)
   const isAuthor = Boolean(user) && user?.id === klash?.authorId
   const canDelete = isAuthor && klash?.status === 'new' ? true : isStaff
   const nextStatuses = role && klash ? allowedNextStatuses(role, klash.status) : []
@@ -137,16 +139,35 @@ export function KlashDetailPage() {
           </dl>
 
           <div>
-            <button
-              type="button"
-              disabled={!user || isAuthor || confirmMutation.isPending}
-              aria-busy={confirmMutation.isPending}
-              onClick={() => confirmMutation.mutate()}
-              className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-            >
-              {hasConfirmed ? fr.detail.confirmed : fr.detail.confirm}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!user || isAuthor || confirmMutation.isPending}
+                aria-busy={confirmMutation.isPending}
+                onClick={() => confirmMutation.mutate()}
+                className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+              >
+                {hasConfirmed ? fr.detail.confirmed : fr.detail.confirm}
+              </button>
+              <button
+                type="button"
+                onClick={() => void share()}
+                className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              >
+                {fr.detail.share}
+              </button>
+            </div>
             {confirmMutation.isError && <ErrorMessage message={fr.detail.confirmError} />}
+            {shareFeedback === 'copied' && (
+              <p role="status" className="mt-1 text-xs text-neutral-500">
+                {fr.detail.linkCopied}
+              </p>
+            )}
+            {shareFeedback === 'error' && (
+              <p role="alert" className="mt-1 text-xs text-red-700">
+                {fr.detail.shareError}
+              </p>
+            )}
           </div>
 
           <p className="text-xs text-neutral-500">

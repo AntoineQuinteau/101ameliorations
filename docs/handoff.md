@@ -6,6 +6,81 @@
 
 ---
 
+## 2026-09-15 — Étape 8 (PWA, export, Open Graph, Sentry) terminée
+
+**État** : branche `claude/blissful-goodall-8v6fwy`, pas encore mergée.
+**Prochaine étape** : 9 — durcissement (Turnstile, revue RLS,
+`get_klash_author_contact`, suppression de compte, Playwright, mentions
+légales / politique de confidentialité).
+
+Détail complet : [`docs/plans/step-08-pwa-export-og-sentry.md`](plans/step-08-pwa-export-og-sentry.md).
+
+### Ce qui existe maintenant et qui n'existait pas
+
+- PWA installable (`vite-plugin-pwa`, manifest, service worker, bandeau
+  d'installation) avec mise en cache des tuiles, des photos et de
+  `klashes_public`.
+- `/export` : CSV et GeoJSON publics, sans donnée personnelle, paginés sur
+  `klashes_public` (pas de nouvelle RPC).
+- Aperçu Open Graph par klash sur `/k/:id`, via un Worker Cloudflare
+  (`workers/app/`) placé devant le service d'assets — et le bouton de
+  partage que la spec §6.3 demandait déjà mais que l'app n'avait jamais eu.
+- Sentry câblé, `VITE_SENTRY_DSN` facultative — inerte tant qu'aucun compte
+  n'est configuré.
+- Icônes et image Open Graph générées depuis un mark « 101 » géométrique
+  (`public/icon-source.svg`, scripts `gen:icons`/`gen:og-image`).
+
+### Dettes connues
+
+| Dette                                                                                                        | Gravité                            | Où                                                                                                            |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Aucune vérification humaine sur téléphone réel de cette étape (session sans accès à un appareil physique)    | À faire avant merge                | Installation PWA Android/iOS, aperçu de lien réel dans une appli de messagerie, export ouvert dans un tableur |
+| Aucun compte Sentry créé — le câblage n'a jamais reçu de vraie erreur                                        | Fonctionnelle, mineure             | À faire une fois un DSN disponible                                                                            |
+| `run_worker_first`/`--var` de wrangler vérifiés en local (`wrangler dev`), pas contre le vrai déploiement CI | À confirmer au premier déploiement | `.github/workflows/ci.yml`, `wrangler.jsonc`                                                                  |
+| Dette de l'étape 7 toujours ouverte : rien ne renseigne `duplicate_of` dans l'app                            | Fonctionnelle, visible             | Non traité par cette étape                                                                                    |
+
+### Pièges — déjà payés une fois
+
+**1. `env.ASSETS.fetch()` sur `/index.html` explicitement déclenche une
+redirection.** Cloudflare normalise les URLs de son service d'assets : une
+requête _explicite_ vers `/index.html` est redirigée (307) vers `/`. Dans
+`workers/app/src/index.ts`, cela aurait envoyé tout lien de klash dans une
+boucle de redirection vers la carte. Toujours refetcher la requête d'origine
+(`request`), jamais une URL construite à la main vers `/index.html` — le
+`not_found_handling: 'single-page-application'` s'en charge très bien tout
+seul pour un chemin non trouvé.
+
+**2. `esbuild` casse le type global `URL` dans `tsconfig.node.json`.**
+`esbuild` (dépendance transitive de `vite`) déclare `interface URL {}` (vide)
+dans son propre `.d.ts`, à des fins internes. Sans la lib `DOM`, c'est la
+seule définition de `URL` visible par `vite.config.ts` — `url.hostname`
+devient une erreur de type dans les callbacks `urlPattern` de
+`vite-plugin-pwa`. Solution : `"lib": ["ES2023", "DOM"]` dans
+`tsconfig.node.json`. Si un futur fichier de config Node a besoin d'un type
+`URL` complet, il aura le même problème.
+
+**3. Les imports d'un module ES s'exécutent avant le corps du module qui
+les importe.** `initSentry()` appelé en tête de `main.tsx` ne peut _pas_
+intercepter le `throw` de `src/env.ts` sur des variables invalides : cet
+échec survient pendant la résolution des imports de `./router` (dont
+`env.ts` fait transitivement partie), donc avant que la moindre ligne du
+corps de `main.tsx` — cet appel inclus — ne s'exécute. Une hypothèse du
+plan initial d'étape 8 tenait pour acquis le contraire ; corrigée dans
+`src/lib/sentry.ts` (commentaire) plutôt que dans le code, la vraie
+solution (armer Sentry depuis un `<script>` classique avant le script de
+module) étant disproportionnée pour ce cas.
+
+### Notes d'environnement
+
+- `wrangler dev --local` fonctionne dans ce type d'environnement (le binaire
+  `workerd` est vendu avec `wrangler`) et permet de vérifier un Worker
+  Cloudflare sans déploiement réel — utile pour toute future modification de
+  `workers/app/` ou `workers/qr/`.
+- Pas de Docker ni de navigateur réel disponibles dans cette session pour la
+  vérification téléphone de la PWA — voir la dette ci-dessus.
+
+---
+
 ## 2026-09-16 — Étape 7 (cycle de vie) terminée
 
 **État** : PR #11 mergée sur `main`. Étapes 1 à 7 du plan §9 livrées.
