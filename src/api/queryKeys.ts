@@ -38,3 +38,8 @@ export const adminKlashKeys = {
     [...adminKlashKeys.all, 'list', filtersKey, page] as const,
   triage: () => [...adminKlashKeys.all, 'triage'] as const,
 }
+
+export const settingsKeys = {
+  all: ['settings'] as const,
+  serviceAreaBbox: () => [...settingsKeys.all, 'serviceAreaBbox'] as const,
+}

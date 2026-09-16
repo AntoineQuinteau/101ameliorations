@@ -7,7 +7,7 @@ import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { statusTone, urgencyTone } from '../../lib/klashPresentation'
-import type { Klash } from '../../types/klash'
+import { klashCategoryLabel, type Klash } from '../../types/klash'
 import { useAuth } from '../auth/useAuth'
 
 const DUPLICATE_RADIUS_M = 50
@@ -64,7 +64,7 @@ export function DuplicatesStep({
             >
               <p className="text-sm font-medium text-neutral-900">{klash.title}</p>
               <div className="flex flex-wrap gap-1.5">
-                <Badge label={fr.category[klash.category]} tone="gray" />
+                <Badge label={klashCategoryLabel(klash)} tone="gray" />
                 <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
                 <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
               </div>

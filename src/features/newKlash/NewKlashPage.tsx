@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
-import type { LatLngBoundsExpression } from 'leaflet'
 import { DraggablePin } from './DraggablePin'
 import { DuplicatesStep } from './DuplicatesStep'
 import { KlashFormStep, type PendingPhoto } from './KlashFormStep'
@@ -19,19 +18,20 @@ import { BottomSheet } from '../../components/BottomSheet'
 import { BboxWatcher } from '../map/BboxWatcher'
 import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
 import { MapTiles } from '../map/MapTiles'
+import { ServiceAreaBounds } from '../map/ServiceAreaBounds'
 import { useKlashesInBbox } from '../map/useKlashesInBbox'
-import {
-  INITIAL_MAP_CENTER,
-  MAX_MAP_ZOOM,
-  MIN_MAP_ZOOM,
-  SERVICE_AREA_BBOX,
-} from '../../config/serviceArea'
+import { INITIAL_MAP_CENTER, MAX_MAP_ZOOM, MIN_MAP_ZOOM } from '../../config/serviceArea'
+import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import type { Klash } from '../../types/klash'
-import { expandBbox, isPointInBbox, type Bbox } from '../../utils/bbox'
+import { isPointInBbox, type Bbox } from '../../utils/bbox'
+import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 
 const NEW_KLASH_MAP_ZOOM = MAX_MAP_ZOOM - 2
+// Same reasoning and value as KlashFormStep's PHOTO_CONCURRENCY: bounded so
+// up to MAX_PHOTOS_PER_KLASH uploads don't all race the network at once.
+const PHOTO_UPLOAD_CONCURRENCY = 4
 
 function noop() {
   // ClusteredKlashMarkers requires an onSelect handler, but markers here are
@@ -84,7 +84,8 @@ export function NewKlashPage() {
   const submitGuardRef = useRef(createSubmitGuard())
 
   const geolocation = useGeolocation()
-  const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox)
+  const serviceArea = useServiceArea()
+  const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox, serviceArea)
 
   // Only apply the geolocation result if the page opened without an explicit
   // ?lat=&lng= (e.g. from the "Signaler ici" floating button, which already
@@ -98,15 +99,7 @@ export function NewKlashPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geolocation.result])
 
-  const isOutOfArea = !isPointInBbox(position[0], position[1], SERVICE_AREA_BBOX)
-
-  const maxBounds = useMemo<LatLngBoundsExpression>(() => {
-    const padded = expandBbox(SERVICE_AREA_BBOX, 0.1)
-    return [
-      [padded.minLat, padded.minLng],
-      [padded.maxLat, padded.maxLng],
-    ]
-  }, [])
+  const isOutOfArea = !isPointInBbox(position[0], position[1], serviceArea)
 
   // A photo's EXIF position was accepted: move the pin and re-run duplicate
   // detection there (its query key includes lat/lng, so this can't serve a
@@ -135,20 +128,32 @@ export function NewKlashPage() {
           lat: position[0],
           lng: position[1],
           category: action.form.category,
+          categoryOther: action.form.categoryOther,
           urgency: action.form.urgency,
           title: action.form.title,
           description: action.form.description,
+          proposedSolution: action.form.proposedSolution,
         })
         setCreatedKlash(klash)
 
-        // Photos upload after the klash exists (spec §6.2 step 4), in
-        // parallel so 3 photos don't serialize into 3x the wait — this and
-        // the compression web worker are what keep the whole flow under the
-        // acceptance criterion's 10s budget. A failed photo doesn't roll
-        // back the klash (a report without a photo still has value); the
-        // done screen reports how many failed instead.
-        const results = await Promise.allSettled(
-          photos.map((photo) => uploadKlashPhoto(klash.id, user.id, photo.compressed)),
+        // Photos upload after the klash exists (spec §6.2 step 4), with bounded
+        // concurrency (PHOTO_UPLOAD_CONCURRENCY) rather than all at once — at up
+        // to MAX_PHOTOS_PER_KLASH photos, uploading every one simultaneously on a
+        // phone in 4G would risk the acceptance criterion's 10s budget. A failed
+        // photo doesn't roll back the klash (a report without a photo still has
+        // value); the done screen reports how many failed instead — so each
+        // upload is caught individually rather than left to reject the batch.
+        const results = await mapWithConcurrency(
+          photos,
+          PHOTO_UPLOAD_CONCURRENCY,
+          async (photo) => {
+            try {
+              await uploadKlashPhoto(klash.id, user.id, photo.compressed)
+              return { status: 'fulfilled' } as const
+            } catch {
+              return { status: 'rejected' } as const
+            }
+          },
         )
         const failedCount = results.filter((result) => result.status === 'rejected').length
         setFailedPhotoCount(failedCount)
@@ -183,11 +188,11 @@ export function NewKlashPage() {
         zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
         maxZoom={MAX_MAP_ZOOM}
-        maxBounds={maxBounds}
         maxBoundsViscosity={1}
         className="h-full w-full"
       >
         <MapTiles />
+        <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
         <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />

@@ -169,12 +169,25 @@ insert into seed_fillers (filler) values
   ('Problème présent depuis plusieurs semaines.'),
   ('Intervention souhaitée avant la prochaine saison touristique.');
 
+-- Precisions for the 'category_7' ("Autre (préciser)") branch below —
+-- category_other is required whenever that category is picked (see the
+-- klashes_category_other_required_check constraint).
+drop table if exists seed_other_precisions;
+create temporary table seed_other_precisions (id serial primary key, precision_text text not null);
+insert into seed_other_precisions (precision_text) values
+  ('Éclairage défectueux le soir'),
+  ('Stationnement gênant récurrent'),
+  ('Odeur/dépôt sauvage sur la piste'),
+  ('Bruit de circulation gênant à cet endroit'),
+  ('Accès non praticable en fauteuil ou poussette');
+
 -- One row per generated klash. Point jitter around each hub uses a
 -- Box-Muller transform for a roughly gaussian spread (sigma ~= 1.3 km)
--- instead of a uniform square, then clamps to the service area bbox
--- (spec §4: lat 43.25-43.80, lng -1.80 to -0.90).
+-- instead of a uniform square. No clamp to the service area bbox: the hubs
+-- (seed_hubs) sit well inside it, and sigma ~= 1.3 km is far too small for
+-- the jitter alone to ever cross it.
 insert into public.klashes (
-  author_id, location, category, urgency, status,
+  author_id, location, category, category_other, urgency, status,
   title, description, created_at, updated_at, resolved_at
 )
 select
@@ -183,6 +196,7 @@ select
      extensions.st_makepoint(derived.final_lng, derived.final_lat), 4326
    ))::extensions.geography,
   derived.category,
+  derived.category_other,
   derived.urgency,
   derived.status,
   content.title,
@@ -213,11 +227,11 @@ cross join lateral (
 ) as hub
 cross join lateral (
   select
-    least(43.80, greatest(43.25, hub.hub_lat
-      + sqrt(-2 * ln(base.u1)) * cos(2 * pi() * base.u2) * 1.3 / 111.0)) as final_lat,
-    least(-0.90, greatest(-1.80, hub.hub_lng
+    hub.hub_lat
+      + sqrt(-2 * ln(base.u1)) * cos(2 * pi() * base.u2) * 1.3 / 111.0 as final_lat,
+    hub.hub_lng
       + sqrt(-2 * ln(base.u1)) * sin(2 * pi() * base.u2) * 1.3
-        / (111.0 * cos(radians(hub.hub_lat))))) as final_lng,
+        / (111.0 * cos(radians(hub.hub_lat))) as final_lng,
     (case
       when base.status_r < 0.45 then 'new'
       when base.status_r < 0.57 then 'acknowledged'
@@ -226,13 +240,23 @@ cross join lateral (
       when base.status_r < 0.97 then 'rejected'
       else 'duplicate'
     end)::public.klash_status as status,
+    -- 22/20/16/14/12/10/6%, the last slice ('category_7', "Autre") pairs
+    -- with a category_other value below via the same category_r draw.
     (case
-      when base.category_r < 0.30 then 'category_1'
-      when base.category_r < 0.55 then 'category_2'
-      when base.category_r < 0.75 then 'category_3'
-      when base.category_r < 0.90 then 'category_4'
-      else 'category_5'
+      when base.category_r < 0.22 then 'category_1'
+      when base.category_r < 0.42 then 'category_2'
+      when base.category_r < 0.58 then 'category_3'
+      when base.category_r < 0.72 then 'category_4'
+      when base.category_r < 0.84 then 'category_5'
+      when base.category_r < 0.94 then 'category_6'
+      else 'category_7'
     end)::public.klash_category as category,
+    (case
+      when base.category_r >= 0.94
+        then (select precision_text from seed_other_precisions
+              where s.n > 0 order by random() limit 1)
+      else null
+    end) as category_other,
     (case
       when base.urgency_r < 0.25 then 'low'
       when base.urgency_r < 0.75 then 'medium'

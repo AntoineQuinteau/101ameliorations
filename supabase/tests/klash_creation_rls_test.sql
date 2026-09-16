@@ -5,7 +5,7 @@
 -- (as CI does). Uses a UUID range disjoint from the seed's 10000000-... range
 -- and the existing profiles_rls_test.sql's aaaaaaaa-... range.
 begin;
-select plan(14);
+select plan(16);
 
 -- Three fixture users: one author, one confirmer, one dedicated to the
 -- duplicate-prevention tests (10-14) — the author is deliberately run into
@@ -209,6 +209,27 @@ select lives_ok(
        43.60, -1.20, 'category_2', 'high', 'Nid de poule doublon', null
      ) $$,
   'the same title and category at a different position is accepted'
+);
+
+-- 15. 'category_7' ("Autre") without a category_other precision is rejected
+-- by klashes_category_other_required_check.
+select throws_ok(
+  $$ select public.create_klash(
+       43.55, -1.10, 'category_7', 'medium', 'Klash autre sans precision', null
+     ) $$,
+  'new row for relation "klashes" violates check constraint "klashes_category_other_required_check"',
+  'category_7 without a category_other precision is rejected'
+);
+
+-- 16. A non-'category_7' category with a category_other precision is
+-- rejected by the same constraint, the other way round.
+select throws_ok(
+  $$ select public.create_klash(
+       43.56, -1.11, 'category_1', 'medium', 'Klash avec precision indue', null,
+       'Précision qui ne devrait pas être là'
+     ) $$,
+  'new row for relation "klashes" violates check constraint "klashes_category_other_required_check"',
+  'a non-category_7 category with a category_other precision is rejected'
 );
 
 select * from finish();

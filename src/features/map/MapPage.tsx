@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, ZoomControl } from 'react-leaflet'
-import type { LatLngBoundsExpression } from 'leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
@@ -14,6 +13,7 @@ import { MapTiles } from './MapTiles'
 import { MobileFiltersSheet } from './MobileFiltersSheet'
 import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
+import { ServiceAreaBounds } from './ServiceAreaBounds'
 import { useHasHover } from './useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
 import { AppFooterLinks } from '../../components/AppFooterLinks'
@@ -23,11 +23,11 @@ import {
   INITIAL_MAP_ZOOM,
   MAX_MAP_ZOOM,
   MIN_MAP_ZOOM,
-  SERVICE_AREA_BBOX,
 } from '../../config/serviceArea'
+import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import type { Klash } from '../../types/klash'
-import { expandBbox, type Bbox } from '../../utils/bbox'
+import type { Bbox } from '../../utils/bbox'
 
 export function MapPage() {
   const navigate = useNavigate()
@@ -38,7 +38,13 @@ export function MapPage() {
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
-  const { data: klashes = [], isError, isFetching, refetch } = useKlashesInBbox(viewportBbox)
+  const serviceArea = useServiceArea()
+  const {
+    data: klashes = [],
+    isError,
+    isFetching,
+    refetch,
+  } = useKlashesInBbox(viewportBbox, serviceArea)
 
   const visibleKlashes = useMemo(() => applyFilters(klashes, filters), [klashes, filters])
 
@@ -92,15 +98,6 @@ export function MapPage() {
     )
   }
 
-  // A little slack around the service area so the pan doesn't hard-stop right at its edge.
-  const maxBounds = useMemo<LatLngBoundsExpression>(() => {
-    const padded = expandBbox(SERVICE_AREA_BBOX, 0.1)
-    return [
-      [padded.minLat, padded.minLng],
-      [padded.maxLat, padded.maxLng],
-    ]
-  }, [])
-
   return (
     <div className="relative h-dvh w-full">
       <MapContainer
@@ -108,7 +105,6 @@ export function MapPage() {
         zoom={INITIAL_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
         maxZoom={MAX_MAP_ZOOM}
-        maxBounds={maxBounds}
         maxBoundsViscosity={1}
         zoomControl={false}
         className="h-full w-full"
@@ -117,6 +113,7 @@ export function MapPage() {
         {/* Moved off the default topleft: that's where the filters button
             (and, on desktop, the filters card) lives. */}
         <ZoomControl position="bottomright" />
+        <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers
           klashes={visibleKlashes}

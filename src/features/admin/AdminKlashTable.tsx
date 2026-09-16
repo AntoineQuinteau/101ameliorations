@@ -7,7 +7,7 @@ import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { statusTone } from '../../lib/klashPresentation'
 import type { KlashCategory, KlashStatus } from '../../types/klash'
-import { klashCategorySchema, klashStatusSchema } from '../../types/klash'
+import { klashCategoryLabel, klashCategorySchema, klashStatusSchema } from '../../types/klash'
 import { formatDate } from '../../utils/formatDate'
 import { useAdminKlashes } from './useAdminKlashes'
 
@@ -153,17 +153,22 @@ export function AdminKlashTable() {
               {data.klashes.map((klash) => (
                 <tr key={klash.id} className="border-b border-neutral-100">
                   <td className="py-2 pr-3">
-                    <Link
-                      to={`/k/${klash.id}`}
-                      className="font-medium text-teal-700 hover:underline"
-                    >
-                      {klash.title}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/k/${klash.id}`}
+                        className="font-medium text-teal-700 hover:underline"
+                      >
+                        {klash.title}
+                      </Link>
+                      {klash.proposedSolution && (
+                        <Badge label={fr.admin.table.hasProposedSolution} tone="indigo" />
+                      )}
+                    </div>
                   </td>
                   <td className="py-2 pr-3">
                     <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
                   </td>
-                  <td className="py-2 pr-3 text-neutral-700">{fr.category[klash.category]}</td>
+                  <td className="py-2 pr-3 text-neutral-700">{klashCategoryLabel(klash)}</td>
                   <td className="py-2 pr-3 text-neutral-500">{formatDate(klash.createdAt)}</td>
                   <td className="py-2 pr-3 text-neutral-700">{klash.confirmationsCount}</td>
                 </tr>

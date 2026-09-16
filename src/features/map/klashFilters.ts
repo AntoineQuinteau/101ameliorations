@@ -1,4 +1,10 @@
-import type { Klash, KlashCategory, KlashStatus, KlashUrgency } from '../../types/klash'
+import {
+  klashCategorySchema,
+  type Klash,
+  type KlashCategory,
+  type KlashStatus,
+  type KlashUrgency,
+} from '../../types/klash'
 
 export interface KlashFilters {
   categories: KlashCategory[]
@@ -24,13 +30,9 @@ export const ALL_STATUSES: KlashStatus[] = [
 export const DEFAULT_STATUSES: KlashStatus[] = ALL_STATUSES.filter(
   (status) => status !== 'rejected' && status !== 'duplicate',
 )
-export const ALL_CATEGORIES: KlashCategory[] = [
-  'category_1',
-  'category_2',
-  'category_3',
-  'category_4',
-  'category_5',
-]
+// Derived from the zod schema rather than listed by hand, so a category
+// added there (the source of truth) doesn't also need updating here.
+export const ALL_CATEGORIES: KlashCategory[] = [...klashCategorySchema.options]
 export const ALL_URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
 
 export const defaultFilters: KlashFilters = {

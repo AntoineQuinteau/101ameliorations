@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { bboxKey, clampBbox, expandBbox, isPointInBbox, roundBbox, type Bbox } from './bbox'
 
-// Service area from spec §4 (bbox lat 43.25–43.80, lon -1.80 to -0.90).
-const serviceArea: Bbox = { minLat: 43.25, minLng: -1.8, maxLat: 43.8, maxLng: -0.9 }
+// Arbitrary fixture bbox for these pure-function tests — not the app's real service area.
+const sampleArea: Bbox = { minLat: 43.25, minLng: -1.8, maxLat: 43.8, maxLng: -0.9 }
 
 describe('isPointInBbox', () => {
   it('accepts a point inside the service area (Bayonne)', () => {
-    expect(isPointInBbox(43.49, -1.47, serviceArea)).toBe(true)
+    expect(isPointInBbox(43.49, -1.47, sampleArea)).toBe(true)
   })
 
   it('rejects a point outside the service area (Paris)', () => {
-    expect(isPointInBbox(48.85, 2.35, serviceArea)).toBe(false)
+    expect(isPointInBbox(48.85, 2.35, sampleArea)).toBe(false)
   })
 
   it('treats the boundary as inclusive', () => {
-    expect(isPointInBbox(43.25, -1.8, serviceArea)).toBe(true)
+    expect(isPointInBbox(43.25, -1.8, sampleArea)).toBe(true)
   })
 })
 
@@ -64,12 +64,18 @@ describe('roundBbox', () => {
 describe('clampBbox', () => {
   it('leaves a bbox already inside the bounds untouched', () => {
     const bbox: Bbox = { minLat: 43.4, minLng: -1.5, maxLat: 43.6, maxLng: -1.3 }
-    expect(clampBbox(bbox, serviceArea)).toEqual(bbox)
+    expect(clampBbox(bbox, sampleArea)).toEqual(bbox)
   })
 
   it('clamps a bbox that overshoots the service area', () => {
     const bbox: Bbox = { minLat: 43.0, minLng: -2.0, maxLat: 44.0, maxLng: -0.5 }
-    expect(clampBbox(bbox, serviceArea)).toEqual(serviceArea)
+    expect(clampBbox(bbox, sampleArea)).toEqual(sampleArea)
+  })
+
+  it('leaves a bbox untouched when the bounds are wider than it', () => {
+    const bbox: Bbox = { minLat: 43.4, minLng: -1.5, maxLat: 43.6, maxLng: -1.3 }
+    const wideBounds: Bbox = { minLat: 42.7, minLng: -2.3, maxLat: 45.0, maxLng: 0.5 }
+    expect(clampBbox(bbox, wideBounds)).toEqual(bbox)
   })
 })
 
