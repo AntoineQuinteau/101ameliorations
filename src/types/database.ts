@@ -176,6 +176,7 @@ export type Database = {
         Row: {
           author_id: string
           category: Database['public']['Enums']['klash_category']
+          category_other: string | null
           comments_count: number
           confirmations_count: number
           created_at: string
@@ -183,6 +184,7 @@ export type Database = {
           duplicate_of: string | null
           id: string
           location: unknown
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status']
           title: string
@@ -192,6 +194,7 @@ export type Database = {
         Insert: {
           author_id: string
           category: Database['public']['Enums']['klash_category']
+          category_other?: string | null
           comments_count?: number
           confirmations_count?: number
           created_at?: string
@@ -199,6 +202,7 @@ export type Database = {
           duplicate_of?: string | null
           id?: string
           location: unknown
+          proposed_solution?: string | null
           resolved_at?: string | null
           status?: Database['public']['Enums']['klash_status']
           title: string
@@ -208,6 +212,7 @@ export type Database = {
         Update: {
           author_id?: string
           category?: Database['public']['Enums']['klash_category']
+          category_other?: string | null
           comments_count?: number
           confirmations_count?: number
           created_at?: string
@@ -215,6 +220,7 @@ export type Database = {
           duplicate_of?: string | null
           id?: string
           location?: unknown
+          proposed_solution?: string | null
           resolved_at?: string | null
           status?: Database['public']['Enums']['klash_status']
           title?: string
@@ -348,6 +354,7 @@ export type Database = {
           author_organization: string | null
           author_role: Database['public']['Enums']['user_role'] | null
           category: Database['public']['Enums']['klash_category'] | null
+          category_other: string | null
           comments_count: number | null
           confirmations_count: number | null
           created_at: string | null
@@ -356,6 +363,7 @@ export type Database = {
           id: string | null
           lat: number | null
           lng: number | null
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
@@ -408,6 +416,7 @@ export type Database = {
           author_organization: string | null
           author_role: Database['public']['Enums']['user_role'] | null
           category: Database['public']['Enums']['klash_category'] | null
+          category_other: string | null
           comments_count: number | null
           confirmations_count: number | null
           created_at: string | null
@@ -416,6 +425,7 @@ export type Database = {
           id: string | null
           lat: number | null
           lng: number | null
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
@@ -432,9 +442,11 @@ export type Database = {
       create_klash: {
         Args: {
           category: Database['public']['Enums']['klash_category']
+          category_other?: string
           description: string
           lat: number
           lng: number
+          proposed_solution?: string
           title: string
           urgency: Database['public']['Enums']['klash_urgency']
         }
@@ -444,6 +456,7 @@ export type Database = {
           author_organization: string | null
           author_role: Database['public']['Enums']['user_role'] | null
           category: Database['public']['Enums']['klash_category'] | null
+          category_other: string | null
           comments_count: number | null
           confirmations_count: number | null
           created_at: string | null
@@ -452,6 +465,7 @@ export type Database = {
           id: string | null
           lat: number | null
           lng: number | null
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
@@ -491,6 +505,7 @@ export type Database = {
           author_organization: string | null
           author_role: Database['public']['Enums']['user_role'] | null
           category: Database['public']['Enums']['klash_category'] | null
+          category_other: string | null
           comments_count: number | null
           confirmations_count: number | null
           created_at: string | null
@@ -499,6 +514,7 @@ export type Database = {
           id: string | null
           lat: number | null
           lng: number | null
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
@@ -520,6 +536,7 @@ export type Database = {
           author_organization: string | null
           author_role: Database['public']['Enums']['user_role'] | null
           category: Database['public']['Enums']['klash_category'] | null
+          category_other: string | null
           comments_count: number | null
           confirmations_count: number | null
           created_at: string | null
@@ -528,6 +545,7 @@ export type Database = {
           id: string | null
           lat: number | null
           lng: number | null
+          proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
@@ -543,7 +561,14 @@ export type Database = {
       }
     }
     Enums: {
-      klash_category: 'category_1' | 'category_2' | 'category_3' | 'category_4' | 'category_5'
+      klash_category:
+        | 'category_1'
+        | 'category_2'
+        | 'category_3'
+        | 'category_4'
+        | 'category_5'
+        | 'category_6'
+        | 'category_7'
       klash_status: 'new' | 'acknowledged' | 'in_progress' | 'resolved' | 'rejected' | 'duplicate'
       klash_urgency: 'low' | 'medium' | 'high'
       user_role: 'user' | 'moderator' | 'authority' | 'admin'
@@ -671,7 +696,15 @@ export const Constants = {
   },
   public: {
     Enums: {
-      klash_category: ['category_1', 'category_2', 'category_3', 'category_4', 'category_5'],
+      klash_category: [
+        'category_1',
+        'category_2',
+        'category_3',
+        'category_4',
+        'category_5',
+        'category_6',
+        'category_7',
+      ],
       klash_status: ['new', 'acknowledged', 'in_progress', 'resolved', 'rejected', 'duplicate'],
       klash_urgency: ['low', 'medium', 'high'],
       user_role: ['user', 'moderator', 'authority', 'admin'],
