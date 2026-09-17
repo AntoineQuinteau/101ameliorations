@@ -99,8 +99,8 @@ jobs:
           # by design (Supabase's "publishable" key and URL are meant to be
           # public, RLS is the real access control; the MapTiler key is
           # restricted by domain). Repo variables, not secrets.
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_STAGING_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_STAGING_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
           # Optional — see src/lib/sentry.ts. Empty is fine: the build
           # behaves identically either way, which is exactly what the
@@ -117,8 +117,8 @@ jobs:
           # Graph rewrite) — distinct from the VITE_* build-time vars above,
           # which get inlined into the client bundle and are invisible to
           # the Worker. Not secrets, same reasoning as the VITE_* ones.
-          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ vars.VITE_STAGING_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_STAGING_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -euo pipefail
           npx wrangler versions upload \
