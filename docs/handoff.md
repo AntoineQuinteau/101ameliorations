@@ -6,6 +6,154 @@
 
 ---
 
+## 2026-09-18 — Étape 9 (durcissement) terminée
+
+**État** : branche `step-9-hardening`, pas encore mergée. C'était la
+dernière étape du plan de construction (spec §9) — v1 fonctionnellement
+complète, sous réserve des dettes listées plus bas et de la vérification sur
+téléphone réel.
+
+Détail complet : [`docs/plans/step-09-hardening.md`](plans/step-09-hardening.md).
+
+### Ce qui existe maintenant et qui n'existait pas
+
+- Turnstile invisible sur la demande d'OTP (`src/features/auth/useTurnstile.ts`,
+  `useOtpLogin.ts` — qui a aussi éliminé la duplication entre `LoginPage` et
+  `SubmitStep`), câblé aux quatre points d'envoi. `VITE_TURNSTILE_SITE_KEY`
+  reste optionnelle : le widget créé par le compte reste à ajouter aux
+  variables du repo GitHub.
+- `get_klash_author_contact(klash_id)`, journalisée dans
+  `author_contact_lookups` (lecture admin uniquement, écriture impossible
+  hors de la fonction), plus `purge_author_contact_lookups()` pour la
+  rétention à 12 mois promise par la politique de confidentialité.
+- `delete_my_account()` : suppression de compte RGPD par anonymisation vers
+  un profil sentinelle « Compte supprimé », section dédiée sur `/me`.
+- Trois lacunes RLS réelles corrigées (spec §2) : un moderator/admin pouvait
+  réassigner `author_id` ; une `authority` ne pouvait pas modifier **son
+  propre** klash (contraire à la spec, et ce qui bloquait aussi la
+  suppression de compte pour ce rôle) ; un auteur pouvait forger
+  `confirmations_count`/`comments_count`/`created_at`/`resolved_at`.
+- `/mentions-legales` et `/confidentialite`, contenu complet, identité de
+  l'association en `TODO` (non dérivable du code).
+- Un vrai harnais Playwright (`e2e/`, `playwright.config.ts`) : 5 specs +
+  fumée, sur Chromium bureau et un profil tactile `devices['iPhone 13']`,
+  job CI `e2e` autonome. A trouvé un vrai bug préexistant (voir pièges
+  ci-dessous).
+- 147 assertions pgTAP sur 7 fichiers (2 nouveaux, 1 étendu) : couverture
+  RLS complète du tableau de permissions de la spec §2, per CLAUDE.md.
+
+### Dettes connues
+
+| Dette                                                                         | Gravité                | Où                                                                     |
+| ----------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| Identité réelle de l'association dans les pages légales (nom, SIRET, adresse) | Bloquant avant prod    | `src/i18n/fr.ts` (`fr.legal`), marqué `TODO`                           |
+| Purge de `author_contact_lookups` non planifiée                               | Fonctionnelle, mineure | La fonction existe (`purge_author_contact_lookups`), rien ne l'appelle |
+| `klash_photos` orphelines au Storage lors de l'anonymisation d'un compte      | Silencieuse, acceptée  | `delete_my_account()` ne touche pas Storage — voir pièges              |
+| Aucune vérification sur téléphone réel de cette étape                         | À faire avant merge    | —                                                                      |
+| Dette de l'étape 7 toujours ouverte : rien ne renseigne `duplicate_of`        | Fonctionnelle, visible | Non traité par cette étape                                             |
+
+### Pièges — déjà payés une fois
+
+**1. Supabase captcha est un interrupteur global au niveau du projet, pas par
+requête.** L'activer dans le dashboard rejette _toute_ requête `signInWithOtp`
+sans `captchaToken` valide, y compris pour des clients pas encore mis à jour.
+`VITE_TURNSTILE_SITE_KEY` doit être déployée (build + preview) **avant**
+d'activer la protection captcha côté Supabase, jamais après.
+
+**2. Un jeton Turnstile est à usage unique et expire en 300 s.** Le bouton
+« Renvoyer un code » est un second envoi indépendant : il ne peut pas
+réutiliser le jeton du premier envoi. `useTurnstile.ts` réinitialise le
+widget après chaque `getToken()`.
+
+**3. `getToken()` et l'effet de montage du widget attendent la même promesse
+de chargement du script — mais un seul des deux la consommait.** Une
+implémentation initiale faisait rendre le widget uniquement par l'effet de
+montage ; un appel à `getToken()` arrivant avant la résolution de cette
+promesse (plausible sur une connexion lente) trouvait `widgetIdRef` encore
+`null` et renvoyait silencieusement `undefined` — jeton absent, rejeté
+`captcha_failed` par Supabase. Corrigé en faisant rendre son propre widget
+par `getToken()` à la demande, sur premier usage — un seul chemin de code
+renseigne désormais `widgetIdRef`.
+
+**4. `current_user_role()` lit le JWT de l'appelant, pas le rôle Postgres —
+y compris depuis une fonction SECURITY DEFINER.** `delete_my_account()`
+réassigne les klashs de l'utilisateur qui se supprime ; pour un compte
+`authority`, cela déclenchait `guard_klash_authority_columns` (« an
+authority can only change a klash status ») car ce trigger n'avait pas
+d'exemption pour le propre klash de l'acteur. Toute fonction SECURITY
+DEFINER qui modifie une ligne au nom de l'appelant peut retomber sur ce
+genre de garde — vérifier qu'elle a une échappatoire pour l'auteur lui-même,
+pas seulement pour le rôle.
+
+**5. Un trigger d'immutabilité générique doit connaître `pg_trigger_depth()`
+ET la position de son propre nom dans l'ordre d'exécution.**
+`guard_klash_system_columns` (nouveau, interdit de forger
+`confirmations_count`/`comments_count`/`created_at`, et `resolved_at` hors
+changement de statut) a cassé deux choses avant sa version finale, chacune
+vérifiée en base locale avant correction :
+
+- Sans l'exemption `pg_trigger_depth() > 1`, poster un commentaire était
+  rejeté : `refresh_comments_count()` est elle-même un `UPDATE` SECURITY
+  DEFINER sur `klashes`, déclenchée à la profondeur 2.
+- `resolved_at` ne peut PAS être protégée sans condition, même avec cette
+  exemption : le propre `UPDATE` de `change_klash_status()` est une
+  instruction de premier niveau dans le corps de la fonction, donc à la
+  profondeur 1, pas 2. Il faut nommer le trigger pour qu'il s'exécute
+  _après_ `klashes_enforce_status_transition` (Postgres trie les triggers
+  de même timing par nom) et ne protéger `resolved_at` que quand `status`
+  est inchangé.
+
+**6. Le Storage Supabase reste inaccessible depuis SQL (toujours vrai,
+piège déjà noté à l'étape 8).** `delete_my_account()` ne touche donc pas aux
+fichiers Storage des photos réassignées — elles restent rattachées au klash
+anonymisé, ce qui est le comportement voulu (préserver la donnée
+collective), mais un futur besoin de purge des photos d'un compte supprimé
+devra passer par le client ou une Edge Function, jamais par la RPC SQL.
+
+**7. Les specs Playwright ont trouvé un bug de production réel, pas
+seulement des bugs de test.** `SubmitStep` (connexion inline dans la feuille
+de création) ne faisait jamais avancer son état après l'étape pseudo
+(validation ou passage) — l'effet qui déclenche l'action différée
+(création/confirmation du klash) restait bloqué indéfiniment sur
+`step === 'nickname'`. Ce bug préexistait à cette étape (même défaut dans le
+code d'avant l'extraction de `useOtpLogin`) et n'avait été détecté par
+aucune des trois étapes précédentes ni par la CI — seul un vrai navigateur
+driving le parcours complet l'a révélé. Rappel de la leçon de l'étape 7 :
+lint + typecheck + tests verts ne veut toujours pas dire que ça marche.
+
+**8. Mailpit renvoie les messages triés du plus récent au plus ancien, et
+les trois comptes staff seedés sont réutilisés par plusieurs specs qui
+tournent en parallèle.** Chercher « le message le plus récent pour cette
+adresse » sans borne temporelle peut retourner le code d'un test précédent
+pas encore lu, provoquant un `verifyOtp` avec un code périmé. Passer un
+horodatage `sentAfter` (capturé juste avant le déclenchement de l'envoi) et
+ne matcher que `Created >= sentAfter` élimine l'ambiguïté sans marge de
+recul, puisque la liste est déjà triée.
+
+### Notes d'environnement
+
+- Bac à sable local sans accès réseau sortant vers le CDN de Playwright :
+  `npx playwright install` échoue. `playwright.config.ts` utilise le
+  Chromium système (`/usr/bin/chromium-browser`, déjà exploité ad hoc à
+  l'étape 7) via `launchOptions.executablePath`, strictement conditionné à
+  `!process.env.CI` — la CI installe son propre Chromium géré par
+  Playwright et ne doit jamais dépendre de ce chemin, qui n'existe pas sur
+  ses runners.
+- `devices['iPhone 13']` a pour navigateur par défaut WebKit, non installé
+  ici : forcer `browserName: 'chromium'` sur ce projet tout en gardant le
+  viewport/UA/émulation tactile de l'appareil — sans quoi Playwright passe
+  le flag de lancement WebKit `--inspector-pipe` au binaire Chromium, qui se
+  ferme aussitôt et silencieusement (code de sortie 0).
+- Les clés de test Cloudflare Turnstile (toujours acceptées/toujours
+  refusées, en version visible et invisible) valident uniquement contre le
+  secret de test correspondant — un vrai secret de production rejette un
+  jeton de test. `supabase/config.toml` porte le secret de test ; ne jamais
+  y mettre le vrai secret.
+- `npm run format` avant de commiter : `format:check` est dans la CI (déjà
+  noté à l'étape 8, toujours vrai).
+
+---
+
 ## 2026-09-15 — Étape 8 (PWA, export, Open Graph, Sentry) terminée
 
 **État** : branche `claude/blissful-goodall-8v6fwy`, pas encore mergée.
