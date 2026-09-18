@@ -267,15 +267,20 @@ Puis mettre à jour la variable de dépôt `QR_WORKER_URL` avec l'URL affichée.
 
 ### Previews et base de données
 
-Les previews CI pointent vers la base de production Supabase (mêmes secrets que
-`deploy-production`). Depuis l'étape 4 (création), tester une preview depuis un
-téléphone crée un vrai klash — et potentiellement un vrai compte — en base de
-production. Décision assumée plutôt qu'une base dédiée aux previews : le produit n'a
-pas encore d'utilisateurs réels, et dupliquer projet Supabase / migrations / seed pour
-cette seule raison serait disproportionné à ce stade.
+Les previews CI pointent vers un projet Supabase STAGING dédié (variables de dépôt
+`VITE_STAGING_SUPABASE_URL` / `VITE_STAGING_SUPABASE_PUBLISHABLE_KEY`), distinct du
+projet de production utilisé par `deploy-production`. Tester une preview depuis un
+téléphone crée un klash — et potentiellement un compte — sur STAGING, jamais en
+production.
 
-Après un test manuel de création (compte de test, ex. `test-<quelquechose>@<domaine
-que tu contrôles>`), nettoyer avec :
+STAGING suit les mêmes migrations et le même `seed.sql` que la production (voir
+`supabase/migrations/`) ; le lier avec `npx supabase link --project-ref
+<ref-staging>` avant tout `db push`/`db reset --linked` ciblé sur cet environnement,
+et repasser sur le projet de production ensuite pour éviter un `db push` accidentel
+au mauvais endroit.
+
+Après un test manuel de création sur STAGING (compte de test, ex.
+`test-<quelquechose>@<domaine que tu contrôles>`), nettoyer avec :
 
 ```bash
 psql "$(npx supabase status -o env --linked | grep DB_URL | cut -d= -f2-)" \

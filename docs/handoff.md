@@ -316,10 +316,15 @@ les a trouvés.
 
 ### Notes d'environnement
 
-- **Les previews CI pointent sur la base de production** (cf. README). Après un
-  `db push`, promouvoir un compte à la main pour tester : récupérer son id via
+- **Les previews CI pointent sur un projet Supabase STAGING dédié**, distinct de la
+  production (cf. README, PR #15/#17). Après un `db push` sur STAGING, promouvoir un
+  compte à la main pour tester : récupérer son id via
   `select id from auth.users where email = '…'`, puis le motif
-  `disable trigger profiles_guard_role` / `update` / `enable trigger`.
+  `disable trigger profiles_guard_role` / `update` / `enable trigger`. Les grants de
+  schéma/table (`usage`, `alter default privileges`) sont désormais posés par une
+  migration (`20260918172310_public_schema_grants.sql`) et non plus seulement par le
+  bootstrap de la plateforme Supabase — nécessaire pour qu'un `db reset --linked` sur
+  STAGING reconstruise un environnement fonctionnel.
 - Playwright **n'est pas** une dépendance du repo. Il a été utilisé en ad hoc
   depuis le scratchpad (`npm install playwright --no-save`), avec
   `executablePath: '/usr/bin/chromium-browser'`. Les OTP locaux se lisent via
