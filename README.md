@@ -28,13 +28,25 @@ npm run dev
 
 ### Variables d'environnement (`.env.local`, non versionné)
 
-| Variable                        | Rôle                                                     |
-| ------------------------------- | -------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`) |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)            |
-| `VITE_MAPTILER_KEY`             | Clé API MapTiler                                         |
-| `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans         |
-| `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front   |
+| Variable                        | Rôle                                                                |
+| ------------------------------- | ------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`)            |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)                       |
+| `VITE_MAPTILER_KEY`             | Clé API MapTiler                                                    |
+| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — **optionnelle**, voir ci-dessous |
+| `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans                    |
+| `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front              |
+
+`VITE_TURNSTILE_SITE_KEY` : sans elle, l'app démarre normalement et se
+connecte sans vérification Turnstile (voir `src/env.ts` et
+`src/features/auth/useTurnstile.ts`) — utile avant la création du widget
+Cloudflare. En local et en CI, utiliser une des clés de test Cloudflare :
+`1x00000000000000000000BB` (invisible, toujours acceptée) ou
+`2x00000000000000000000BB` (invisible, toujours refusée, pour tester le
+message d'erreur). La protection captcha côté Supabase est un interrupteur
+global au niveau du projet (Auth → Attack Protection) : ne l'activer en
+production qu'une fois un build portant une vraie
+`VITE_TURNSTILE_SITE_KEY` déployé, sinon toute connexion échoue.
 
 ## Scripts
 

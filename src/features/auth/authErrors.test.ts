@@ -32,6 +32,10 @@ describe('authErrorMessageKey', () => {
     expect(authErrorMessageKey(authError('signup_disabled', 422))).toBe('signupDisabled')
   })
 
+  it('maps captcha_failed to captcha', () => {
+    expect(authErrorMessageKey(authError('captcha_failed', 400))).toBe('captcha')
+  })
+
   it('maps a response-less failure (offline) to network', () => {
     expect(authErrorMessageKey(authError(undefined, undefined))).toBe('network')
   })

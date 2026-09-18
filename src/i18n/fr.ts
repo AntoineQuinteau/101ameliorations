@@ -192,6 +192,7 @@ export const fr = {
       rateLimited: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.',
       signupDisabled: 'Les inscriptions sont temporairement fermées.',
       network: 'Impossible de contacter le serveur. Vérifiez votre connexion.',
+      captcha: 'Échec de la vérification anti-robot. Veuillez réessayer.',
       unknown: 'Une erreur est survenue. Veuillez réessayer.',
     },
   },

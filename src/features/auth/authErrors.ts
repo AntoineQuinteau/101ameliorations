@@ -2,7 +2,13 @@ import { AuthError } from '@supabase/supabase-js'
 
 /** Keys of `fr.login.errors`. */
 export type LoginErrorKey =
-  'invalidEmail' | 'invalidOrExpiredCode' | 'rateLimited' | 'signupDisabled' | 'network' | 'unknown'
+  | 'invalidEmail'
+  | 'invalidOrExpiredCode'
+  | 'rateLimited'
+  | 'signupDisabled'
+  | 'network'
+  | 'captcha'
+  | 'unknown'
 
 /**
  * Maps a Supabase auth failure to a French message key.
@@ -29,6 +35,8 @@ export function authErrorMessageKey(error: unknown): LoginErrorKey {
     case 'signup_disabled':
     case 'email_provider_disabled':
       return 'signupDisabled'
+    case 'captcha_failed':
+      return 'captcha'
     default:
       break
   }

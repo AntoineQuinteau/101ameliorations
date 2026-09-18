@@ -210,10 +210,17 @@ token_verifications = 30
 web3 = 30
 
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+# Enabled locally (and in CI, which reuses this file) so captcha is
+# genuinely exercised rather than bypassed — step 9, spec §5. The dummy
+# always-passing secret only validates a dummy token minted by one of
+# Cloudflare's test site keys (1x00000000000000000000BB, invisible, always
+# passes; 2x00000000000000000000BB to exercise the failure path); a real
+# secret rejects a dummy token outright, so this pair only ever works
+# together, locally.
+[auth.captcha]
+enabled = true
+provider = "turnstile"
+secret = "1x0000000000000000000000000000000AA"
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.

@@ -102,6 +102,10 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
+          # Optional — see src/env.ts and src/features/auth/useTurnstile.ts.
+          # Empty until the Turnstile widget is created (step 9); the app
+          # runs with captcha disabled either way, same as VITE_SENTRY_DSN.
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           # Optional — see src/lib/sentry.ts. Empty is fine: the build
           # behaves identically either way, which is exactly what the
           # `quality` job's smoke build (no Sentry var at all) already covers.
@@ -185,6 +189,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
       - name: wrangler deploy
         env:
