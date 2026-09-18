@@ -8,6 +8,8 @@ import { RequireAuth } from './features/auth/RequireAuth'
 import { RequireRole } from './features/auth/RequireRole'
 import { ExportPage } from './features/export/ExportPage'
 import { KlashDetailPage } from './features/klash/KlashDetailPage'
+import { LegalNoticePage } from './features/legal/LegalNoticePage'
+import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage'
 import { MapPage } from './features/map/MapPage'
 import { MePage } from './features/me/MePage'
 import { NewKlashPage } from './features/newKlash/NewKlashPage'
@@ -23,6 +25,8 @@ export const router = createBrowserRouter([
       { path: 'new', element: <NewKlashPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'export', element: <ExportPage /> },
+      { path: 'mentions-legales', element: <LegalNoticePage /> },
+      { path: 'confidentialite', element: <PrivacyPolicyPage /> },
       {
         path: 'me',
         element: (
