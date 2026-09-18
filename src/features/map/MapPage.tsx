@@ -146,7 +146,7 @@ export function MapPage() {
         <button
           type="button"
           onClick={handleReportHereButton}
-          className="absolute bottom-4 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
+          className="absolute bottom-16 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
         >
           {fr.map.reportWhereIAm}
         </button>

@@ -6,7 +6,7 @@ export interface AuthContextValue {
   user: User | null
   /** True until the first auth-state notification has been received. */
   isInitializing: boolean
-  signInWithOtp: (email: string) => Promise<void>
+  signInWithOtp: (email: string, captchaToken?: string) => Promise<void>
   verifyOtp: (email: string, token: string) => Promise<void>
   signOut: () => Promise<void>
 }

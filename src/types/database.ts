@@ -28,6 +28,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      author_contact_lookups: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          klash_id: string
+          looked_up_by: string
+          looked_up_role: Database['public']['Enums']['user_role']
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          klash_id: string
+          looked_up_by: string
+          looked_up_role: Database['public']['Enums']['user_role']
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          klash_id?: string
+          looked_up_by?: string
+          looked_up_role?: Database['public']['Enums']['user_role']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'author_contact_lookups_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'author_contact_lookups_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'author_contact_lookups_klash_id_fkey'
+            columns: ['klash_id']
+            isOneToOne: false
+            referencedRelation: 'klashes_public'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'author_contact_lookups_looked_up_by_fkey'
+            columns: ['looked_up_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -483,6 +539,7 @@ export type Database = {
         Args: never
         Returns: Database['public']['Enums']['user_role']
       }
+      delete_my_account: { Args: never; Returns: undefined }
       find_profile_by_email: {
         Args: { email: string }
         Returns: {
@@ -492,6 +549,7 @@ export type Database = {
           role: Database['public']['Enums']['user_role']
         }[]
       }
+      get_klash_author_contact: { Args: { klash_id: string }; Returns: string }
       klashes_in_bbox: {
         Args: {
           max_lat: number
@@ -559,6 +617,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      purge_author_contact_lookups: { Args: never; Returns: undefined }
     }
     Enums: {
       klash_category:

@@ -18,7 +18,7 @@
 -- which is asserted with is(...) on the unchanged value (same idiom as
 -- profiles_rls_test.sql and comments_rls_test.sql).
 begin;
-select plan(62);
+select plan(71);
 
 -- Four fixture users: a klash author (plain 'user'), a moderator, an
 -- authority, and an admin. Roles set directly as postgres with
@@ -598,8 +598,10 @@ select throws_ok(
 -- fixture's original created_at is backdated instead, so any trigger-set
 -- updated_at is provably later regardless of transaction-local time.
 set local role postgres;
+alter table public.klashes disable trigger klashes_guard_system_columns;
 update public.klashes set created_at = now() - interval '1 hour'
  where id = 'eeeeeeee-1111-4000-8000-000000000016';
+alter table public.klashes enable trigger klashes_guard_system_columns;
 reset role;
 select set_config('request.jwt.claims',
   '{"sub":"eeeeeeee-0000-4000-8000-000000000002","role":"authenticated"}', true);
@@ -743,6 +745,102 @@ select is(
     where id = 'eeeeeeee-1111-4000-8000-000000000010'),
   null,
   '61. the referencing klash''s duplicate_of is nulled, not left dangling'
+);
+
+-- ========================================================================
+-- E. Step 9 hardening — guard_klash_system_columns and the authority
+--    self-edit exemption (guard_klash_authority_columns).
+-- ========================================================================
+
+set local role postgres;
+insert into public.klashes (id, author_id, location, category, urgency, title, status)
+values
+  ('eeeeeeee-1111-4000-8000-000000000020', 'eeeeeeee-0000-4000-8000-000000000001',
+   extensions.st_setsrid(extensions.st_makepoint(-1.47, 43.49), 4326)::extensions.geography,
+   'category_1', 'medium', 'Lifecycle klash 20 - system column guard', 'new'),
+  ('eeeeeeee-1111-4000-8000-000000000021', 'eeeeeeee-0000-4000-8000-000000000003',
+   extensions.st_setsrid(extensions.st_makepoint(-1.47, 43.49), 4326)::extensions.geography,
+   'category_1', 'medium', 'Lifecycle klash 21 - authority''s own klash', 'new');
+reset role;
+
+-- 62. a moderator cannot reassign author_id.
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000002","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $$ update public.klashes set author_id = 'eeeeeeee-0000-4000-8000-000000000002'
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'klash identity, counters and timestamps are maintained by the database',
+  '62. a moderator cannot reassign a klash''s author_id'
+);
+
+-- 63-66. an author cannot forge confirmations_count, comments_count,
+-- created_at or resolved_at on their own klash.
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000001","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $$ update public.klashes set confirmations_count = 9999
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'klash identity, counters and timestamps are maintained by the database',
+  '63. an author cannot forge confirmations_count'
+);
+select throws_ok(
+  $$ update public.klashes set comments_count = 9999
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'klash identity, counters and timestamps are maintained by the database',
+  '64. an author cannot forge comments_count'
+);
+select throws_ok(
+  $$ update public.klashes set created_at = now() - interval '5 years'
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'klash identity, counters and timestamps are maintained by the database',
+  '65. an author cannot forge created_at'
+);
+select throws_ok(
+  $$ update public.klashes set resolved_at = now() + interval '10 years'
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'klash identity, counters and timestamps are maintained by the database',
+  '66. an author cannot forge resolved_at with no status change'
+);
+
+-- 67. a comment insert still increments comments_count (the
+-- pg_trigger_depth() > 1 exemption in guard_klash_system_columns) --
+-- without it, refresh_comments_count()'s own nested UPDATE against
+-- klashes would be blocked by the very guard this section is testing.
+select lives_ok(
+  $$ insert into public.comments (klash_id, author_id, body)
+     values ('eeeeeeee-1111-4000-8000-000000000020',
+             'eeeeeeee-0000-4000-8000-000000000001', 'Commentaire test 67') $$,
+  '67. a comment insert still increments comments_count'
+);
+select is(
+  (select comments_count from public.klashes
+    where id = 'eeeeeeee-1111-4000-8000-000000000020'),
+  1,
+  '67b. comments_count was actually incremented by the trigger'
+);
+
+-- 68. an authority can edit their own klash's title (spec §2: "modifier
+-- son klash" is granted to every signed-in role, including authority; this
+-- was wrongly denied before this step's guard_klash_authority_columns
+-- self-exemption).
+select set_config('request.jwt.claims',
+  '{"sub":"eeeeeeee-0000-4000-8000-000000000003","role":"authenticated"}', true);
+set local role authenticated;
+select lives_ok(
+  $$ update public.klashes set title = 'Lifecycle klash 21 - edited by its authority author'
+      where id = 'eeeeeeee-1111-4000-8000-000000000021' $$,
+  '68. an authority can edit their own klash''s title'
+);
+
+-- 69. an authority still cannot edit someone else's klash content (proves
+-- the self-exemption didn't over-open guard_klash_authority_columns).
+select throws_ok(
+  $$ update public.klashes set title = 'Hacked by authority'
+      where id = 'eeeeeeee-1111-4000-8000-000000000020' $$,
+  'an authority can only change a klash status',
+  '69. an authority cannot edit someone else''s klash'
 );
 
 select * from finish();

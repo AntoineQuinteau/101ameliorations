@@ -130,6 +130,12 @@ export const fr = {
     shareTitle: (title: string) => `${title} — 101améliorations`,
     linkCopied: 'Lien copié dans le presse-papiers.',
     shareError: 'Impossible de partager ce signalement.',
+    authorContact: {
+      reveal: "Voir l'email de l'auteur",
+      loading: 'Chargement…',
+      error: "Impossible de récupérer l'email de l'auteur.",
+      notice: 'Cette consultation est enregistrée (voir la politique de confidentialité).',
+    },
   },
   comments: {
     title: 'Commentaires',
@@ -192,6 +198,7 @@ export const fr = {
       rateLimited: 'Trop de tentatives. Veuillez réessayer dans quelques minutes.',
       signupDisabled: 'Les inscriptions sont temporairement fermées.',
       network: 'Impossible de contacter le serveur. Vérifiez votre connexion.',
+      captcha: 'Échec de la vérification anti-robot. Veuillez réessayer.',
       unknown: 'Une erreur est survenue. Veuillez réessayer.',
     },
   },
@@ -205,6 +212,16 @@ export const fr = {
     pseudoSave: 'Enregistrer',
     pseudoSaved: 'Pseudo enregistré.',
     signOut: 'Se déconnecter',
+    deleteAccount: {
+      title: 'Supprimer mon compte',
+      body: "Vos signalements, photos et commentaires ne seront pas supprimés : ils seront anonymisés (attribués à « Compte supprimé ») afin de préserver les données utiles à l'association et à la collectivité. Vos confirmations (+1) seront, elles, définitivement retirées. Cette action est irréversible.",
+      confirmPrompt: 'Confirmez-vous la suppression définitive de votre compte ?',
+      trigger: 'Supprimer mon compte…',
+      confirm: 'Oui, supprimer définitivement',
+      cancel: 'Annuler',
+      deleting: 'Suppression…',
+      error: 'Impossible de supprimer votre compte.',
+    },
   },
   newKlash: {
     title: 'Signaler un problème',
@@ -350,5 +367,79 @@ export const fr = {
     preparing: (loaded: number) => `Préparation de l'export… (${loaded} signalements)`,
     error: "Impossible de générer l'export.",
     footerLink: 'Export des données',
+  },
+  legal: {
+    footerLink: 'Mentions légales',
+    notice: {
+      title: 'Mentions légales',
+      publisher: {
+        heading: 'Éditeur du site',
+        // TODO: remplacer par les coordonnées réelles de l'association avant
+        // mise en production.
+        body: [
+          'TODO — Nom de l’association : « 101améliorations » (nom à confirmer)',
+          'TODO — Forme juridique et numéro SIRET',
+          'TODO — Adresse du siège social',
+          'TODO — Adresse email de contact',
+        ],
+      },
+      publicationDirector: {
+        heading: 'Directeur de la publication',
+        body: 'TODO — Nom et qualité du directeur ou de la directrice de la publication.',
+      },
+      hosting: {
+        heading: 'Hébergement',
+        body: [
+          'Hébergement des données (base de données, authentification, fichiers) : Supabase Inc., région Union européenne.',
+          'Hébergement du site (fichiers statiques) : Cloudflare, Inc.',
+        ],
+      },
+      accessibility: {
+        heading: 'Accessibilité',
+        body: "Ce site est en cours d'amélioration continue de son accessibilité. Toute difficulté rencontrée peut être signalée à l'adresse de contact ci-dessus.",
+      },
+    },
+    privacy: {
+      title: 'Politique de confidentialité',
+      intro:
+        '101améliorations traite un minimum de données personnelles, nécessaires au fonctionnement du service décrit dans la spécification du projet. Cette page en détaille la nature, la finalité et la durée de conservation.',
+      dataCollected: {
+        heading: 'Données collectées',
+        body: [
+          'Adresse email, pour la connexion sans mot de passe (code à usage unique envoyé par email) et pour vous recontacter au sujet d’un signalement.',
+          'Pseudo (facultatif) et rôle du compte.',
+          'Position géographique, catégorie, description et éventuelles photos des signalements que vous créez. Les données de localisation (GPS) éventuellement présentes dans les photos sont supprimées avant l’envoi ; seule une éventuelle position GPS de la photo peut vous être proposée pour préremplir la position du signalement, avec votre accord explicite.',
+          'Commentaires publiés sur les signalements.',
+          'Adresse IP et informations techniques transmises à Cloudflare Turnstile lors de la connexion, à seule fin de limiter les abus automatisés.',
+        ],
+      },
+      whoSeesWhat: {
+        heading: 'Qui voit quoi',
+        body: [
+          'Votre email n’est jamais affiché publiquement. Seul votre pseudo (ou « Usager » à défaut) apparaît sur vos signalements et commentaires.',
+          'Les membres de l’association (rôle « modérateur »), de la collectivité (rôle « autorité ») et les administrateurs peuvent consulter l’email associé à un signalement, afin de recontacter son auteur si nécessaire. Chaque consultation est enregistrée (date, klash concerné, compte l’ayant consultée) dans un journal d’audit conservé 12 mois et consultable uniquement par un administrateur.',
+        ],
+      },
+      retention: {
+        heading: 'Durée de conservation',
+        body: [
+          'Les signalements, y compris résolus, sont conservés indéfiniment : ils constituent une donnée collective d’intérêt général pour le suivi des infrastructures cyclables.',
+          'Le journal des consultations d’email (voir ci-dessus) est conservé 12 mois, puis supprimé.',
+        ],
+      },
+      rights: {
+        heading: 'Vos droits',
+        body: "Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Vous pouvez modifier votre pseudo depuis « Mon espace » à tout moment, et y supprimer votre compte : vos signalements, photos et commentaires sont alors anonymisés (attribués à « Compte supprimé ») plutôt que supprimés, afin de préserver la donnée collective ; vos confirmations (+1) sont, elles, définitivement retirées. Pour toute autre demande, contactez l'adresse indiquée dans les mentions légales.",
+      },
+      hosting: {
+        heading: 'Hébergement et sous-traitants',
+        body: [
+          'Supabase Inc. (base de données, authentification, stockage des photos) — région Union européenne.',
+          'Cloudflare, Inc. (hébergement du site, vérification anti-robot Turnstile).',
+          'MapTiler (fond de carte).',
+          'Sentry (suivi des erreurs techniques, aucune donnée personnelle transmise).',
+        ],
+      },
+    },
   },
 } as const

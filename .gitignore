@@ -24,6 +24,12 @@ dist-ssr
 .SWC
 coverage
 
+# Playwright (e2e/)
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
 # Scratch file used by the CI "generated types are up to date" check
 src/types/database.generated.ts
 

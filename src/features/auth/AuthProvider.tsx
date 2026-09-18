@@ -35,10 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       user: session?.user ?? null,
       isInitializing,
-      signInWithOtp: async (email: string) => {
+      signInWithOtp: async (email: string, captchaToken?: string) => {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { shouldCreateUser: true },
+          options: { shouldCreateUser: true, captchaToken },
         })
         if (error) throw error
       },
