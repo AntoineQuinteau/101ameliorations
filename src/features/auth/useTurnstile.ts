@@ -28,22 +28,15 @@ export function useTurnstile() {
     document.body.appendChild(container)
     containerRef.current = container
 
-    let cancelled = false
-    void loadTurnstile().then((turnstile) => {
-      if (cancelled) return
-      widgetIdRef.current = turnstile.render(container, {
-        sitekey: env.VITE_TURNSTILE_SITE_KEY!,
-        appearance: 'interaction-only',
-        execution: 'execute',
-        callback: () => {
-          // Resolved via the getToken() promise below, not here — this
-          // callback only fires the widget's own internal state forward.
-        },
-      })
-    })
+    // No initial render here on purpose: getToken() below renders its own
+    // widget lazily, on first use, rather than racing this effect's own
+    // `loadTurnstile().then(...)` — both awaited the same script-load
+    // promise, so a getToken() call arriving before this one resolved would
+    // find widgetIdRef still null and silently return no token (which
+    // Supabase then rejects as captcha_failed). getToken() renders on
+    // demand instead, so there is exactly one path that sets widgetIdRef.
 
     return () => {
-      cancelled = true
       const turnstile = window.turnstile
       if (turnstile && widgetIdRef.current) turnstile.remove(widgetIdRef.current)
       container.remove()
@@ -57,17 +50,17 @@ export function useTurnstile() {
       (turnstile) =>
         new Promise<string | undefined>((resolve) => {
           const container = containerRef.current
-          const widgetId = widgetIdRef.current
-          if (!container || !widgetId) {
+          if (!container) {
             resolve(undefined)
             return
           }
 
-          // Re-render bound to this call's own callback/error-callback so
-          // getToken() can resolve/reject a specific invocation, then reset
-          // so the next call starts a fresh challenge rather than replaying
-          // this (now spent) token.
-          turnstile.remove(widgetId)
+          // Remove any prior widget bound to an earlier call's own
+          // callback/error-callback (or none, on first use) before
+          // rendering a fresh one for this specific call — a Turnstile
+          // token is single-use, so every getToken() gets its own
+          // challenge rather than replaying a spent one.
+          if (widgetIdRef.current) turnstile.remove(widgetIdRef.current)
           widgetIdRef.current = turnstile.render(container, {
             sitekey: env.VITE_TURNSTILE_SITE_KEY!,
             appearance: 'interaction-only',
