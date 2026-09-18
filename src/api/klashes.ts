@@ -98,3 +98,16 @@ export async function deleteKlash(id: string): Promise<void> {
   const { error } = await supabase.from('klashes').delete().eq('id', id)
   if (error) throw error
 }
+
+/** Looks up a klash author's email, for `moderator`/`authority`/`admin` to
+ * recontact them (spec §2 line 39) via the `get_klash_author_contact` RPC —
+ * the email itself lives in `auth.users`, unreachable from the client
+ * directly. Every call is journalised server-side (an
+ * `author_contact_lookups` row), which is why this is never called eagerly
+ * on page load: only from an explicit "voir l'email de l'auteur" action, so
+ * opening a klash's page alone never logs a lookup. */
+export async function getKlashAuthorContact(klashId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('get_klash_author_contact', { klash_id: klashId })
+  if (error) throw error
+  return data
+}

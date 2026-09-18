@@ -23,3 +23,20 @@ export async function updateDisplayName(userId: string, displayName: string): Pr
   if (error) throw error
   return profileFromRow(data)
 }
+
+/** RGPD account deletion (spec §6.5): anonymises the caller's klashs, photos,
+ * comments and status_changes to the "compte supprimé" sentinel, withdraws
+ * their confirmations, then deletes their `auth.users` row — see the
+ * `delete_my_account` RPC for why that ordering is forced by foreign keys,
+ * not chosen.
+ *
+ * Storage photos are NOT removed by the RPC (SQL cannot reach
+ * `storage.objects` — see the migration), so any caller of this function
+ * that wants the caller's photo *files* gone must call
+ * `removeKlashPhotoObjects` for each of the caller's klashs first. The
+ * default here is to keep them: spec §6.5 preserves the collective data by
+ * design, and a kept photo stays attached to the now-anonymised klash. */
+export async function deleteMyAccount(): Promise<void> {
+  const { error } = await supabase.rpc('delete_my_account')
+  if (error) throw error
+}

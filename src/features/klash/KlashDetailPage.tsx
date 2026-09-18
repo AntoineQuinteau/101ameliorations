@@ -21,6 +21,7 @@ import { StatusHistory } from './StatusHistory'
 import { useChangeKlashStatus } from './useChangeKlashStatus'
 import { useConfirmKlash } from './useConfirmKlash'
 import { useDeleteKlash } from './useDeleteKlash'
+import { useKlashAuthorContact } from './useKlashAuthorContact'
 import { useMyConfirmation } from './useMyConfirmation'
 import { useShareKlash } from './useShareKlash'
 
@@ -50,8 +51,10 @@ export function KlashDetailPage() {
   const changeStatusMutation = useChangeKlashStatus(id ?? '')
   const deleteMutation = useDeleteKlash()
   const { share, feedback: shareFeedback } = useShareKlash(klash)
+  const authorContactMutation = useKlashAuthorContact()
   const isAuthor = Boolean(user) && user?.id === klash?.authorId
   const canDelete = isAuthor && klash?.status === 'new' ? true : isStaff
+  const canSeeAuthorContact = role === 'moderator' || role === 'authority' || role === 'admin'
   const nextStatuses = role && klash ? allowedNextStatuses(role, klash.status) : []
 
   function handleChangeStatus(toStatus: KlashStatus, note: string | null) {
@@ -148,6 +151,33 @@ export function KlashDetailPage() {
               <dd className="font-medium text-neutral-900">{klash.confirmationsCount}</dd>
             </div>
           </dl>
+
+          {canSeeAuthorContact && (
+            <div className="text-sm">
+              {authorContactMutation.data ? (
+                <p className="font-medium text-neutral-900">{authorContactMutation.data}</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => authorContactMutation.mutate(klash.id)}
+                  disabled={authorContactMutation.isPending}
+                  className="font-medium text-teal-700 hover:underline disabled:opacity-60"
+                >
+                  {authorContactMutation.isPending
+                    ? fr.detail.authorContact.loading
+                    : fr.detail.authorContact.reveal}
+                </button>
+              )}
+              {authorContactMutation.isError && (
+                <p role="alert" className="mt-1 text-xs text-red-700">
+                  {fr.detail.authorContact.error}
+                </p>
+              )}
+              {authorContactMutation.data && (
+                <p className="mt-1 text-xs text-neutral-500">{fr.detail.authorContact.notice}</p>
+              )}
+            </div>
+          )}
 
           <div>
             <div className="flex flex-wrap items-center gap-2">

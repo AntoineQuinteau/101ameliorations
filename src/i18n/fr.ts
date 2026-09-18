@@ -130,6 +130,12 @@ export const fr = {
     shareTitle: (title: string) => `${title} — 101améliorations`,
     linkCopied: 'Lien copié dans le presse-papiers.',
     shareError: 'Impossible de partager ce signalement.',
+    authorContact: {
+      reveal: "Voir l'email de l'auteur",
+      loading: 'Chargement…',
+      error: "Impossible de récupérer l'email de l'auteur.",
+      notice: 'Cette consultation est enregistrée (voir la politique de confidentialité).',
+    },
   },
   comments: {
     title: 'Commentaires',
@@ -206,6 +212,16 @@ export const fr = {
     pseudoSave: 'Enregistrer',
     pseudoSaved: 'Pseudo enregistré.',
     signOut: 'Se déconnecter',
+    deleteAccount: {
+      title: 'Supprimer mon compte',
+      body: "Vos signalements, photos et commentaires ne seront pas supprimés : ils seront anonymisés (attribués à « Compte supprimé ») afin de préserver les données utiles à l'association et à la collectivité. Vos confirmations (+1) seront, elles, définitivement retirées. Cette action est irréversible.",
+      confirmPrompt: 'Confirmez-vous la suppression définitive de votre compte ?',
+      trigger: 'Supprimer mon compte…',
+      confirm: 'Oui, supprimer définitivement',
+      cancel: 'Annuler',
+      deleting: 'Suppression…',
+      error: 'Impossible de supprimer votre compte.',
+    },
   },
   newKlash: {
     title: 'Signaler un problème',
