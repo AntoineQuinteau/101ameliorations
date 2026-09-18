@@ -213,7 +213,7 @@ export function KlashFormStep({
 
       <div>
         <span className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.urgencyLabel}
+          {fr.newKlash.form.importancyLabel}
         </span>
         <div className="mt-1 grid grid-cols-3 gap-2">
           {URGENCIES.map((option) => (
@@ -222,11 +222,10 @@ export function KlashFormStep({
               type="button"
               onClick={() => onChange({ ...value, urgency: option })}
               aria-pressed={value.urgency === option}
-              className={`rounded-md border px-2 py-2 text-xs font-medium ${
-                value.urgency === option
+              className={`rounded-md border px-2 py-2 text-xs font-medium ${value.urgency === option
                   ? 'border-teal-700 bg-teal-50 text-teal-800'
                   : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
-              }`}
+                }`}
             >
               {fr.urgency[option]}
             </button>

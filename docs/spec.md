@@ -191,9 +191,9 @@ Une seule application responsive. Routes :
 ### 6.1 Carte (`/`)
 
 - Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), contrainte aux bounds de la zone de service.
-- Marqueurs colorés par urgence, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
+- Marqueurs colorés par importance, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
-- Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), urgence (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
+- Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
 - Mobile : bouton flottant **« Signaler ici »** (utilise la géoloc) + tap long sur la carte pour signaler à un point précis. Desktop : clic sur la carte → pin → « Signaler ici ».
 - Bouton « Ma position » (géoloc, mobile seulement).
 
@@ -203,14 +203,14 @@ Une seule application responsive. Routes :
 
 1. **Position** : pin déplaçable, adresse approximative affichée (reverse geocoding Nominatim, facultatif, avec cache). Précision GPS affichée si < 50 m sinon avertissement « affinez la position ».
 2. **Doublons** : appel `klashes_nearby(50 m)`. S'il y a des résultats : liste avec « C'est le même problème → je confirme » (crée une `confirmation` et termine) ou « Non, c'est un autre problème → continuer ».
-3. **Formulaire** : catégorie (liste déroulante obligatoire, sans valeur par défaut ; « Autre (préciser) » ouvre un champ libre requis), urgence (3 boutons), titre, description, proposition de solution (facultative), photos (jusqu'à 12 : caméra ou fichier ; compression côté client à 1600 px max / qualité 0.8 avec `browser-image-compression`, avec un maximum de 4 compressions/uploads en parallèle ; EXIF supprimé sauf lecture préalable du GPS pour proposer « utiliser la position de la photo ? »).
+3. **Formulaire** : catégorie (liste déroulante obligatoire, sans valeur par défaut ; « Autre (préciser) » ouvre un champ libre requis), importance (3 boutons), titre, description, proposition de solution (facultative), photos (jusqu'à 12 : caméra ou fichier ; compression côté client à 1600 px max / qualité 0.8 avec `browser-image-compression`, avec un maximum de 4 compressions/uploads en parallèle ; EXIF supprimé sauf lecture préalable du GPS pour proposer « utiliser la position de la photo ? »).
 4. **Envoi** : si non connecté, étape login inline (email → code), le brouillon est conservé en mémoire pendant l'auth. Insert du klash puis upload des photos puis insert `klash_photos`. Écran de confirmation avec lien de partage.
 
 Hors zone de service : message clair et blocage avant le formulaire.
 
 ### 6.3 Détail (`/k/:id`)
 
-- Carte réduite, photos (galerie), catégorie, urgence, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.
+- Carte réduite, photos (galerie), catégorie, importance, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.
 - Historique des statuts avec notes (ex. « CAPB — intervention programmée semaine 38 »).
 - Commentaires chronologiques, formulaire pour les connectés. Édition/suppression de ses propres commentaires.
 - Actions contextuelles selon rôle : Modifier / Supprimer (auteur si `new`, moderator, admin) ; Changer le statut (authority, moderator selon §3) avec note ; Masquer un commentaire (moderator, admin).

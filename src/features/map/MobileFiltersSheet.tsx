@@ -26,11 +26,10 @@ function toggle<T>(list: T[], value: T): T[] {
 }
 
 function toggleButtonClass(active: boolean): string {
-  return `rounded-md border px-2 py-2 text-xs font-medium ${
-    active
+  return `rounded-md border px-2 py-2 text-xs font-medium ${active
       ? 'border-teal-700 bg-teal-50 text-teal-800'
       : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
-  }`
+    }`
 }
 
 /** Filters sheet for the map on mobile (spec §6.1): near-full-height so this
@@ -98,7 +97,7 @@ export function MobileFiltersSheet({
 
           <div>
             <span className="text-sm font-medium text-neutral-700">
-              {fr.map.filters.urgencyLabel}
+              {fr.map.filters.importancyLabel}
             </span>
             <div className="mt-1 grid grid-cols-3 gap-2">
               {ALL_URGENCIES.map((option: KlashUrgency) => (

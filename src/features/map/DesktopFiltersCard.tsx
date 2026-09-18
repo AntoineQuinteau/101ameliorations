@@ -26,11 +26,10 @@ function toggle<T>(list: T[], value: T): T[] {
 }
 
 function toggleButtonClass(active: boolean): string {
-  return `rounded-md border px-2 py-1.5 text-xs font-medium ${
-    active
+  return `rounded-md border px-2 py-1.5 text-xs font-medium ${active
       ? 'border-teal-700 bg-teal-50 text-teal-800'
       : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
-  }`
+    }`
 }
 
 /** Filters card for the map on desktop (spec §6.1): a compact, semi-
@@ -59,11 +58,10 @@ export function DesktopFiltersCard({
   return (
     <div
       aria-hidden={!isOpen}
-      className={`absolute top-14 left-3 z-[1000] w-72 max-w-[85vw] origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${
-        isOpen
+      className={`absolute top-14 left-3 z-[1000] w-72 max-w-[85vw] origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${isOpen
           ? 'translate-y-0 scale-100 opacity-100'
           : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
-      }`}
+        }`}
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-neutral-700">{fr.map.resultsCount(resultsCount)}</p>
@@ -100,7 +98,7 @@ export function DesktopFiltersCard({
 
         <div>
           <span className="text-xs font-medium text-neutral-500">
-            {fr.map.filters.urgencyLabel}
+            {fr.map.filters.importancyLabel}
           </span>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {ALL_URGENCIES.map((option: KlashUrgency) => (

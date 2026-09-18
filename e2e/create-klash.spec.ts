@@ -50,7 +50,7 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   // Step 3: form. Category (not category_7), urgency, title, description;
   // photos step is optional and skipped entirely by not adding any.
   await page.getByLabel('Catégorie').selectOption('category_1')
-  await page.getByRole('button', { name: 'Urgence élevée' }).click()
+  await page.getByRole('button', { name: 'Importance élevée' }).click()
   await page.getByLabel('Titre').fill(title)
   await page.getByLabel('Description (facultative)').fill('Signalement créé par le test E2E.')
   await page.getByRole('button', { name: 'Continuer' }).click()
@@ -91,7 +91,7 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
     page.getByRole('heading', { name: 'Signalement envoyé !' }).waitFor({ state: 'visible' }),
   ])
   if (await skipButton.isVisible().catch(() => false)) {
-    await skipButton.click({ timeout: 5_000 }).catch(() => {})
+    await skipButton.click({ timeout: 5_000 }).catch(() => { })
   }
 
   // NewKlashPage's DoneStep (see src/features/newKlash/NewKlashPage.tsx):
@@ -107,6 +107,6 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   await expect(page).toHaveURL(/\/k\/[0-9a-f-]+/)
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await expect(page.getByText('Trou / bosse ou chaussée abîmée')).toBeVisible()
-  await expect(page.getByText('Urgence élevée')).toBeVisible()
+  await expect(page.getByText('Importance élevée')).toBeVisible()
   await expect(page.getByText('Nouveau', { exact: true })).toBeVisible()
 })
