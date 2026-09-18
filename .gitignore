@@ -56,3 +56,9 @@ src/types/database.generated.ts
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Dumps Supabase pris manuellement à la racine (supabase db dump) — peuvent
+# contenir des données réelles (ex. emails d'utilisateurs) ; jamais commités
+/data.sql
+/roles.sql
+/schema.sql

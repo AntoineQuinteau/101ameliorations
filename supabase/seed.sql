@@ -15,6 +15,8 @@
 
 begin;
 
+SET search_path TO public, extensions;
+
 select setseed(0.4242);
 
 -- ---------- Reference data for this script only ----------
