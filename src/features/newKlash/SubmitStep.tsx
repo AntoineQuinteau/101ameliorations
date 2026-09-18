@@ -96,11 +96,27 @@ export function SubmitStep({
     )
   }
 
+  async function handleNicknameSubmit(displayName: string) {
+    await login.submitNickname(displayName)
+    // Unlike LoginPage, this step never navigates away — it's an inline
+    // sheet, not a route — so nothing else ever moves `login.step` off
+    // 'nickname' once the user is done with it. Without this, the effect
+    // above that fires `onReady()` (line 53: `if (login.step === 'nickname')
+    // return`) never releases: the pending klash creation/confirmation
+    // silently never runs, and the user is stuck on this step forever.
+    login.setStep('code')
+  }
+
+  function handleNicknameSkip() {
+    login.skipNickname()
+    login.setStep('code') // see handleNicknameSubmit's comment above
+  }
+
   return (
     <NicknameStep
       isSubmitting={login.isNicknameSubmitting}
-      onSubmit={(displayName) => void login.submitNickname(displayName)}
-      onSkip={login.skipNickname}
+      onSubmit={(displayName) => void handleNicknameSubmit(displayName)}
+      onSkip={handleNicknameSkip}
     />
   )
 }
