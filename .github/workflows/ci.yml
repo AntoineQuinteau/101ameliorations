@@ -114,7 +114,8 @@ jobs:
           # Same reasoning as the `preview`/`deploy-production` jobs below:
           # not secrets, VITE_* are meant to be public. Points at this job's
           # own local Supabase (127.0.0.1:54321, `supabase start`'s fixed
-          # local port), not the shared staging project the other jobs use.
+          # local port) — not the STAGING project the `preview` job below
+          # uses, and not the production project `deploy-production` uses.
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
