@@ -192,6 +192,9 @@ export const fr = {
       submit: 'Enregistrer',
       skip: 'Passer',
     },
+    turnstile: {
+      interactive: 'Merci de confirmer que vous n’êtes pas un robot pour continuer.',
+    },
     errors: {
       invalidEmail: 'Adresse email invalide.',
       invalidOrExpiredCode: 'Code incorrect ou expiré. Vérifiez le code ou demandez-en un nouveau.',

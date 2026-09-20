@@ -115,6 +115,8 @@ export function useOtpLogin() {
     setIsSubmitting,
     errorMessage,
     resendSecondsLeft: resendCooldown.secondsLeft,
+    turnstileContainerRef: turnstile.containerRef,
+    isTurnstileInteractive: turnstile.isInteractive,
     submitEmail,
     resend,
     submitCode,
