@@ -1,15 +1,20 @@
-import { useState } from 'react'
+import { useState, type MutableRefObject } from 'react'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { emailSchema } from './authSchemas'
+import { TurnstileSlot } from './TurnstileSlot'
 
 export function EmailStep({
   isSubmitting,
   errorMessage,
+  turnstileContainerRef,
+  isTurnstileInteractive,
   onSubmit,
 }: {
   isSubmitting: boolean
   errorMessage: string | null
+  turnstileContainerRef: MutableRefObject<HTMLDivElement | null>
+  isTurnstileInteractive: boolean
   onSubmit: (email: string) => void
 }) {
   const [email, setEmail] = useState('')
@@ -47,6 +52,7 @@ export function EmailStep({
         </p>
       )}
       {errorMessage && <ErrorMessage message={errorMessage} />}
+      <TurnstileSlot containerRef={turnstileContainerRef} isInteractive={isTurnstileInteractive} />
       <button
         type="submit"
         disabled={isSubmitting}

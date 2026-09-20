@@ -70,6 +70,8 @@ export function LoginPage() {
         <EmailStep
           isSubmitting={login.isSubmitting}
           errorMessage={login.errorMessage}
+          turnstileContainerRef={login.turnstileContainerRef}
+          isTurnstileInteractive={login.isTurnstileInteractive}
           onSubmit={(email) => void login.submitEmail(email)}
         />
       )}
@@ -80,6 +82,8 @@ export function LoginPage() {
           isSubmitting={login.isSubmitting}
           errorMessage={login.errorMessage}
           resendSecondsLeft={login.resendSecondsLeft}
+          turnstileContainerRef={login.turnstileContainerRef}
+          isTurnstileInteractive={login.isTurnstileInteractive}
           onSubmit={(code) => void login.submitCode(code)}
           onResend={() => void login.resend()}
           onChangeEmail={login.changeEmail}
