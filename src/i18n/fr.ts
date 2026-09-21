@@ -85,6 +85,12 @@ export const fr = {
       reset: 'Réinitialiser',
       viewOnMap: 'Voir sur la carte',
     },
+    layer: {
+      plan: 'Plan',
+      satellite: 'Satellite',
+      switchToPlan: 'Afficher le plan',
+      switchToSatellite: 'Afficher la vue satellite',
+    },
   },
   detail: {
     notFoundTitle: 'Signalement introuvable',

@@ -192,7 +192,7 @@ export function NewKlashPage() {
         maxBoundsViscosity={1}
         className="h-full w-full"
       >
-        <MapTiles />
+        <MapTiles layer="plan" />
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />

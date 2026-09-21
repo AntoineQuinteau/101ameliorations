@@ -56,7 +56,9 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'maptiler-tiles',
-              expiration: { maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 },
+              // Two layers (plan + satellite) and deeper zoom levels than before churn
+              // through this cache faster than the original 500-entry cap allowed for.
+              expiration: { maxEntries: 1000, maxAgeSeconds: 7 * 24 * 60 * 60 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
