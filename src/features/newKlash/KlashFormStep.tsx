@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { PhotoSourceSheet } from './PhotoSourceSheet'
 import { createSubmitGuard } from './submitGuard'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { MAX_PHOTOS_PER_KLASH } from '../../config/photos'
 import { fr } from '../../i18n/fr'
+import { useHasHover } from '../map/useHasHover'
 import { klashCategorySchema, type KlashUrgency } from '../../types/klash'
 import { distanceMeters } from '../../utils/distance'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
@@ -69,6 +71,10 @@ export function KlashFormStep({
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false)
   const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [isPhotoSourceOpen, setIsPhotoSourceOpen] = useState(false)
+  const hasHover = useHasHover()
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   // Guards against a double-tap submitting twice: onSubmit() below leads the
   // parent to unmount this step, but that unmount only takes effect on the
@@ -126,6 +132,16 @@ export function KlashFormStep({
       setPhotoError(fr.newKlash.form.photoError)
     } finally {
       setIsProcessingPhoto(false)
+    }
+  }
+
+  function handleAddPhotoClick() {
+    if (hasHover) {
+      // No camera to speak of on a desktop with a mouse/trackpad — skip
+      // straight to the file picker rather than offering a meaningless choice.
+      galleryInputRef.current?.click()
+    } else {
+      setIsPhotoSourceOpen(true)
     }
   }
 
@@ -305,12 +321,25 @@ export function KlashFormStep({
         )}
 
         {photos.length < MAX_PHOTOS ? (
-          <label className="inline-flex w-fit cursor-pointer items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50">
-            {isProcessingPhoto ? fr.newKlash.form.compressing : fr.newKlash.form.addPhoto}
+          <>
+            <button
+              type="button"
+              onClick={handleAddPhotoClick}
+              disabled={isProcessingPhoto}
+              className="inline-flex w-fit items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isProcessingPhoto ? fr.newKlash.form.compressing : fr.newKlash.form.addPhoto}
+            </button>
+            {/* Two separate inputs, not one whose `capture` is toggled before
+                `.click()`: mutating an attribute and firing the click in the
+                same tick is exactly the kind of thing Safari iOS handles
+                inconsistently. Neither is rendered inside the sheet below —
+                a hidden `<input>` still receives `.click()` while unmounted
+                from view but present in the DOM. */}
             <input
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
-              multiple
               capture="environment"
               disabled={isProcessingPhoto}
               onChange={(event) => {
@@ -319,7 +348,19 @@ export function KlashFormStep({
               }}
               className="sr-only"
             />
-          </label>
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={isProcessingPhoto}
+              onChange={(event) => {
+                void handleFilesSelected(event.target.files)
+                event.target.value = ''
+              }}
+              className="sr-only"
+            />
+          </>
         ) : (
           <p className="text-xs text-neutral-500">
             {fr.newKlash.form.photoLimitReached(MAX_PHOTOS)}
@@ -365,6 +406,20 @@ export function KlashFormStep({
           {fr.newKlash.form.submit}
         </button>
       </div>
+
+      {isPhotoSourceOpen && (
+        <PhotoSourceSheet
+          onPickCamera={() => {
+            setIsPhotoSourceOpen(false)
+            cameraInputRef.current?.click()
+          }}
+          onPickGallery={() => {
+            setIsPhotoSourceOpen(false)
+            galleryInputRef.current?.click()
+          }}
+          onCancel={() => setIsPhotoSourceOpen(false)}
+        />
+      )}
     </form>
   )
 }
