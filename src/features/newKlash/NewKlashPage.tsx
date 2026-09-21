@@ -188,6 +188,7 @@ export function NewKlashPage() {
         zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
         maxZoom={MAX_MAP_ZOOM}
+        bounceAtZoomLimits={false}
         maxBoundsViscosity={1}
         className="h-full w-full"
       >
