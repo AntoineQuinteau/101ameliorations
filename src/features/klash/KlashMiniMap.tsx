@@ -21,7 +21,7 @@ export function KlashMiniMap({ klash }: { klash: Klash }) {
         boxZoom={false}
         keyboard={false}
       >
-        <MapTiles />
+        <MapTiles layer="plan" />
         <Marker position={position} icon={getMarkerIcon(klash.urgency, klash.status)} />
       </MapContainer>
     </div>

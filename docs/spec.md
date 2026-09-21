@@ -190,7 +190,8 @@ Une seule application responsive. Routes :
 
 ### 6.1 Carte (`/`)
 
-- Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), contrainte aux bounds de la zone de service.
+- Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), zoom maximum 20 en plan et 22 en vue satellite (zoom natif de chaque tuileset), contrainte aux bounds de la zone de service.
+- Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), bascule via un bouton flottant, dernier choix mémorisé en local sur l'appareil.
 - Marqueurs colorés par urgence, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
 - Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), urgence (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).

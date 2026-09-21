@@ -9,6 +9,8 @@ import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
 import { applyFilters, type KlashFilters } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
 import { MapClickToReport } from './MapClickToReport'
+import { MapLayerToggle } from './MapLayerToggle'
+import { MapLayerZoom } from './MapLayerZoom'
 import { MapTiles } from './MapTiles'
 import { MobileFiltersSheet } from './MobileFiltersSheet'
 import { PendingPinMarker } from './PendingPinMarker'
@@ -16,12 +18,13 @@ import { PinConfirmCard } from './PinConfirmCard'
 import { ServiceAreaBounds } from './ServiceAreaBounds'
 import { useHasHover } from './useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
+import { useMapLayer } from './useMapLayer'
 import { AppFooterLinks } from '../../components/AppFooterLinks'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import {
   INITIAL_MAP_CENTER,
   INITIAL_MAP_ZOOM,
-  MAX_MAP_ZOOM,
+  MAX_SATELLITE_MAP_ZOOM,
   MIN_MAP_ZOOM,
 } from '../../config/serviceArea'
 import { useServiceArea } from '../../config/useServiceArea'
@@ -38,6 +41,7 @@ export function MapPage() {
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
+  const [layer, setLayer] = useMapLayer()
   const serviceArea = useServiceArea()
   const {
     data: klashes = [],
@@ -104,12 +108,17 @@ export function MapPage() {
         center={INITIAL_MAP_CENTER}
         zoom={INITIAL_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
-        maxZoom={MAX_MAP_ZOOM}
+        // The higher of the two layers' ceilings, as a static prop — react-leaflet
+        // only reads maxZoom once, at construction. MapLayerZoom narrows it at
+        // runtime to whichever layer is actually active (see its docblock).
+        maxZoom={MAX_SATELLITE_MAP_ZOOM}
+        bounceAtZoomLimits={false}
         maxBoundsViscosity={1}
         zoomControl={false}
         className="h-full w-full"
       >
-        <MapTiles />
+        <MapTiles layer={layer} />
+        <MapLayerZoom layer={layer} />
         {/* Moved off the default topleft: that's where the filters button
             (and, on desktop, the filters card) lives. */}
         <ZoomControl position="bottomright" />
@@ -141,6 +150,8 @@ export function MapPage() {
       >
         {fr.map.filters.open}
       </button>
+
+      {(hasHover || !isFiltersOpen) && <MapLayerToggle layer={layer} onChange={setLayer} />}
 
       {!pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
         <button

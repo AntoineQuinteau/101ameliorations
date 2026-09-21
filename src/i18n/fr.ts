@@ -85,6 +85,12 @@ export const fr = {
       reset: 'Réinitialiser',
       viewOnMap: 'Voir sur la carte',
     },
+    layer: {
+      plan: 'Plan',
+      satellite: 'Satellite',
+      switchToPlan: 'Afficher le plan',
+      switchToSatellite: 'Afficher la vue satellite',
+    },
   },
   detail: {
     notFoundTitle: 'Signalement introuvable',
@@ -270,6 +276,10 @@ export const fr = {
       invalidProposedSolution: 'La proposition de solution ne peut pas dépasser 2000 caractères.',
       photosLabel: 'Photos (facultatif)',
       addPhoto: 'Ajouter une photo',
+      photoSourceTitle: 'Ajouter une photo',
+      photoSourceCamera: 'Prendre une photo',
+      photoSourceGallery: 'Choisir dans la galerie',
+      photoSourceCancel: 'Annuler',
       removePhoto: 'Retirer cette photo',
       photoLimitReached: (max: number) => `Vous avez atteint la limite de ${max} photos.`,
       compressing: 'Traitement de la photo…',

@@ -23,4 +23,8 @@ export const INITIAL_MAP_ZOOM = 10
 // overview. Kept as a compile-time constant (static MapContainer prop, read once at
 // mount) even though the bbox itself is now dynamic — see ServiceAreaBounds.
 export const MIN_MAP_ZOOM = 8
-export const MAX_MAP_ZOOM = 18
+// Native zoom of each MapTiler tileset (verified against the project's key):
+// the streets style tops out at 20, the satellite tileset at 22 — see
+// MapTiles.tsx for how each is wired to its own `maxNativeZoom`.
+export const MAX_MAP_ZOOM = 20
+export const MAX_SATELLITE_MAP_ZOOM = 22
