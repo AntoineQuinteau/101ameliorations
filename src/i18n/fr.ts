@@ -63,6 +63,7 @@ export const fr = {
           : `${count} confirmations`,
     reportHere: 'Signaler ici',
     reportWhereIAm: 'Signaler à ma position',
+    draftInProgress: 'Déclaration en cours — reprendre',
     longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
     resultsCount: (count: number) =>
       count === 0
@@ -235,6 +236,17 @@ export const fr = {
   newKlash: {
     title: 'Signaler un problème',
     cancel: 'Annuler',
+    draft: {
+      resumeTitle: 'Déclaration en cours',
+      resumeBody: (savedAt: string) =>
+        `Vous avez une déclaration non envoyée, enregistrée le ${savedAt}. Voulez-vous la reprendre ?`,
+      resumeAction: 'Reprendre ma déclaration',
+      startNewAction: 'Commencer une nouvelle déclaration ici',
+      cancelTitle: 'Abandonner la déclaration ?',
+      cancelBody: 'Vous pouvez garder ce que vous avez saisi et le reprendre plus tard.',
+      cancelKeep: 'Garder le brouillon',
+      cancelDiscard: 'Supprimer la déclaration',
+    },
     outOfArea: {
       title: 'Hors zone de signalement',
       body: "Ce point est hors de la zone couverte par l'application. Déplacez le repère pour continuer.",
