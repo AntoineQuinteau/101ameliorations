@@ -78,6 +78,55 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
   return klashFromRow(data)
 }
 
+export interface UpdateKlashInput {
+  category: KlashCategory
+  categoryOther: string | null
+  urgency: KlashUrgency
+  title: string
+  description: string | null
+  proposedSolution: string | null
+}
+
+/** Updates a klash's editable fields (spec §6.3 "Modifier"): category,
+ * urgency, title, description, proposed solution — never position or
+ * status, which have their own dedicated paths (create_klash builds the
+ * PostGIS point; change_klash_status is the only way status moves).
+ *
+ * Writes to the `klashes` table directly, not the `klashes_public` view
+ * (the view joins `profiles`, isn't auto-updatable, and exposes lat/lng
+ * instead of the `location` column). `UpdateKlashInput` names exactly the
+ * six editable columns — never spread a whole `Klash` here, or
+ * `guard_klash_system_columns` rejects the write for touching
+ * author_id/created_at/the counters.
+ *
+ * RLS (klashes_update_author_new / klashes_update_staff) turns a forbidden
+ * update into a silent 0-row no-op, not an error — e.g. an author whose
+ * klash left `new` mid-edit. `.select('id')` plus this length check is what
+ * turns that into a reported failure instead of a false "saved". */
+export async function updateKlash(id: string, input: UpdateKlashInput): Promise<Klash> {
+  const { data, error } = await supabase
+    .from('klashes')
+    .update({
+      category: input.category,
+      category_other: input.categoryOther,
+      urgency: input.urgency,
+      title: input.title,
+      description: input.description,
+      proposed_solution: input.proposedSolution,
+    })
+    .eq('id', id)
+    .select('id')
+
+  if (error) throw error
+  if (data.length === 0) throw new Error('klash update not permitted')
+
+  // The table row doesn't carry lat/lng or the author_* columns
+  // klashFromRow expects — re-read through the public view instead.
+  const updated = await fetchKlashById(id)
+  if (!updated) throw new Error('klash update not permitted')
+  return updated
+}
+
 /** Deletes a klash. Allowed for its own author while `new`, or for staff
  * (`klashes_delete_author_or_staff`); this app only ever calls it from
  * `/k/:id`'s role-gated action bar. Deleting the row cascades klash_photos,

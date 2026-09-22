@@ -7,14 +7,17 @@ import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
+import { canDeleteKlash, canEditKlash } from '../../lib/klashPermissions'
 import { displayActor, statusTone, urgencyTone } from '../../lib/klashPresentation'
 import { allowedNextStatuses } from '../../lib/klashTransitions'
 import { klashCategoryLabel, type KlashStatus } from '../../types/klash'
+import type { NewKlashForm } from '../newKlash/newKlashSchemas'
 import { formatDate } from '../../utils/formatDate'
 import { useAuth } from '../auth/useAuth'
 import { useRole } from '../auth/useRole'
 import { ChangeStatusForm } from './ChangeStatusForm'
 import { CommentList } from './CommentList'
+import { EditKlashForm } from './EditKlashForm'
 import { KlashMiniMap } from './KlashMiniMap'
 import { KlashPhotoGallery } from './KlashPhotoGallery'
 import { StatusHistory } from './StatusHistory'
@@ -24,6 +27,18 @@ import { useDeleteKlash } from './useDeleteKlash'
 import { useKlashAuthorContact } from './useKlashAuthorContact'
 import { useMyConfirmation } from './useMyConfirmation'
 import { useShareKlash } from './useShareKlash'
+import { useUpdateKlash } from './useUpdateKlash'
+
+/** Maps an updateKlash failure to a French message: RLS turns a forbidden
+ * edit (e.g. the klash left `new` mid-edit) into a distinguishable 'klash
+ * update not permitted' error rather than a generic one — see updateKlash's
+ * docblock — so that case gets its own, more informative message. */
+function mapUpdateKlashError(error: unknown): string {
+  const message = error instanceof Error ? error.message : ''
+  return message.includes('klash update not permitted')
+    ? fr.detail.edit.forbiddenError
+    : fr.detail.edit.submitError
+}
 
 /** Detail page (spec §6.3): read-only content, the confirm (+1) button
  * (step 4), comments (step 6), and — since step 7 — the status history and
@@ -31,9 +46,11 @@ import { useShareKlash } from './useShareKlash'
 export function KlashDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
-  const { role, isStaff } = useRole()
+  const { role } = useRole()
   const navigate = useNavigate()
   const [isChangingStatus, setIsChangingStatus] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editFeedback, setEditFeedback] = useState<'saved' | null>(null)
 
   const {
     data: klash,
@@ -49,16 +66,27 @@ export function KlashDetailPage() {
   const { data: hasConfirmed = false } = useMyConfirmation(id ?? '')
   const confirmMutation = useConfirmKlash(id ?? '', hasConfirmed)
   const changeStatusMutation = useChangeKlashStatus(id ?? '')
+  const updateMutation = useUpdateKlash(id ?? '')
   const deleteMutation = useDeleteKlash()
   const { share, feedback: shareFeedback } = useShareKlash(klash)
   const authorContactMutation = useKlashAuthorContact()
   const isAuthor = Boolean(user) && user?.id === klash?.authorId
-  const canDelete = isAuthor && klash?.status === 'new' ? true : isStaff
+  const canDelete = klash ? canDeleteKlash(role, isAuthor, klash.status) : false
+  const canEdit = klash ? canEditKlash(role, isAuthor, klash.status) : false
   const canSeeAuthorContact = role === 'moderator' || role === 'authority' || role === 'admin'
   const nextStatuses = role && klash ? allowedNextStatuses(role, klash.status) : []
 
   function handleChangeStatus(toStatus: KlashStatus, note: string | null) {
     changeStatusMutation.mutate({ toStatus, note }, { onSuccess: () => setIsChangingStatus(false) })
+  }
+
+  function handleSaveEdit(form: NewKlashForm) {
+    updateMutation.mutate(form, {
+      onSuccess: () => {
+        setIsEditing(false)
+        setEditFeedback('saved')
+      },
+    })
   }
 
   function handleDelete() {
@@ -98,7 +126,21 @@ export function KlashDetailPage() {
         </div>
       )}
 
-      {klash && (
+      {klash && isEditing && (
+        <div className="mt-4">
+          <EditKlashForm
+            klash={klash}
+            isSubmitting={updateMutation.isPending}
+            submitErrorMessage={
+              updateMutation.isError ? mapUpdateKlashError(updateMutation.error) : null
+            }
+            onSubmit={handleSaveEdit}
+            onCancel={() => setIsEditing(false)}
+          />
+        </div>
+      )}
+
+      {klash && !isEditing && (
         <article className="mt-4 flex flex-col gap-4">
           <KlashMiniMap klash={klash} />
 
@@ -217,7 +259,13 @@ export function KlashDetailPage() {
               : fr.detail.updatedOn(formatDate(klash.updatedAt))}
           </p>
 
-          {(nextStatuses.length > 0 || canDelete) && (
+          {editFeedback === 'saved' && (
+            <p role="status" className="text-sm text-teal-800">
+              {fr.detail.edit.saved}
+            </p>
+          )}
+
+          {(nextStatuses.length > 0 || canEdit || canDelete) && (
             <div className="flex flex-col gap-2 rounded-md border border-neutral-200 p-3">
               {isChangingStatus ? (
                 <ChangeStatusForm
@@ -238,6 +286,18 @@ export function KlashDetailPage() {
                       className="text-sm font-medium text-teal-700 hover:underline"
                     >
                       {fr.detail.lifecycle.changeStatusTitle}
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditFeedback(null)
+                        setIsEditing(true)
+                      }}
+                      className="text-sm font-medium text-teal-700 hover:underline"
+                    >
+                      {fr.detail.editKlash}
                     </button>
                   )}
                   {canDelete && (
