@@ -39,6 +39,19 @@
 -- storage.objects DELETE needs no change: klash_photos_objects_delete_
 -- author_or_staff already covers staff and the klash's author, which is
 -- exactly (c) on the storage side.
+--
+-- Note on naming: klash_photos_insert_klash_author (below) is renamed to
+-- reflect that it now also admits staff, but its storage.objects
+-- counterpart keeps its original name — storage.objects is owned by
+-- Supabase's supabase_storage_admin role, not by whatever role runs this
+-- migration, and `alter policy ... rename to ...` is a strict ownership
+-- check with no grantable workaround (unlike `alter policy ... with
+-- check`, which only edits the policy's expression and does not require
+-- ownership the same way). Verified against a CI run: renaming
+-- klash_photos_insert_klash_author on public.klash_photos succeeded;
+-- renaming the storage.objects policy failed with "must be owner of table
+-- objects". The asymmetric name is intentional — do not "fix" it with
+-- another rename attempt.
 
 -- ---------- (a) + (b) klash_photos INSERT ----------
 alter policy klash_photos_insert_klash_author on public.klash_photos
@@ -76,9 +89,6 @@ alter policy klash_photos_objects_insert_klash_author on storage.objects
       )
     )
   );
-
-alter policy klash_photos_objects_insert_klash_author on storage.objects
-  rename to klash_photos_objects_insert_klash_author_or_staff;
 
 -- ---------- (c) klash_photos DELETE ----------
 alter policy klash_photos_delete_author_or_staff on public.klash_photos
