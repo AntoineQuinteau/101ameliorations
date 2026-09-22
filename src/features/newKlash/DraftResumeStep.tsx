@@ -12,10 +12,17 @@ export function DraftResumeStep({
   savedAt,
   onResume,
   onStartNew,
+  onCancel,
 }: {
   savedAt: string
   onResume: () => void
   onStartNew: () => void
+  /** Like the other three steps' onCancel — needed here too: in the
+   * installed PWA there's no browser chrome to fall back on, and
+   * "Commencer une nouvelle déclaration ici" is destructive (it purges the
+   * saved draft immediately), so a user who reached this screen by mistake
+   * needs a third, non-committing way out. */
+  onCancel: () => void
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -38,6 +45,13 @@ export function DraftResumeStep({
           className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
         >
           {fr.newKlash.draft.startNewAction}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-700"
+        >
+          {fr.newKlash.cancel}
         </button>
       </div>
     </div>

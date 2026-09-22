@@ -10,22 +10,27 @@ import { fr } from '../../i18n/fr'
 export function CancelDraftSheet({
   onKeep,
   onDiscard,
+  onDismiss,
 }: {
   onKeep: () => void
   onDiscard: () => void
+  /** Backdrop click / Escape: closes the sheet only, same as `PhotoSourceSheet`'s
+   * `onCancel` — distinct from `onKeep`, which also navigates away. A stray tap
+   * dismissing this sheet must land the user back on the form, not on the map. */
+  onDismiss: () => void
 }) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onKeep()
+      if (event.key === 'Escape') onDismiss()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onKeep])
+  }, [onDismiss])
 
   return (
     <div
       className="fixed inset-0 z-[2000] flex items-end justify-center bg-black/50 p-4 sm:items-center"
-      onClick={onKeep}
+      onClick={onDismiss}
     >
       <div
         role="dialog"

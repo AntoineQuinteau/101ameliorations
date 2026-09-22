@@ -51,11 +51,20 @@ test('an abandoned report draft is offered back on the map, and can be discarded
   await page.locator('input[type="file"][multiple]').setInputFiles(FIXTURE_PHOTO)
   await expect(page.getByRole('button', { name: 'Retirer cette photo' })).toBeVisible()
 
-  // The autosave is debounced (500ms) and the photo write to IndexedDB is
-  // fired async in that same callback — wait for the metadata to land in
-  // localStorage, then give the photo write a moment to follow.
-  await page.waitForFunction(() => localStorage.getItem('klash-draft') !== null)
-  await page.waitForTimeout(300)
+  // Wait on the real postcondition, not a timeout: the debounced metadata
+  // write (500ms) can land before setInputFiles finishes compressing and
+  // reading the photo, so a wait keyed on 'klash-draft' merely existing
+  // proves nothing about the photo specifically — poll until its `photos`
+  // array is non-empty instead.
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('klash-draft')
+    if (!raw) return false
+    try {
+      return (JSON.parse(raw) as { photos: unknown[] }).photos.length > 0
+    } catch {
+      return false
+    }
+  })
 
   // Cancel, and choose to keep the draft.
   await page.getByRole('button', { name: 'Annuler' }).click()

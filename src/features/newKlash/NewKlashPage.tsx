@@ -14,6 +14,7 @@ import {
 import { DraftResumeStep } from './DraftResumeStep'
 import { DuplicatesStep } from './DuplicatesStep'
 import { KlashFormStep, type PendingPhoto } from './KlashFormStep'
+import { MapRecenter } from './MapRecenter'
 import { PositionStep } from './PositionStep'
 import { SubmitStep } from './SubmitStep'
 import { useDraftAutosave } from './useDraftAutosave'
@@ -84,6 +85,15 @@ export function NewKlashPage() {
   // supplied a position) — otherwise it would override a long-press point.
   const hasExplicitPosition = searchParams.has('lat') && searchParams.has('lng')
 
+  // Needed before the draft-restore decision below, so it's called here
+  // rather than further down alongside the other map-data hooks: an
+  // unconditional, side-effect-free hook call, safe to reorder. A draft
+  // whose saved position has fallen outside the service area (the area can
+  // shrink between save and restore, and the pin stays draggable at the
+  // 'form' step, so a draft can be saved already out of area) must not skip
+  // spec §6.2's out-of-area gate on restore.
+  const serviceArea = useServiceArea()
+
   // Read once, at mount: a later save by useDraftAutosave must not make this
   // component think there's a *different* draft to offer mid-session — this
   // is "what was on disk when the page opened", not a live value.
@@ -93,6 +103,8 @@ export function NewKlashPage() {
   // below rather than silently picking one. With no explicit position, the
   // draft — if any — is simply what this visit to /new is about.
   const shouldAutoRestoreDraft = restorableDraft !== null && !hasExplicitPosition
+  const isRestorableDraftInArea =
+    restorableDraft !== null && isPointInBbox(restorableDraft.lat, restorableDraft.lng, serviceArea)
 
   const [position, setPosition] = useState<[number, number]>(() =>
     shouldAutoRestoreDraft && restorableDraft
@@ -101,13 +113,24 @@ export function NewKlashPage() {
   )
   const [step, setStep] = useState<Step>(() => {
     if (hasExplicitPosition && restorableDraft) return 'resume'
-    if (shouldAutoRestoreDraft && restorableDraft) return restorableDraft.step
+    if (shouldAutoRestoreDraft && restorableDraft) {
+      return isRestorableDraftInArea ? restorableDraft.step : 'position'
+    }
     return 'position'
   })
   const [formDraft, setFormDraft] = useState<KlashFormDraft>(() =>
     shouldAutoRestoreDraft && restorableDraft ? restorableDraft.form : emptyKlashFormDraft,
   )
   const [photos, setPhotos] = useState<PendingPhoto[]>([])
+  // True while restoreDraftPhotos' IndexedDB read is in flight, so
+  // useDraftAutosave's debounce can't fire against the not-yet-restored,
+  // still-empty `photos` array and either wipe a photo-only draft or briefly
+  // claim it has no photos while IndexedDB still holds them. Starts true
+  // exactly when the auto-restore effect below will run.
+  const [isRestoringPhotos, setIsRestoringPhotos] = useState(shouldAutoRestoreDraft)
+  // Set only by handleResumeDraft, to recentre the map on a draft's saved
+  // position — see MapRecenter's docblock for why this isn't just `position`.
+  const [recenterTarget, setRecenterTarget] = useState<[number, number] | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [createdKlash, setCreatedKlash] = useState<Klash | null>(null)
   const [confirmedKlashId, setConfirmedKlashId] = useState<string | null>(null)
@@ -124,7 +147,6 @@ export function NewKlashPage() {
   const submitGuardRef = useRef(createSubmitGuard())
 
   const geolocation = useGeolocation()
-  const serviceArea = useServiceArea()
   const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox, serviceArea)
 
   // hasExplicitPosition is computed above, alongside the draft-restore logic
@@ -147,20 +169,37 @@ export function NewKlashPage() {
   // one recorded at save time died with the tab that created it. A photo
   // whose bytes failed to persist (see draftPhotoStore's docblocks) is
   // silently dropped rather than shown broken.
+  //
+  // isRestoringPhotos brackets the whole (async) call so useDraftAutosave's
+  // debounce can't fire while `photos` is still the pre-restore, empty
+  // array. The final setPhotos is a merge, not an overwrite, for the same
+  // race from the other side: KlashFormStep is already interactive once the
+  // 'form' step is mounted, so a photo the user adds while this is still in
+  // flight must survive being restored over, not get silently dropped (and
+  // its object URL leaked, since it would no longer be in the array
+  // KlashFormStep's own unmount cleanup reads).
   async function restoreDraftPhotos(draft: StoredKlashDraft) {
-    const files = await loadDraftPhotos()
-    const restored: PendingPhoto[] = []
-    for (const meta of draft.photos) {
-      const file = files.get(meta.id)
-      if (!file) continue
-      restored.push({
-        id: meta.id,
-        compressed: { file, width: meta.width, height: meta.height },
-        previewUrl: URL.createObjectURL(file),
-        gps: meta.gps,
+    setIsRestoringPhotos(true)
+    try {
+      const files = await loadDraftPhotos()
+      const restored: PendingPhoto[] = []
+      for (const meta of draft.photos) {
+        const file = files.get(meta.id)
+        if (!file) continue
+        restored.push({
+          id: meta.id,
+          compressed: { file, width: meta.width, height: meta.height },
+          previewUrl: URL.createObjectURL(file),
+          gps: meta.gps,
+        })
+      }
+      setPhotos((current) => {
+        const currentIds = new Set(current.map((photo) => photo.id))
+        return [...restored.filter((photo) => !currentIds.has(photo.id)), ...current]
       })
+    } finally {
+      setIsRestoringPhotos(false)
     }
-    setPhotos(restored)
   }
 
   // Auto-restore path only: runs once, mirroring the geolocation effect's
@@ -172,8 +211,9 @@ export function NewKlashPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useDraftAutosave({
-    enabled: step === 'position' || step === 'duplicates' || step === 'form',
+  const { suppressPendingSave } = useDraftAutosave({
+    enabled:
+      (step === 'position' || step === 'duplicates' || step === 'form') && !isRestoringPhotos,
     lat: position[0],
     lng: position[1],
     step: step === 'duplicates' ? 'duplicates' : step === 'form' ? 'form' : 'position',
@@ -183,9 +223,11 @@ export function NewKlashPage() {
 
   function handleResumeDraft() {
     if (!restorableDraft) return
-    setPosition([restorableDraft.lat, restorableDraft.lng])
+    const resumedPosition: [number, number] = [restorableDraft.lat, restorableDraft.lng]
+    setPosition(resumedPosition)
+    setRecenterTarget(resumedPosition)
     setFormDraft(restorableDraft.form)
-    setStep(restorableDraft.step)
+    setStep(isRestorableDraftInArea ? restorableDraft.step : 'position')
     void restoreDraftPhotos(restorableDraft)
   }
 
@@ -213,6 +255,7 @@ export function NewKlashPage() {
 
   function handleDiscardDraftAndLeave() {
     setIsCancelSheetOpen(false)
+    suppressPendingSave()
     clearStoredDraft()
     void clearDraftPhotos()
     navigate('/')
@@ -279,6 +322,7 @@ export function NewKlashPage() {
       }
       // The report this draft was tracking is now either a real klash or a
       // confirmation on an existing one — either way, "in progress" is over.
+      suppressPendingSave()
       clearStoredDraft()
       void clearDraftPhotos()
       setStep('done')
@@ -318,6 +362,7 @@ export function NewKlashPage() {
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
         <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
+        <MapRecenter position={recenterTarget} />
       </MapContainer>
 
       <BottomSheet scrollable>
@@ -326,6 +371,7 @@ export function NewKlashPage() {
             savedAt={restorableDraft.savedAt}
             onResume={handleResumeDraft}
             onStartNew={handleStartNewHere}
+            onCancel={handleCancel}
           />
         )}
 
@@ -382,7 +428,11 @@ export function NewKlashPage() {
       </BottomSheet>
 
       {isCancelSheetOpen && (
-        <CancelDraftSheet onKeep={handleKeepDraftAndLeave} onDiscard={handleDiscardDraftAndLeave} />
+        <CancelDraftSheet
+          onKeep={handleKeepDraftAndLeave}
+          onDiscard={handleDiscardDraftAndLeave}
+          onDismiss={() => setIsCancelSheetOpen(false)}
+        />
       )}
     </div>
   )

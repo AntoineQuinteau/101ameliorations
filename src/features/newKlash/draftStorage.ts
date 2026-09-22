@@ -10,7 +10,14 @@ const DRAFT_VERSION = 1
 // that confuses more than it helps.
 const DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
 
-export type DraftStep = 'position' | 'duplicates' | 'form'
+// The single source of truth for which steps a draft can be saved at —
+// `DraftStep` is derived from it (matching how newKlashSchemas.ts derives
+// `NewKlashForm` from `newKlashFormSchema`), so the type and the schema
+// can't drift apart. Before this, adding a step to a hand-written
+// `DraftStep` union would type-check everywhere but fail `safeParse` below,
+// silently purging every saved draft as corrupt on the next reload.
+export const draftStepSchema = z.enum(['position', 'duplicates', 'form'])
+export type DraftStep = z.infer<typeof draftStepSchema>
 
 export interface StoredDraftPhoto {
   id: string
@@ -56,7 +63,7 @@ const storedDraftSchema = z.object({
   savedAt: z.string(),
   lat: z.number(),
   lng: z.number(),
-  step: z.enum(['position', 'duplicates', 'form']),
+  step: draftStepSchema,
   form: draftFormSchema,
   photos: z.array(draftPhotoSchema),
 })
@@ -121,10 +128,16 @@ export function clearStoredDraft(): void {
   }
 }
 
-/** Cheap synchronous check for the map's "déclaration en cours" chip — avoids
- * parsing the whole draft just to know whether to render it. Still runs the
- * full `readStoredDraft` so an expired/corrupted draft doesn't light up the
- * chip for something that won't actually restore. */
+/** Whether a draft exists and would actually restore — used by the map's
+ * "déclaration en cours" chip. Not a cheap check: it runs the full
+ * `readStoredDraft` (JSON parse and zod validation included) so an
+ * expired, corrupted or wrong-version draft doesn't light up the chip for
+ * something that wouldn't come back anyway. Callers should read it from an
+ * effect, not during render: `readStoredDraft` purges a stale draft as a
+ * side effect, and render-phase side effects aren't safe under StrictMode's
+ * double-invoke or concurrent rendering (see `MapPage`, which reads this in
+ * a `useEffect` rather than a `useState` initializer for exactly this
+ * reason). */
 export function hasStoredDraft(now: number = Date.now()): boolean {
   return readStoredDraft(now) !== null
 }
@@ -132,9 +145,10 @@ export function hasStoredDraft(now: number = Date.now()): boolean {
 /** Whether a draft is worth persisting at all — an empty form at the default
  * urgency and no photos is what `/new` looks like on first render, not
  * something the user typed; saving it would make the chip appear on every
- * visit to the report flow. `category`/`urgency` alone don't count either:
- * `urgency` always has a value (defaults to 'medium') and picking a category
- * with nothing else filled in isn't yet a report worth resurrecting. */
+ * visit to the report flow. `urgency` alone never counts: it always has a
+ * value (defaults to 'medium') with no action needed to set it. `category`
+ * alone *does* count, deliberately: picking one is a real tap, not a
+ * default, and is treated the same as typing a title. */
 export function isDraftWorthKeeping(form: KlashFormDraft, photoCount: number): boolean {
   if (photoCount > 0) return true
   return (

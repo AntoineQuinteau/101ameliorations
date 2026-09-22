@@ -3,6 +3,8 @@ import type { Session } from '@supabase/supabase-js'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { AuthContext, type AuthContextValue } from './authContext'
+import { clearDraftPhotos } from '../newKlash/draftPhotoStore'
+import { clearStoredDraft } from '../newKlash/draftStorage'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -22,10 +24,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // inside it can deadlock. Clearing the query cache here (rather than in
     // signOut()) also means sign-out from another tab, a revoked session, or
     // an expired token all clean up the profile cache the same way.
+    //
+    // The draft store is cleared here too: it's per-origin, not per-user,
+    // so on a shared device it would otherwise offer the next signed-in
+    // user the previous one's unsent report — text, position and geotagged
+    // photos included. clearStoredDraft is synchronous (safe under the
+    // lock above); clearDraftPhotos is fire-and-forget IndexedDB, not a
+    // supabase.auth.* call, so it can't deadlock this callback either.
+    // Deliberately not mirrored on SIGNED_IN: that event also fires during
+    // SubmitStep's inline OTP login, which is exactly the flow this draft
+    // is meant to survive.
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession)
       setIsInitializing(false)
-      if (event === 'SIGNED_OUT') queryClient.clear()
+      if (event === 'SIGNED_OUT') {
+        queryClient.clear()
+        clearStoredDraft()
+        void clearDraftPhotos()
+      }
     })
     return () => data.subscription.unsubscribe()
   }, [])

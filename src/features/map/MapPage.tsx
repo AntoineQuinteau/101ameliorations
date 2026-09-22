@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, ZoomControl } from 'react-leaflet'
 import { AuthBadge } from './AuthBadge'
@@ -44,10 +44,15 @@ export function MapPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
-  // Read on mount — this route remounts on every return from /new (a real
+  // Read in an effect, not a useState initializer: hasStoredDraft can purge
+  // a stale draft as a side effect (see its docblock), which isn't safe
+  // during render. This route remounts on every return from /new (a real
   // navigation, not client-side state), which is exactly when the draft
   // status can have changed (saved, resumed, submitted, or discarded).
-  const [hasDraft] = useState(hasStoredDraft)
+  const [hasDraft, setHasDraft] = useState(false)
+  useEffect(() => {
+    setHasDraft(hasStoredDraft())
+  }, [])
   const serviceArea = useServiceArea()
   const {
     data: klashes = [],
