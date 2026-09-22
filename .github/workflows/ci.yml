@@ -118,7 +118,12 @@ jobs:
           # uses, and not the production project `deploy-production` uses.
           VITE_SUPABASE_URL: http://127.0.0.1:54321
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
-          VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
+          # Routes the map at vite-plugins/tileProxy.ts (mounted by `npm run dev`,
+          # which `npm run e2e`'s webServer runs — see playwright.config.ts) instead of
+          # MapTiler directly. No MAPTILER_KEY is set here, so every spec that loads
+          # the map (most of them, via loginAs()'s default redirect) gets placeholder
+          # tiles and never touches MapTiler's real quota — see that plugin's docblock.
+          VITE_TILE_BASE_URL: /__tiles
           # Cloudflare's dummy always-passing Turnstile sitekey (see
           # supabase/config.toml's [auth.captcha] and .env.example) — captcha
           # is genuinely enabled locally and in CI (this file is reused by

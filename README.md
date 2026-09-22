@@ -28,14 +28,16 @@ npm run dev
 
 ### Variables d'environnement (`.env.local`, non versionné)
 
-| Variable                        | Rôle                                                                |
-| ------------------------------- | ------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`)            |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)                       |
-| `VITE_MAPTILER_KEY`             | Clé API MapTiler                                                    |
-| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — **optionnelle**, voir ci-dessous |
-| `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans                    |
-| `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front              |
+| Variable                        | Rôle                                                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`)                                           |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)                                                      |
+| `VITE_MAPTILER_KEY`             | Clé API MapTiler — **optionnelle** si `VITE_TILE_BASE_URL` ci-dessous pointe ailleurs que MapTiler |
+| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — **optionnelle**, voir ci-dessous                                |
+| `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans                                                   |
+| `VITE_TILE_BASE_URL`            | **Optionnelle**, vide en prod. Recommandée en local : `/__tiles`, voir ci-dessous                  |
+| `MAPTILER_KEY`                  | Clé MapTiler du proxy de dev ci-dessous — **sans préfixe `VITE_`**, jamais dans le bundle          |
+| `SUPABASE_SECRET_KEY`           | Usage scripts/CLI uniquement — jamais lue par le front                                             |
 
 `VITE_TURNSTILE_SITE_KEY` : sans elle, l'app démarre normalement et se
 connecte sans vérification Turnstile (voir `src/env.ts` et
@@ -47,6 +49,19 @@ message d'erreur). La protection captcha côté Supabase est un interrupteur
 global au niveau du projet (Auth → Attack Protection) : ne l'activer en
 production qu'une fois un build portant une vraie
 `VITE_TURNSTILE_SITE_KEY` déployé, sinon toute connexion échoue.
+
+`VITE_TILE_BASE_URL` / `MAPTILER_KEY` : en local, `npm run dev` n'a pas de
+service worker (voir la section PWA plus bas), donc rien ne met les tuiles
+MapTiler en cache — chaque zoom/pan pendant une session de debug repart du
+réseau. `vite-plugins/tileProxy.ts` sert les tuiles depuis `/__tiles` (mettre
+`VITE_TILE_BASE_URL=/__tiles` dans `.env.local`) avec un cache disque dans
+`.cache/maptiler/` qui survit aux rechargements et aux redémarrages du
+serveur ; sans `MAPTILER_KEY` (sans préfixe `VITE_`, donc jamais dans le
+bundle) il sert des tuiles de remplacement sans jamais appeler MapTiler — le
+réglage utilisé par la CI (`.github/workflows/ci.yml`, job `e2e`), qui ne
+consomme donc plus aucun quota MapTiler. Laisser les deux vides pour
+continuer comme avant (tuiles MapTiler directes, nécessite
+`VITE_MAPTILER_KEY`).
 
 ## Scripts
 
@@ -117,11 +132,15 @@ avant de tester le parcours sur un téléphone réel.
 ## PWA
 
 `vite-plugin-pwa` en mode `generateSW` / `registerType: 'autoUpdate'` (voir
-`vite.config.ts`) : manifest, service worker, mise en cache des tuiles MapTiler et
-des photos de klash (`CacheFirst`, 7 jours), et de la lecture `klashes_public`
-(`NetworkFirst`, 5 min — la seule lecture Supabase dont la réponse est identique
-pour `anon` et `authenticated`, le service worker ne pouvant pas lire la session
-dans `localStorage`). Bandeau d'installation (`src/features/pwa/`) : flux natif
+`vite.config.ts`) : manifest, service worker, mise en cache des tuiles MapTiler
+(`CacheFirst`, 2000 entrées, 30 jours — une tuile raster ne change quasiment
+jamais) et des photos de klash (`CacheFirst`, 7 jours), et de la lecture
+`klashes_public` (`NetworkFirst`, 5 min — la seule lecture Supabase dont la
+réponse est identique pour `anon` et `authenticated`, le service worker ne
+pouvant pas lire la session dans `localStorage`). Ce service worker n'est actif
+qu'en build de production (pas de `devOptions` dans `VitePWA`) — voir la note
+`VITE_TILE_BASE_URL` / `MAPTILER_KEY` plus haut pour son équivalent en local.
+Bandeau d'installation (`src/features/pwa/`) : flux natif
 `beforeinstallprompt` sur Android/desktop, instructions manuelles sur iOS (qui ne
 déclenche jamais cet évènement).
 
