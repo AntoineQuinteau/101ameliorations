@@ -16,7 +16,7 @@
 --   Storage API, which this suite doesn't call. The policy still exists and
 --   matters for that path; it just isn't exercisable from pgTAP.
 begin;
-select plan(16);
+select plan(17);
 
 -- Three fixture users: one klash author, one unrelated user, one moderator
 -- (added for the edit-photos step — see tests 7+ below).
@@ -57,7 +57,8 @@ alter table public.profiles enable trigger profiles_guard_role;
 -- enforce_photo_limit() first — a BEFORE ROW trigger runs before the INSERT
 -- policy's WITH CHECK is evaluated, so reusing the capped klash there would
 -- test the wrong rejection reason. A third klash is `acknowledged` from the
--- start, for the status-gating tests (10-13) added with the edit-photos step.
+-- start, for the status-gating tests (10-12, 15) added with the edit-photos
+-- step.
 -- Inserted as `postgres` to bypass the creation triggers entirely
 -- (irrelevant to what's under test here).
 set local role postgres;
@@ -182,10 +183,11 @@ select isnt_empty(
   'anon can read klash_photos rows'
 );
 
--- Tests 7-14: the edit-photos step (klash_edit_photos.sql) — a moderator
+-- Tests 7-15: the edit-photos step (klash_edit_photos.sql) — a moderator
 -- can add a photo to any klash, attributed to themselves (a); the klash
 -- author's own insert is now additionally gated on status = 'new' (b); and
--- the klash's own author can remove a photo staff deposited on it (c).
+-- the klash's own author can remove a photo staff deposited on it, but
+-- only while the klash is still `new` (c).
 
 -- 7. A moderator can insert a klash_photos row on someone else's klash, as
 -- the photo's own author.
@@ -260,13 +262,20 @@ select throws_ok(
 );
 
 -- 13. THE ALIGNMENT: the klash's own author can remove a photo a moderator
--- deposited on it. Still as the klash author (...0001), from test 11's
--- set_config.
-select lives_ok(
-  $$ delete from public.klash_photos
+-- deposited on it, while the klash is still new (klash ...0002 stays
+-- 'new' throughout this file). Still as the klash author (...0001), from
+-- test 11's set_config. lives_ok alone would not prove this: a denied
+-- delete is a silent 0-row no-op, not an error (see test 14 below) — so
+-- this checks the row is actually gone, the same way test 14 does.
+delete from public.klash_photos
+ where klash_id = 'cccccccc-1111-4000-8000-000000000002'
+   and author_id = 'cccccccc-0000-4000-8000-000000000003';
+
+select is_empty(
+  $$ select 1 from public.klash_photos
       where klash_id = 'cccccccc-1111-4000-8000-000000000002'
         and author_id = 'cccccccc-0000-4000-8000-000000000003' $$,
-  '13. the klash author can delete a photo a moderator added to their own klash'
+  '13. the klash author can delete a photo a moderator added to their own new klash'
 );
 
 -- 14. A non-author, non-staff user cannot delete a photo on a klash they
@@ -285,6 +294,26 @@ select isnt_empty(
       where klash_id = 'cccccccc-1111-4000-8000-000000000001'
         and storage_path = 'cccccccc-1111-4000-8000-000000000001/p1.jpg' $$,
   '14. an unrelated user cannot delete a photo on someone else''s klash (silent no-op)'
+);
+
+-- 15. THE GATE ON (c): once the klash has left `new`, its author can no
+-- longer remove a photo they didn't upload themselves — only a photo's
+-- own author or staff can, at any status. Targets klash ...0003
+-- (acknowledged), whose moderator-added photo (test 10) is still there;
+-- same silent-no-op reasoning as test 14, not throws_ok.
+select set_config('request.jwt.claims',
+  '{"sub":"cccccccc-0000-4000-8000-000000000001","role":"authenticated"}', true);
+set local role authenticated;
+
+delete from public.klash_photos
+ where klash_id = 'cccccccc-1111-4000-8000-000000000003'
+   and author_id = 'cccccccc-0000-4000-8000-000000000003';
+
+select isnt_empty(
+  $$ select 1 from public.klash_photos
+      where klash_id = 'cccccccc-1111-4000-8000-000000000003'
+        and author_id = 'cccccccc-0000-4000-8000-000000000003' $$,
+  '15. the klash author cannot delete a staff-added photo once the klash has left new'
 );
 
 select * from finish();

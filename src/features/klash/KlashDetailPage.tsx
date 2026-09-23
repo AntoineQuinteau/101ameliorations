@@ -293,6 +293,7 @@ export function KlashDetailPage() {
                       type="button"
                       onClick={() => {
                         setEditFeedback(null)
+                        updateMutation.reset()
                         setIsEditing(true)
                       }}
                       className="text-sm font-medium text-teal-700 hover:underline"

@@ -121,9 +121,15 @@ export async function updateKlash(id: string, input: UpdateKlashInput): Promise<
   if (data.length === 0) throw new Error('klash update not permitted')
 
   // The table row doesn't carry lat/lng or the author_* columns
-  // klashFromRow expects — re-read through the public view instead.
+  // klashFromRow expects — re-read through the public view instead. By
+  // this point the update already committed (data.length > 0 above), so a
+  // null here is a different failure than "forbidden" — e.g. the klash's
+  // author profile disappeared mid-account-anonymisation, dropping the row
+  // out of klashes_public's inner join on profiles. A distinct message
+  // keeps mapUpdateKlashError from reporting the save as rejected when it
+  // actually succeeded.
   const updated = await fetchKlashById(id)
-  if (!updated) throw new Error('klash update not permitted')
+  if (!updated) throw new Error('klash saved but could not be re-read')
   return updated
 }
 

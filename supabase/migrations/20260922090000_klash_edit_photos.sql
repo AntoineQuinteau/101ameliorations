@@ -29,16 +29,23 @@
 --  (c) DELETE on klash_photos was keyed on klash_photos.author_id only, so
 --      once (a) lets a moderator upload onto someone's klash, the klash's
 --      own author could not remove that photo from their own report. The
---      storage.objects DELETE policy already allows "klash author or
---      staff"; this brings the table policy in line, so the two sides of
---      one delete can no longer disagree. Deliberately NOT gated on
---      status = 'new': removing a photo of oneself is not a content edit,
---      and the storage side has never been gated either — a status gate
---      here would strand objects whose row can no longer be deleted.
+--      storage.objects DELETE policy already allowed "klash author or
+--      staff" for this case, so both sides need the same new branch, kept
+--      symmetric with each other.
 --
--- storage.objects DELETE needs no change: klash_photos_objects_delete_
--- author_or_staff already covers staff and the klash's author, which is
--- exactly (c) on the storage side.
+--      That new branch — the klash's own author removing a photo they did
+--      not upload themselves — is gated on status = 'new', matching (b):
+--      a `user` should not be able to remove evidence staff attached
+--      (e.g. a completion photo) once the klash has moved past `new`. The
+--      other two branches on each policy stay ungated: staff must be able
+--      to remove a photo at any status, and a photo's own author removing
+--      their own upload isn't the case this gate is about.
+--
+--      Applied on storage.objects too (klash_photos_objects_delete_author_
+--      or_staff, from 20260913140000_klash_photos_storage.sql), or an
+--      author blocked from deleting the klash_photos row past `new` could
+--      still delete the underlying Storage object directly, leaving a row
+--      that survives pointing at nothing.
 --
 -- Note on naming: klash_photos_insert_klash_author (below) is renamed to
 -- reflect that it now also admits staff, but its storage.objects
@@ -97,6 +104,22 @@ alter policy klash_photos_delete_author_or_staff on public.klash_photos
     or public.current_user_role() in ('moderator', 'admin')
     or exists (
       select 1 from public.klashes k
-       where k.id = klash_id and k.author_id = auth.uid()
+       where k.id = klash_id and k.author_id = auth.uid() and k.status = 'new'
+    )
+  );
+
+-- ---------- (c) storage.objects DELETE, mirrored ----------
+alter policy klash_photos_objects_delete_author_or_staff on storage.objects
+  using (
+    bucket_id = 'klash-photos'
+    and (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    and (
+      public.current_user_role() in ('moderator', 'admin')
+      or exists (
+        select 1 from public.klashes k
+         where k.id = ((storage.foldername(name))[1])::uuid
+           and k.author_id = auth.uid()
+           and k.status = 'new'
+      )
     )
   );
