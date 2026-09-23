@@ -428,10 +428,12 @@ export const fr = {
         // TODO: remplacer par les coordonnées réelles de l'association avant
         // mise en production.
         body: [
-          'TODO — Nom de l’association : « 101améliorations » (nom à confirmer)',
-          'TODO — Forme juridique et numéro SIRET',
-          'TODO — Adresse du siège social',
-          'TODO — Adresse email de contact',
+          'Le site 101ameliorations.org est édité par :',
+          "Association Atelier Vélo Txirrind'Ola** (Association loi 1901).",
+          'Adresse du siège social :** 56 allées Marines, 64100 Bayonne, France.',
+          'Téléphone : 07 81 50 72 73.',
+          'E-mail de contact : contact@txirrindola.org.',
+          'Numéro SIRET : 789 375 433 00016',
         ],
       },
       publicationDirector: {
@@ -441,9 +443,15 @@ export const fr = {
       hosting: {
         heading: 'Hébergement',
         body: [
-          'Hébergement des données (base de données, authentification, fichiers) : Supabase Inc., région Union européenne.',
-          'Hébergement du site (fichiers statiques) : Cloudflare, Inc.',
+          "Hébergement du site (fichiers statiques et CDN) : Cloudflare, Inc. — 101 Townsend St, San Francisco, CA 94107, États-Unis (Tél. : +1 888 993 5273). Fichiers distribués via un réseau CDN mondial s'appuyant sur des centres de données en France (notamment Bordeaux, Paris, Lyon, Marseille).",
+          'Hébergement des données (base de données et authentification) : SUPABASE PTE. LTD. — 65 Chulia Street #38-02/03, OCBC Centre, Singapour 049513 (E-mail : support@supabase.com).',
+          "Localisation physique des données : Les données sont hébergées en France sur les serveurs d'Amazon Web Services (région AWS Paris - eu-west-3).",
         ],
+      },
+      privacy: {
+        heading: 'Données personnelles et cookies',
+        body: "Dans le cadre de l'utilisation de la plateforme (notamment pour l'authentification des utilisateurs), des données à caractère personnel sont traitées. L'ensemble des règles relatives à ce traitement, à l'exercice de vos droits (accès, rectification, suppression, opposition) et à la gestion des cookies sont détaillées dans notre",
+        link: 'Politique de confidentialité',
       },
       accessibility: {
         heading: 'Accessibilité',

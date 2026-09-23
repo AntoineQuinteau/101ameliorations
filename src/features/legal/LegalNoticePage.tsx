@@ -39,6 +39,20 @@ export function LegalNoticePage() {
       </section>
 
       <section className="mt-6">
+        <h2 className="text-sm font-semibold text-neutral-900">{t.privacy.heading}</h2>
+        <p className="mt-2 text-sm text-neutral-700">
+          {t.privacy.body}{' '}
+          <a
+            href="/confidentialite"
+            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800"
+          >
+            {t.privacy.link}
+          </a>
+          .
+        </p>
+      </section>
+
+      <section className="mt-6">
         <h2 className="text-sm font-semibold text-neutral-900">{t.accessibility.heading}</h2>
         <p className="mt-2 text-sm text-neutral-700">{t.accessibility.body}</p>
       </section>
