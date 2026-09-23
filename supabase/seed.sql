@@ -189,7 +189,7 @@ insert into seed_other_precisions (precision_text) values
 -- (seed_hubs) sit well inside it, and sigma ~= 1.3 km is far too small for
 -- the jitter alone to ever cross it.
 insert into public.klashes (
-  author_id, location, category, category_other, urgency, status,
+  author_id, location, category, category_other, importance, status,
   title, description, created_at, updated_at, resolved_at
 )
 select
@@ -199,7 +199,7 @@ select
    ))::extensions.geography,
   derived.category,
   derived.category_other,
-  derived.urgency,
+  derived.importance,
   derived.status,
   content.title,
   content.description,
@@ -215,7 +215,7 @@ cross join lateral (
     random() as u2,
     random() as status_r,
     random() as category_r,
-    random() as urgency_r,
+    random() as importance_r,
     -- 548 days (~18 months) back, squared to bias toward recent reports.
     now() - (548 * power(random(), 2)) * interval '1 day' as created_at
   -- `where s.n > 0` is not a filter: it correlates this subquery to the
@@ -260,10 +260,10 @@ cross join lateral (
       else null
     end) as category_other,
     (case
-      when base.urgency_r < 0.25 then 'low'
-      when base.urgency_r < 0.75 then 'medium'
+      when base.importance_r < 0.25 then 'low'
+      when base.importance_r < 0.75 then 'medium'
       else 'high'
-    end)::public.klash_urgency as urgency
+    end)::public.klash_importance as importance
 ) as derived
 cross join lateral (
   select case when derived.status = 'resolved'

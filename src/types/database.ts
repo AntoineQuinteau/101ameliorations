@@ -239,13 +239,13 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string
+          importance: Database['public']['Enums']['klash_importance']
           location: unknown
           proposed_solution: string | null
           resolved_at: string | null
           status: Database['public']['Enums']['klash_status']
           title: string
           updated_at: string
-          urgency: Database['public']['Enums']['klash_urgency']
         }
         Insert: {
           author_id: string
@@ -257,13 +257,13 @@ export type Database = {
           description?: string | null
           duplicate_of?: string | null
           id?: string
+          importance?: Database['public']['Enums']['klash_importance']
           location: unknown
           proposed_solution?: string | null
           resolved_at?: string | null
           status?: Database['public']['Enums']['klash_status']
           title: string
           updated_at?: string
-          urgency?: Database['public']['Enums']['klash_urgency']
         }
         Update: {
           author_id?: string
@@ -275,13 +275,13 @@ export type Database = {
           description?: string | null
           duplicate_of?: string | null
           id?: string
+          importance?: Database['public']['Enums']['klash_importance']
           location?: unknown
           proposed_solution?: string | null
           resolved_at?: string | null
           status?: Database['public']['Enums']['klash_status']
           title?: string
           updated_at?: string
-          urgency?: Database['public']['Enums']['klash_urgency']
         }
         Relationships: [
           {
@@ -417,6 +417,7 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string | null
+          importance: Database['public']['Enums']['klash_importance'] | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -424,7 +425,6 @@ export type Database = {
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
           updated_at: string | null
-          urgency: Database['public']['Enums']['klash_urgency'] | null
         }
         Relationships: [
           {
@@ -479,6 +479,7 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string | null
+          importance: Database['public']['Enums']['klash_importance'] | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -486,7 +487,6 @@ export type Database = {
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
           updated_at: string | null
-          urgency: Database['public']['Enums']['klash_urgency'] | null
         }
         SetofOptions: {
           from: '*'
@@ -500,11 +500,11 @@ export type Database = {
           category: Database['public']['Enums']['klash_category']
           category_other?: string
           description: string
+          importance: Database['public']['Enums']['klash_importance']
           lat: number
           lng: number
           proposed_solution?: string
           title: string
-          urgency: Database['public']['Enums']['klash_urgency']
         }
         Returns: {
           author_display_name: string | null
@@ -519,6 +519,7 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string | null
+          importance: Database['public']['Enums']['klash_importance'] | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -526,7 +527,6 @@ export type Database = {
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
           updated_at: string | null
-          urgency: Database['public']['Enums']['klash_urgency'] | null
         }
         SetofOptions: {
           from: '*'
@@ -570,6 +570,7 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string | null
+          importance: Database['public']['Enums']['klash_importance'] | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -577,7 +578,6 @@ export type Database = {
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
           updated_at: string | null
-          urgency: Database['public']['Enums']['klash_urgency'] | null
         }[]
         SetofOptions: {
           from: '*'
@@ -601,6 +601,7 @@ export type Database = {
           description: string | null
           duplicate_of: string | null
           id: string | null
+          importance: Database['public']['Enums']['klash_importance'] | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -608,7 +609,6 @@ export type Database = {
           status: Database['public']['Enums']['klash_status'] | null
           title: string | null
           updated_at: string | null
-          urgency: Database['public']['Enums']['klash_urgency'] | null
         }[]
         SetofOptions: {
           from: '*'
@@ -628,8 +628,8 @@ export type Database = {
         | 'category_5'
         | 'category_6'
         | 'category_7'
+      klash_importance: 'low' | 'medium' | 'high'
       klash_status: 'new' | 'acknowledged' | 'in_progress' | 'resolved' | 'rejected' | 'duplicate'
-      klash_urgency: 'low' | 'medium' | 'high'
       user_role: 'user' | 'moderator' | 'authority' | 'admin'
     }
     CompositeTypes: {
@@ -764,8 +764,8 @@ export const Constants = {
         'category_6',
         'category_7',
       ],
+      klash_importance: ['low', 'medium', 'high'],
       klash_status: ['new', 'acknowledged', 'in_progress', 'resolved', 'rejected', 'duplicate'],
-      klash_urgency: ['low', 'medium', 'high'],
       user_role: ['user', 'moderator', 'authority', 'admin'],
     },
   },
