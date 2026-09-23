@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { Plugin } from 'vite'
 
@@ -37,7 +38,13 @@ function extensionOf(pathname: string): string {
 
 async function readFromDiskCache(cachePath: string): Promise<Buffer | null> {
   try {
-    return await readFile(cachePath)
+    const cached = await readFile(cachePath)
+    // A 0-byte file is a truthy Buffer but never a real tile — the mark of a write
+    // that was interrupted before writeToDiskCache's rename below could land (or, in
+    // principle, an upstream that itself returned an empty body). Treating it as a
+    // miss here, at the single read path, means every caller keeps the simple
+    // `null` = miss / `Buffer` = hit contract instead of re-checking `.length` itself.
+    return cached.length > 0 ? cached : null
   } catch {
     return null
   }
@@ -45,7 +52,14 @@ async function readFromDiskCache(cachePath: string): Promise<Buffer | null> {
 
 async function writeToDiskCache(cachePath: string, body: Buffer): Promise<void> {
   await mkdir(dirname(cachePath), { recursive: true })
-  await writeFile(cachePath, body)
+  // Write-then-rename rather than a direct writeFile (which truncates in place): a
+  // crash, ENOSPC, or another request racing this one would otherwise be able to
+  // observe (or permanently leave behind) a partially-written file at cachePath.
+  // rename() is atomic on the same filesystem, so cachePath only ever transitions
+  // between "absent" and "fully written" — never a half-written state in between.
+  const tmpPath = `${cachePath}.${randomUUID()}.tmp`
+  await writeFile(tmpPath, body)
+  await rename(tmpPath, cachePath)
 }
 
 /** Dev-only Vite plugin (`apply: 'serve'` — never runs in `vite build`, so it can never
@@ -124,7 +138,14 @@ export function tileProxy(maptilerKey: string | undefined): Plugin {
           if (!upstream.ok) throw new Error(`upstream responded ${upstream.status}`)
 
           const body = Buffer.from(await upstream.arrayBuffer())
-          await writeToDiskCache(cachePath, body)
+
+          // Deliberately off the response path: a cache write failure (read-only
+          // .cache/, ENOSPC) must never throw away tile bytes MapTiler already served
+          // successfully. Logged separately so it's never mistaken for the upstream
+          // fetch failure the catch block below reports.
+          void writeToDiskCache(cachePath, body).catch((error: unknown) => {
+            server.config.logger.warn(`[tile-proxy] cache write failed for ${pathname}: ${error}`)
+          })
 
           res.statusCode = 200
           res.setHeader('Content-Type', contentType)

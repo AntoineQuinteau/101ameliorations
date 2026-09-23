@@ -23,3 +23,15 @@ export function buildTileUrlTemplate(layer: MapLayer, baseUrl: string, key?: str
   const query = key ? `?key=${key}` : ''
   return `${baseUrl}${path}${query}`
 }
+
+/** The MapTiler key belongs on the request only when `baseUrl` actually points at
+ * MapTiler. Once it points elsewhere — the dev/CI proxy today
+ * (`vite-plugins/tileProxy.ts`), a future edge proxy — that destination holds its own
+ * upstream key server-side and must never receive the client's, which `MapTiles.tsx`
+ * would otherwise still be inlining into the production bundle and sending on every
+ * tile request for no reason. Called once at the single point both `<TileLayer>` props
+ * read from, so the invariant holds by construction instead of depending on nobody
+ * ever setting both `VITE_MAPTILER_KEY` and a custom `VITE_TILE_BASE_URL` at once. */
+export function resolveTileKey(baseUrl: string, key: string | undefined): string | undefined {
+  return baseUrl === DEFAULT_TILE_BASE_URL ? key : undefined
+}

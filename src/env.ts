@@ -1,5 +1,19 @@
 import { z } from 'zod'
 
+// Vite's loadEnv keeps an explicitly-empty `KEY=` line from .env.local as `''`, not as
+// absent — verified directly against `vite`'s own loadEnv, not assumed. A plain
+// `z.string().min(1).optional()` only tolerates `undefined`; it still rejects `''`
+// (`.optional()` widens accepted *types*, it doesn't relax the inner string check), so
+// that field would fail validation for anyone who follows README.md's own instructions
+// (`cp .env.example .env.local`) and leaves an optional var's line untouched — worse,
+// since this runs inside a single object schema, that failure happens before the
+// superRefine below ever runs. Preprocessing '' to undefined first is what actually
+// makes "leave it blank" behave like "unset".
+const optionalString = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+)
+
 // VITE_SENTRY_DSN is deliberately not listed here: it's optional (see
 // src/lib/sentry.ts) and must never make the app fail to start.
 //
@@ -22,9 +36,9 @@ const schema = z
   .object({
     VITE_SUPABASE_URL: z.string().url(),
     VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
-    VITE_MAPTILER_KEY: z.string().min(1).optional(),
-    VITE_TURNSTILE_SITE_KEY: z.string().min(1).optional(),
-    VITE_TILE_BASE_URL: z.string().min(1).optional(),
+    VITE_MAPTILER_KEY: optionalString,
+    VITE_TURNSTILE_SITE_KEY: optionalString,
+    VITE_TILE_BASE_URL: optionalString,
   })
   .superRefine((value, ctx) => {
     // A custom VITE_TILE_BASE_URL means something else (the dev/CI proxy today, an edge

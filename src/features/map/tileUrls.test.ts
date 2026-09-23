@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_TILE_BASE_URL, buildTileUrlTemplate } from './tileUrls'
+import { DEFAULT_TILE_BASE_URL, buildTileUrlTemplate, resolveTileKey } from './tileUrls'
 
 describe('buildTileUrlTemplate', () => {
   it('reproduces the exact plan-layer URL this replaces, on the default base', () => {
@@ -32,5 +32,23 @@ describe('buildTileUrlTemplate', () => {
   it('keeps the retina placeholder on the plan layer only, never on satellite', () => {
     expect(buildTileUrlTemplate('plan', DEFAULT_TILE_BASE_URL)).toContain('{r}')
     expect(buildTileUrlTemplate('satellite', DEFAULT_TILE_BASE_URL)).not.toContain('{r}')
+  })
+})
+
+describe('resolveTileKey', () => {
+  it('passes the key through on the default (MapTiler) base', () => {
+    expect(resolveTileKey(DEFAULT_TILE_BASE_URL, 'my-key')).toBe('my-key')
+  })
+
+  it('stays undefined on the default base when no key is configured', () => {
+    expect(resolveTileKey(DEFAULT_TILE_BASE_URL, undefined)).toBeUndefined()
+  })
+
+  it('drops the key on any non-default base, even if one is configured', () => {
+    expect(resolveTileKey('/__tiles', 'my-key')).toBeUndefined()
+  })
+
+  it('stays undefined on a non-default base with no key either', () => {
+    expect(resolveTileKey('/__tiles', undefined)).toBeUndefined()
   })
 })
