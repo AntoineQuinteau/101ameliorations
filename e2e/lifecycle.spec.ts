@@ -34,7 +34,14 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
 
   const lastPageButton = page.getByRole('button', { name: 'Page suivante' })
   while (await lastPageButton.isEnabled()) {
-    await lastPageButton.click()
+    // The click that lands on the last page can disable this same button
+    // before Playwright's actionability wait confirms it as "enabled" for
+    // the click, which then retries against a now-permanently-disabled
+    // target until the test's 30s timeout. A short timeout plus swallowing
+    // that one failure is safe here: either the click went through before
+    // the button disabled (the common case), or it didn't and the loop
+    // condition below re-reads `isEnabled()` and simply exits.
+    await lastPageButton.click({ timeout: 5000 }).catch(() => {})
     await expect(rows.first()).toBeVisible()
   }
 
