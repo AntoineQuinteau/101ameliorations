@@ -4,6 +4,7 @@ import {
   type KlashCategory,
   type KlashStatus,
 } from '../../types/klash'
+import { daysAgoIso } from '../../utils/formatDate'
 
 export type Period = 'any' | '7' | '30' | '90'
 
@@ -17,8 +18,7 @@ const PERIODS: Period[] = ['any', '7', '30', '90']
  * table's query key. */
 export function sinceForPeriod(period: Period): string | null {
   if (period === 'any') return null
-  const days = Number(period)
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+  return daysAgoIso(Number(period))
 }
 
 export interface AdminTableParams {
@@ -59,7 +59,11 @@ export function adminParamsFromSearchParams(params: URLSearchParams): AdminTable
   const rawPeriod = params.get(PERIOD_PARAM)
   const period = rawPeriod && PERIODS.includes(rawPeriod as Period) ? (rawPeriod as Period) : null
   const rawPage = params.get(PAGE_PARAM)
-  const parsedPage = rawPage ? Number.parseInt(rawPage, 10) : NaN
+  // Strict all-digits check before parsing: `Number.parseInt` alone would
+  // accept trailing junk ("2abc" → 2) or exponential notation ("1e3" → 1),
+  // silently misreading a malformed URL instead of falling back to the
+  // default as the rest of this parser does.
+  const parsedPage = rawPage && /^\d+$/.test(rawPage) ? Number(rawPage) : NaN
   const page = Number.isInteger(parsedPage) && parsedPage >= 1 ? parsedPage - 1 : null
 
   return {

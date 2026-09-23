@@ -74,6 +74,14 @@ describe('adminParamsFromSearchParams', () => {
     expect(adminParamsFromSearchParams(new URLSearchParams('page=-3')).page).toBe(0)
   })
 
+  it('rejects a page value with trailing junk instead of parsing its numeric prefix', () => {
+    // Number.parseInt would read "2abc" as 2 and "1e3" as 1 (not 1000) —
+    // both must fall back to the default instead of silently misreading a
+    // malformed URL.
+    expect(adminParamsFromSearchParams(new URLSearchParams('page=2abc')).page).toBe(0)
+    expect(adminParamsFromSearchParams(new URLSearchParams('page=1e3')).page).toBe(0)
+  })
+
   it('ignores unrelated params (e.g. tab)', () => {
     const params = adminParamsFromSearchParams(new URLSearchParams('tab=roles&status=new'))
     expect(params.status).toBe('new')

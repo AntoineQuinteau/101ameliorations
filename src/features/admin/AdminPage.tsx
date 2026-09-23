@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   adminTabFromSearchParams,
@@ -18,28 +18,29 @@ import { TriageQueue } from './TriageQueue'
  * self-contained component that owns its own query.
  *
  * The active tab is reflected in the URL (`?tab=`), alongside the klash
- * table's own filters/page — see `adminFilterParams.ts`. */
+ * table's own filters/page — see `adminFilterParams.ts`. Derived from the
+ * URL on every render rather than mirrored into a `useState` (same
+ * rationale as `AdminKlashTable`'s `params`), so browser back/forward
+ * across tabs is picked up automatically. */
 export function AdminPage() {
   const { role, isResolved } = useRole()
   const isAdmin = role === 'admin'
   const [searchParams, setSearchParams] = useSearchParams()
-  const [tab, setTab] = useState<AdminTab>(() => adminTabFromSearchParams(searchParams))
-
-  function changeTab(next: AdminTab) {
-    setTab(next)
-    setSearchParams((current) => adminTabToSearchParams(current, next), { replace: true })
-  }
+  const tab = useMemo(() => adminTabFromSearchParams(searchParams), [searchParams])
 
   // A `?tab=roles` link opened by a non-admin (or while the role hasn't
-  // resolved yet) would otherwise render nothing, since the roles tab's
-  // content is only rendered `isAdmin && tab === 'roles'` below — fall back
-  // to the klash table once the role is known to not be admin. Waits on
-  // `isResolved` so an admin reloading /admin?tab=roles isn't bounced to
-  // "Signalements" for the instant before their own role has loaded.
-  useEffect(() => {
-    if (tab === 'roles' && isResolved && !isAdmin) changeTab('klashes')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, isResolved, isAdmin])
+  // resolved yet) would otherwise render an empty panel — the roles tab's
+  // content is only rendered for `isAdmin`. Derived here instead of
+  // corrected in an effect: an effect would still render that empty panel
+  // for one frame before redirecting. Waits on `isResolved` so an admin
+  // reloading /admin?tab=roles isn't bounced to "Signalements" for the
+  // instant before their own role has loaded. The stale `?tab=roles` in
+  // the URL is simply overwritten the next time the user switches tabs.
+  const effectiveTab: AdminTab = tab === 'roles' && isResolved && !isAdmin ? 'klashes' : tab
+
+  function changeTab(next: AdminTab) {
+    setSearchParams((current) => adminTabToSearchParams(current, next), { replace: true })
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4">
@@ -50,23 +51,23 @@ export function AdminPage() {
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.admin.title}</h1>
 
       <div className="mt-4 flex gap-1 border-b border-neutral-200">
-        <TabButton active={tab === 'klashes'} onClick={() => changeTab('klashes')}>
+        <TabButton active={effectiveTab === 'klashes'} onClick={() => changeTab('klashes')}>
           {fr.admin.tabs.klashes}
         </TabButton>
-        <TabButton active={tab === 'triage'} onClick={() => changeTab('triage')}>
+        <TabButton active={effectiveTab === 'triage'} onClick={() => changeTab('triage')}>
           {fr.admin.tabs.triage}
         </TabButton>
         {isAdmin && (
-          <TabButton active={tab === 'roles'} onClick={() => changeTab('roles')}>
+          <TabButton active={effectiveTab === 'roles'} onClick={() => changeTab('roles')}>
             {fr.admin.tabs.roles}
           </TabButton>
         )}
       </div>
 
       <div className="mt-4">
-        {tab === 'klashes' && <AdminKlashTable />}
-        {tab === 'triage' && <TriageQueue />}
-        {tab === 'roles' && isAdmin && <RoleManagement />}
+        {effectiveTab === 'klashes' && <AdminKlashTable />}
+        {effectiveTab === 'triage' && <TriageQueue />}
+        {effectiveTab === 'roles' && isAdmin && <RoleManagement />}
       </div>
     </div>
   )
