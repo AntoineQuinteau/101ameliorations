@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { klashFromRow, type Klash, type KlashCategory, type KlashStatus } from '../types/klash'
 import { profileFromRow, userRoleSchema, type Profile } from '../types/profile'
 import type { UserRole } from '../types/profile'
+import { daysAgoIso } from '../utils/formatDate'
 
 // find_profile_by_email() (unlike a plain `profiles` row) deliberately
 // returns only what's needed to act on the account — no created_at, no
@@ -47,6 +48,9 @@ export interface AdminKlashFilters {
 export interface AdminKlashPage {
   klashes: Klash[]
   totalCount: number
+  /** The page actually served — can differ from the requested `page` when
+   * the request was out of range (see the PGRST103 handling below). */
+  page: number
 }
 
 /** Paginated, filtered, searchable klash listing for `/admin` (spec §6.6).
@@ -73,20 +77,29 @@ export async function fetchAdminKlashes(
 
   const from = page * ADMIN_PAGE_SIZE
   const { data, error, count } = await query.range(from, from + ADMIN_PAGE_SIZE - 1)
-  if (error) throw error
-  return { klashes: data.map(klashFromRow), totalCount: count ?? 0 }
+  if (error) {
+    // PostgREST rejects a range whose start is beyond the total row count
+    // (PGRST103) rather than returning an empty page — a stale or
+    // hand-edited `?page=` link would otherwise fail forever, since
+    // "Réessayer" repeats the same out-of-range request. Recover by
+    // serving page 0 instead; the caller reconciles the URL to the page
+    // actually served. Recursion is bounded to depth 1: the recursive call
+    // always passes page 0, and the guard requires page > 0.
+    if (error.code === 'PGRST103' && page > 0) return fetchAdminKlashes(filters, 0)
+    throw error
+  }
+  return { klashes: data.map(klashFromRow), totalCount: count ?? 0, page }
 }
 
 /** Klashs stuck in `new` for more than 7 days (spec §6.6 "file à trier").
  * Public read (same RLS as the rest of klashes_public); this app only
  * surfaces it to staff. */
 export async function fetchTriageQueue(): Promise<Klash[]> {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
   const { data, error } = await supabase
     .from('klashes_public')
     .select('*')
     .eq('status', 'new')
-    .lt('created_at', sevenDaysAgo)
+    .lt('created_at', daysAgoIso(7))
     .order('created_at', { ascending: true })
   if (error) throw error
   return data.map(klashFromRow)
