@@ -98,7 +98,11 @@ describe('klashFormInputFromDraft', () => {
   })
 
   it('rejects category_7 ("Autre") with no precision typed', () => {
-    const draft = { ...emptyKlashFormDraft, category: 'category_7' as const, title: 'Trou dans le sol' }
+    const draft = {
+      ...emptyKlashFormDraft,
+      category: 'category_7' as const,
+      title: 'Trou dans le sol',
+    }
     expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(draft)).success).toBe(false)
   })
 
