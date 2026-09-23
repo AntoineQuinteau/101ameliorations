@@ -245,6 +245,8 @@ export const fr = {
     myKlashesEmpty: "Vous n'avez pas encore signalé de klash.",
     myKlashesEmptyCta: 'Voir la carte',
     loadError: 'Impossible de charger vos signalements.',
+    roleLabel: 'Rôle',
+    organizationLabel: 'Organisation',
     pseudoLabel: 'Pseudo',
     pseudoSave: 'Enregistrer',
     pseudoSaved: 'Pseudo enregistré.',
