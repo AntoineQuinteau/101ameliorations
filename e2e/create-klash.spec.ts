@@ -52,7 +52,7 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   await page.getByLabel('Catégorie').selectOption('category_1')
   await page.getByRole('button', { name: 'Élevée' }).click()
   await page.getByLabel('Titre').fill(title)
-  await page.getByLabel('Description (facultative)').fill('Signalement créé par le test E2E.')
+  await page.getByLabel('Description').fill('Signalement créé par le test E2E.')
   await page.getByRole('button', { name: 'Continuer' }).click()
 
   // Step 4: submit, with inline login (spec §6.2 step 4) since this is a
