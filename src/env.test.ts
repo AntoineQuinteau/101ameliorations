@@ -5,12 +5,23 @@ const REQUIRED_VARS = {
   VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_x',
 }
 
+// Every optional var this module validates, forced to '' (env.ts treats that the same
+// as unset — see its optionalString comment) unless a test overrides it. Without this,
+// a contributor's own .env.local leaks its real VITE_MAPTILER_KEY/VITE_TURNSTILE_SITE_KEY
+// into import.meta.env before vi.stubEnv ever runs, and tests that assume those vars are
+// absent fail on their machine while passing on a clean checkout.
+const OPTIONAL_VARS = {
+  VITE_MAPTILER_KEY: '',
+  VITE_TURNSTILE_SITE_KEY: '',
+  VITE_TILE_BASE_URL: '',
+}
+
 // Each import.meta.env field this module validates is re-evaluated once, at module
 // load — vi.resetModules() plus a fresh dynamic import is what forces that
 // re-evaluation per test, since a plain top-level `import` would reuse the first
 // module instance for the rest of the file.
 async function loadEnvWith(vars: Record<string, string>) {
-  for (const [key, value] of Object.entries({ ...REQUIRED_VARS, ...vars })) {
+  for (const [key, value] of Object.entries({ ...OPTIONAL_VARS, ...REQUIRED_VARS, ...vars })) {
     vi.stubEnv(key, value)
   }
   vi.resetModules()
