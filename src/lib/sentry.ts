@@ -31,3 +31,13 @@ export function initSentry(): void {
     sendDefaultPii: false,
   })
 }
+
+/** Called once from `tileFailover.ts` when a device's map switches from MapTiler to the
+ * IGN fallback (a MapTiler outage or exhausted quota) — the one signal the association
+ * needs to notice this is happening, without a Sentry account being required for the
+ * app to work (same no-op-without-a-DSN contract as `initSentry`). Warning, not error:
+ * the map keeps working, on the fallback source. */
+export function reportTileFailover(reason: string): void {
+  if (!import.meta.env.VITE_SENTRY_DSN) return
+  Sentry.captureMessage(`Tile provider failover to IGN: ${reason}`, 'warning')
+}

@@ -19,19 +19,20 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action                                                                      | anonyme    | `user` | `moderator` (asso) | `authority` (agglo) | `admin` |
-| --------------------------------------------------------------------------- | ---------- | ------ | ------------------ | ------------------- | ------- |
-| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓      | ✓                  | ✓                   | ✓       |
-| Créer un klash, ajouter des photos                                          |            | ✓      | ✓                  | ✓                   | ✓       |
-| Confirmer (+1) un klash                                                     |            | ✓      | ✓                  | ✓                   | ✓       |
-| Commenter                                                                   |            | ✓      | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓      | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |        | ✓                  |                     | ✓       |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |        | ✓                  |                     | ✓       |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |        |                    | ✓                   | ✓       |
-| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |        | ✓                  | ✓                   | ✓       |
-| Export CSV / GeoJSON                                                        | ✓ (public) | ✓      | ✓                  | ✓                   | ✓       |
-| Gérer les rôles                                                             |            |        |                    |                     | ✓       |
+| Action                                                                        | anonyme    | `user` | `moderator` (asso) | `authority` (agglo) | `admin` |
+| ----------------------------------------------------------------------------- | ---------- | ------ | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                      | ✓          | ✓      | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                            |            | ✓      | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                       |            | ✓      | ✓                  | ✓                   | ✓       |
+| Commenter                                                                     |            | ✓      | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires              |            | ✓      | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire   |            |        | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                      |            |        | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`             |            |        |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                     |            |        | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                          | ✓ (public) | ✓      | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                               |            |        |                    |                     | ✓       |
+| Modifier les réglages (`settings` : zone de service, source du fond de carte) |            |        |                    |                     | ✓       |
 
 Règles :
 
@@ -191,7 +192,8 @@ Une seule application responsive. Routes :
 ### 6.1 Carte (`/`)
 
 - Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), zoom maximum 20 en plan et 22 en vue satellite (zoom natif de chaque tuileset), contrainte aux bounds de la zone de service.
-- Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), bascule via un bouton flottant, dernier choix mémorisé en local sur l'appareil.
+- Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), et couche « Vélo » optionnelle (tuiles CyclOSM, mettant en avant les aménagements cyclables) ; bascule entre les trois via un sélecteur flottant (`MapLayerToggle.tsx`), dernier choix mémorisé en local sur l'appareil.
+- **Source du fond de carte (plan/satellite)** : MapTiler par défaut, avec un secours gratuit et sans quota vers l'IGN (Plan IGN v2 / BD ORTHO pour la France, WMTS de l'IGN espagnol pour la partie Navarre/Gipuzkoa de la zone de service) — voir `src/features/map/tileProviders.ts`. Le secours est déclenché soit par un admin via `settings.tile_provider` (`'maptiler'` | `'ign'`, sans redéploiement), soit automatiquement par appareil quand une tuile MapTiler échoue de façon confirmée (`src/features/map/tileFailover.ts`, secours de 6 h, alerte Sentry). Les tuiles IGN, en secours de zoom natif (~19) inférieur au MapTiler, sont ré-échelonnées par Leaflet plutôt que de bloquer le zoom.
 - Marqueurs colorés par importance, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
 - Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
@@ -246,7 +248,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 ## 7. PWA
 
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
-- Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
+- Cache : coquille applicative + tuiles récentes (`CacheFirst`, une entrée par source — MapTiler, IGN, CyclOSM — pour qu'un basculement de source n'évince pas le cache de l'autre ; 30 jours pour MapTiler/IGN, 7 jours pour CyclOSM par respect de sa politique d'usage OSM). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
 - Hors v1 : file d'attente hors-ligne des signalements (Background Sync).
 
@@ -255,7 +257,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Front** : React 18, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
-- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
+- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service, ni pour la source du fond de carte : elles sont lues au runtime depuis `settings.service_area_bbox` et `settings.tile_provider`, pas passées à la compilation.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.
@@ -287,6 +289,6 @@ Chaque étape se termine par un déploiement preview testé sur téléphone rée
 
 1. **Catégories** (mises à jour le 17/09/2026, remplace la liste placeholder) : `category_1` « Trou / bosse ou chaussée abîmée », `category_2` « Obstacle sur la piste », `category_3` « Problème de signalisation / marquage », `category_4` « Rupture de continuité », `category_5` « Zone de conflit avec automobiliste », `category_6` « Zone de conflit avec autres usagers », `category_7` « Autre (préciser) » — avec un champ `category_other` requis pour ce dernier. Sélection par liste déroulante obligatoire, sans valeur par défaut. Paramétrage par le rôle `moderator` : v2.
 2. **Nom** : « 101améliorations ». Domaine initial `101ameliorations.workers.dev` (gratuit Cloudflare), puis domaine personnalisé `101ameliorations.org` sans impact sur le code. Expéditeur des emails : « 101améliorations ».
-3. **Tuiles** : MapTiler.
+3. **Tuiles** : MapTiler par défaut, secours automatique et manuel vers l'IGN (France + Espagne, gratuit et sans quota) suite au quasi-épuisement du quota gratuit MapTiler dès la bêta (10 jours, <5 testeurs) — voir `src/features/map/tileProviders.ts` et `tileFailover.ts`. Couche « Vélo » optionnelle : CyclOSM.
 4. **Conservation** : klashs `resolved` masqués de la carte par défaut après 90 jours, conservés en base et dans l'export.
 5. **Contact auteur** : `authority`, `moderator` et `admin` peuvent consulter l'email de l'auteur d'un klash (v1). Notifications automatiques : v2.

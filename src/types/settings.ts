@@ -34,3 +34,24 @@ export function serviceAreaBboxFromValue(value: unknown): Bbox {
     maxLng: parsed.max_lng,
   }
 }
+
+// Mirrors settings.value for key 'tile_provider' (a plain jsonb string, not an object —
+// see that row's own migration). Kept in sync by hand with the TileProvider type in
+// src/features/map/tileProviders.ts: duplicated rather than imported, for the same
+// reason serviceAreaBboxFromValue lives here rather than in src/api/ (see its docblock)
+// — importing from src/features/map would pull react-leaflet's own types into a module
+// that must stay loadable with no DOM/leaflet present.
+const TILE_PROVIDERS = ['maptiler', 'ign'] as const
+const tileProviderValueSchema = z.enum(TILE_PROVIDERS)
+
+/** One of `TILE_PROVIDERS` above — assignable to `TileProvider`
+ * (src/features/map/tileProviders.ts) without a cast, since both list the exact same
+ * two literals. */
+export type TileProviderSetting = (typeof TILE_PROVIDERS)[number]
+
+/** Validates and maps a raw `settings.value` jsonb into a `TileProviderSetting`. Throws
+ * on anything else (missing row, unexpected value) — see `useTileProviderSetting()` for
+ * the fallback ('maptiler') that keeps the map usable when that happens. */
+export function tileProviderFromValue(value: unknown): TileProviderSetting {
+  return tileProviderValueSchema.parse(value)
+}

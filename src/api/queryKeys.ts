@@ -42,4 +42,5 @@ export const adminKlashKeys = {
 export const settingsKeys = {
   all: ['settings'] as const,
   serviceAreaBbox: () => [...settingsKeys.all, 'serviceAreaBbox'] as const,
+  tileProvider: () => [...settingsKeys.all, 'tileProvider'] as const,
 }

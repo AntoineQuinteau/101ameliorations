@@ -60,6 +60,23 @@ export default defineConfig(({ mode }) => {
             {
               // MapTiler tiles (spec §7): recent tiles stay available offline,
               // capped so the cache can't grow without bound.
+              //
+              // KNOWN GAP — statuses: [0, 200] below caches opaque (status 0) responses
+              // as well as real 200s. Leaflet's <img> tile requests have no `crossorigin`
+              // attribute, so every MapTiler response — including a 403 from an
+              // exhausted quota (see docs/plans/tile-edge-proxy.md's replacement plan,
+              // and src/features/map/tileFailover.ts) — comes back opaque, and the
+              // browser deliberately hides the real status from JS in that mode:
+              // Workbox cannot tell an opaque error from an opaque success. During a
+              // MapTiler outage this can cache a *blank* tile for the full 30 days
+              // below, staying blank even once MapTiler recovers. Fixing this needs
+              // `crossOrigin` set on the MapTiler `TileLayerSpec`s
+              // (src/features/map/tileProviders.ts) *and* `statuses` narrowed to
+              // `[200]` here, together — but only once MapTiler's tile responses are
+              // confirmed (on a live preview, not this sandbox) to actually send
+              // `Access-Control-Allow-Origin`: without it, `crossOrigin` makes the
+              // `<img>` request itself fail, which is strictly worse. Left as `[0, 200]`
+              // until that's confirmed.
               urlPattern: ({ url }) => url.hostname === 'api.maptiler.com',
               handler: 'CacheFirst',
               options: {
@@ -73,6 +90,37 @@ export default defineConfig(({ mode }) => {
                 // below (Workbox's expiration plugin evicts LRU, so this is a ceiling,
                 // not a reservation).
                 expiration: { maxEntries: 2000, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              // IGN fallback tiles (France's Géoplateforme + Spain's IGN — see
+              // src/features/map/tileProviders.ts): kept in a cache of its own, separate
+              // from maptiler-tiles, so a MapTiler outage that triggers the fallback
+              // doesn't evict MapTiler's own still-good cache, and vice versa on
+              // recovery. Same known opaque-response caveat as maptiler-tiles above —
+              // narrower `bounds` on these layers (a few thousand tiles at most, see
+              // that file) makes a 1000-entry cap generous rather than tight.
+              urlPattern: ({ url }) =>
+                url.hostname === 'data.geopf.fr' || url.hostname === 'www.ign.es',
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'ign-tiles',
+                expiration: { maxEntries: 1000, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+            {
+              // CyclOSM "Vélo" layer tiles (spec §6.1 follow-up). Shorter freshness
+              // window than the other two basemaps: OSM's own tile usage policy asks
+              // for normal interactive viewing only (no prefetching), so this cache
+              // exists purely to let a tile already seen this week redraw instantly —
+              // not to build up an offline set the way maptiler-tiles/ign-tiles do.
+              urlPattern: ({ url }) => url.hostname.endsWith('.tile-cyclosm.openstreetmap.fr'),
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'cyclosm-tiles',
+                expiration: { maxEntries: 500, maxAgeSeconds: 7 * 24 * 60 * 60 },
                 cacheableResponse: { statuses: [0, 200] },
               },
             },
