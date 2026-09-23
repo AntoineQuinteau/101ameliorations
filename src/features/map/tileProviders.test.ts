@@ -52,16 +52,24 @@ describe('tileLayerSpecs — maptiler', () => {
 })
 
 describe('tileLayerSpecs — ign', () => {
-  it('stacks exactly two layers (France + Spain) for plan', () => {
+  it('stacks exactly three layers (France + Spain coast + Spain interior) for plan', () => {
     const specs = tileLayerSpecs('ign', 'plan')
-    expect(specs).toHaveLength(2)
-    expect(specs.map((s) => s.id)).toEqual(['ign-fr-plan', 'ign-es-plan'])
+    expect(specs).toHaveLength(3)
+    expect(specs.map((s) => s.id)).toEqual([
+      'ign-fr-plan',
+      'ign-es-coast-plan',
+      'ign-es-interior-plan',
+    ])
   })
 
-  it('stacks exactly two layers (France + Spain) for satellite', () => {
+  it('stacks exactly three layers (France + Spain coast + Spain interior) for satellite', () => {
     const specs = tileLayerSpecs('ign', 'satellite')
-    expect(specs).toHaveLength(2)
-    expect(specs.map((s) => s.id)).toEqual(['ign-fr-satellite', 'ign-es-satellite'])
+    expect(specs).toHaveLength(3)
+    expect(specs.map((s) => s.id)).toEqual([
+      'ign-fr-satellite',
+      'ign-es-coast-satellite',
+      'ign-es-interior-satellite',
+    ])
   })
 
   it('never carries the MapTiler key or {r} retina placeholder', () => {
@@ -107,55 +115,89 @@ describe('tileLayerSpecs — ign', () => {
     }
   })
 
-  it("Spain's bounds are a real 2D corner, not a latitude-only band (regression: PR #33 review, round 1/2/4)", () => {
+  it("Spain's two corners are each narrower than France's box, not latitude-only bands (regression: PR #33 review, round 1/2/4)", () => {
     // A latitude-only band (rounds 1-2's approach) would span the same full longitude
-    // range as France's box — asserting Spain's box is narrower in *both* dimensions is
-    // what actually distinguishes a proper south-west corner from a band.
+    // range as France's box — asserting each Spain box is narrower in *both* dimensions
+    // is what actually distinguishes a proper south-west corner from a band.
     for (const layer of ['plan', 'satellite'] as const) {
-      const [fr, es] = tileLayerSpecs('ign', layer)
+      const [fr, esCoast, esInterior] = tileLayerSpecs('ign', layer)
       const [, [franceNorth, franceEast]] = fr.bounds as LatLngBox
-      const [[spainSouth, spainWest], [spainNorth, spainEast]] = es.bounds as LatLngBox
 
-      expect(spainSouth).toBeLessThan(spainNorth) // non-degenerate
-      expect(spainWest).toBeLessThan(spainEast) // non-degenerate
-      expect(spainNorth).toBeLessThan(franceNorth) // narrower in latitude
-      expect(spainEast).toBeLessThan(franceEast) // narrower in longitude too
+      for (const es of [esCoast, esInterior]) {
+        const [[spainSouth, spainWest], [spainNorth, spainEast]] = es.bounds as LatLngBox
+        expect(spainSouth).toBeLessThan(spainNorth) // non-degenerate
+        expect(spainWest).toBeLessThan(spainEast) // non-degenerate
+        expect(spainNorth).toBeLessThanOrEqual(franceNorth) // no wider than France
+        expect(spainEast).toBeLessThan(franceEast) // narrower in longitude
+      }
     }
   })
 
-  it('places every named town (from four rounds of review) on its correct side of the split', () => {
+  it('places every named town (from five rounds of review) on its correct side of the split', () => {
+    // Round 5: a single Spain corner loose enough in longitude to reach Pamplona also
+    // reached this whole populated stretch of the French Basque coast and interior, at
+    // similar longitudes but further north than Pamplona — see
+    // `IGN_SPAIN_COAST_BOUNDS`'s docblock for why that needs two corners, not one, to
+    // fix without losing Pamplona.
     const frenchTowns = {
       Pau: [43.295, -0.37],
       Oloron: [43.19, -0.61],
       Mauléon: [43.22, -0.89],
       'Saint-Jean-Pied-de-Port': [43.16, -1.24],
+      'Saint-Jean-de-Luz': [43.39, -1.66],
+      Ciboure: [43.38, -1.67],
+      Urrugne: [43.36, -1.7],
+      Ascain: [43.32, -1.58],
+      Sare: [43.29, -1.58],
+      'Saint-Pée-sur-Nivelle': [43.36, -1.55],
+      Espelette: [43.34, -1.45],
+      'Cambo-les-Bains': [43.36, -1.4],
+      Itxassou: [43.32, -1.42],
+      Bidarray: [43.24, -1.23],
     } as const
-    const spanishTowns = {
+    // Spanish towns close to a corner's edge, to catch a threshold that's merely in the
+    // right direction but not tight/loose enough — not just towns deep inside it.
+    const spanishCoastTowns = {
       'San Sebastián': [43.32, -1.98],
       Irun: [43.34, -1.79],
       Hondarribia: [43.37, -1.79],
+    } as const
+    const spanishInteriorTowns = {
       Pamplona: [42.82, -1.64],
     } as const
 
     for (const layer of ['plan', 'satellite'] as const) {
-      const [fr, es] = tileLayerSpecs('ign', layer)
+      const [fr, esCoast, esInterior] = tileLayerSpecs('ign', layer)
       const franceBounds = fr.bounds as LatLngBox
-      const spainBounds = es.bounds as LatLngBox
+      const spainCoastBounds = esCoast.bounds as LatLngBox
+      const spainInteriorBounds = esInterior.bounds as LatLngBox
 
       for (const [name, [lat, lng]] of Object.entries(frenchTowns)) {
         expect(containsPoint(franceBounds, lat, lng), `${name} should be in France's bounds`).toBe(
           true,
         )
         expect(
-          containsPoint(spainBounds, lat, lng),
-          `${name} should NOT be in Spain's bounds`,
+          containsPoint(spainCoastBounds, lat, lng),
+          `${name} should NOT be in Spain's coastal bounds`,
+        ).toBe(false)
+        expect(
+          containsPoint(spainInteriorBounds, lat, lng),
+          `${name} should NOT be in Spain's interior bounds`,
         ).toBe(false)
       }
 
-      for (const [name, [lat, lng]] of Object.entries(spanishTowns)) {
-        expect(containsPoint(spainBounds, lat, lng), `${name} should be in Spain's bounds`).toBe(
-          true,
-        )
+      for (const [name, [lat, lng]] of Object.entries(spanishCoastTowns)) {
+        expect(
+          containsPoint(spainCoastBounds, lat, lng),
+          `${name} should be in Spain's coastal bounds`,
+        ).toBe(true)
+      }
+
+      for (const [name, [lat, lng]] of Object.entries(spanishInteriorTowns)) {
+        expect(
+          containsPoint(spainInteriorBounds, lat, lng),
+          `${name} should be in Spain's interior bounds`,
+        ).toBe(true)
       }
     }
   })
