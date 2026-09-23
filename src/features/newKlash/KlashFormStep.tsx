@@ -164,8 +164,6 @@ export function KlashFormStep({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-neutral-900">{fr.newKlash.form.title}</h2>
 
-      <KlashFieldset value={value} onChange={onChange} idPrefix="new-klash" />
-
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-neutral-700">{fr.newKlash.form.photosLabel}</span>
 
@@ -258,6 +256,8 @@ export function KlashFormStep({
           </div>
         )}
       </div>
+
+      <KlashFieldset value={value} onChange={onChange} idPrefix="new-klash" />
 
       {validationError && <ErrorMessage message={validationError} />}
 
