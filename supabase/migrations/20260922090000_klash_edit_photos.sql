@@ -97,18 +97,29 @@ alter policy klash_photos_insert_klash_author on public.klash_photos
 -- Same regex-then-cast idiom as the original policy, and for the same
 -- reason: casting an arbitrary folder segment straight to uuid raises
 -- instead of failing the comparison, so the regex must short-circuit.
+--
+-- The klashes existence check is a shared, unconditional conjunct here —
+-- not nested inside only the non-staff branch — on purpose. The
+-- klash_photos table needs no such check: klash_photos.klash_id
+-- references klashes(id), so Postgres itself rejects an insert naming a
+-- non-existent klash regardless of RLS. storage.objects has no such
+-- constraint linking its folder segment to a real klash, so if the
+-- existence check only guarded the author/status branch, a moderator
+-- could upload under any well-formed but non-existent klash UUID —
+-- objects unreferenced by klash_photos and unreachable from every cleanup
+-- path (removeKlashPhotoObjects only ever walks rows, never sweeps the
+-- bucket), accumulating in a public bucket with no owning klash.
 alter policy klash_photos_objects_insert_klash_author on storage.objects
   with check (
     bucket_id = 'klash-photos'
     and (storage.foldername(name))[1] ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    and (
-      public.current_user_role() in ('moderator', 'admin')
-      or exists (
-        select 1 from public.klashes k
-         where k.id = ((storage.foldername(name))[1])::uuid
-           and k.author_id = auth.uid()
-           and k.status = 'new'
-      )
+    and exists (
+      select 1 from public.klashes k
+       where k.id = ((storage.foldername(name))[1])::uuid
+         and (
+           public.current_user_role() in ('moderator', 'admin')
+           or (k.author_id = auth.uid() and k.status = 'new')
+         )
     )
   );
 

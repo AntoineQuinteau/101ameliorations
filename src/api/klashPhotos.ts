@@ -69,20 +69,31 @@ export async function uploadKlashPhoto(
  * own author, the photo's own author, or staff (klash_photos_delete_author_
  * or_staff — supabase/migrations/20260922090000_klash_edit_photos.sql).
  *
- * Row first, object second — the opposite order from
- * removeKlashPhotoObjects, and deliberately so: that function must read
- * every path before deleteKlash's cascade destroys the rows, but here the
- * path is already in hand. The failure modes are also asymmetric: a row
- * that outlives its object renders a broken <img> in KlashPhotoGallery,
- * while an object that outlives its (now-deleted) row is simply invisible
- * — so the row delete is the one that must be verified, the object removal
- * stays best-effort like removeKlashPhotoObjects.
+ * Object first, row second. This used to be the other way round, but the
+ * storage.objects DELETE policy's own-uploader branch reads klash_photos
+ * (matching this row's storage_path and author_id) to authorise the object
+ * delete — deleting the row first makes that branch permanently
+ * unreachable, since by the time the object delete runs the row it needs
+ * to read is already gone. Object-first keeps the row available for that
+ * check. This is safe because the table and storage DELETE policies are
+ * kept structurally symmetric on purpose (same three branches, same
+ * conditions on both sides): whatever grants the object delete also
+ * grants the row delete, so an object succeeding here should not leave a
+ * row that then fails. The one thing this doesn't close is a narrow
+ * TOCTOU race — the klash's status changing between these two network
+ * calls — which no ordering choice eliminates without a single atomic
+ * RPC; out of scope here.
  *
- * RLS makes a forbidden delete a silent 0-row no-op rather than an error;
- * the length check below is what turns that into a reported failure. */
+ * The object removal is still best-effort (errors swallowed): if it's
+ * refused, the row delete below will be refused too under the same
+ * symmetric policies, so nothing is deleted and the length check reports
+ * it — the same "RLS turns a forbidden delete into a silent 0-row no-op,
+ * not an error" case removeKlashPhotoObjects documents. */
 export async function deleteKlashPhoto(
   photo: Pick<KlashPhoto, 'id' | 'storagePath'>,
 ): Promise<void> {
+  await supabase.storage.from(PHOTOS_BUCKET).remove([photo.storagePath])
+
   const { data, error } = await supabase
     .from('klash_photos')
     .delete()
@@ -90,11 +101,6 @@ export async function deleteKlashPhoto(
     .select('id')
   if (error) throw error
   if (data.length === 0) throw new Error('photo delete not permitted')
-
-  // Best-effort, same reasoning as removeKlashPhotoObjects: the row is
-  // already gone, so a failure here leaves an orphaned object that's
-  // unreferenced, not user-visible — not worth failing the delete over.
-  await supabase.storage.from(PHOTOS_BUCKET).remove([photo.storagePath])
 }
 
 /** Removes every Storage object belonging to a klash, for use just before
