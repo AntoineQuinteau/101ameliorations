@@ -8,7 +8,7 @@ function makeKlash(overrides: Partial<ExportKlash> = {}): ExportKlash {
     lat: 43.49,
     lng: -1.47,
     category: 'category_1',
-    urgency: 'medium',
+    importance: 'medium',
     status: 'new',
     title: 'Nid-de-poule',
     description: null,
@@ -31,7 +31,7 @@ describe('toCsv', () => {
   it('writes a snake_case header even with no rows', () => {
     const csv = toCsv([])
     expect(csv.slice(1)).toBe(
-      'id,lat,lng,category,urgency,status,title,description,duplicate_of,confirmations_count,comments_count,created_at,updated_at,resolved_at',
+      'id,lat,lng,category,importance,status,title,description,duplicate_of,confirmations_count,comments_count,created_at,updated_at,resolved_at',
     )
   })
 

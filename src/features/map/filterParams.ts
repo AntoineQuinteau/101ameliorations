@@ -1,15 +1,15 @@
 import {
   klashCategorySchema,
   klashStatusSchema,
-  klashUrgencySchema,
+  klashImportanceSchema,
   type KlashCategory,
   type KlashStatus,
-  type KlashUrgency,
+  type KlashImportance,
 } from '../../types/klash'
 import { defaultFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
 
 const CATEGORY_PARAM = 'category'
-const URGENCY_PARAM = 'urgency'
+const IMPORTANCE_PARAM = 'importance'
 const STATUS_PARAM = 'status'
 const CREATED_AFTER_PARAM = 'since'
 
@@ -38,13 +38,13 @@ function parseEnumList<T extends string>(
  * anything absent or unparseable. */
 export function filtersFromSearchParams(params: URLSearchParams): KlashFilters {
   const categories = parseEnumList<KlashCategory>(params, CATEGORY_PARAM, klashCategorySchema)
-  const urgencies = parseEnumList<KlashUrgency>(params, URGENCY_PARAM, klashUrgencySchema)
+  const importances = parseEnumList<KlashImportance>(params, IMPORTANCE_PARAM, klashImportanceSchema)
   const statuses = parseEnumList<KlashStatus>(params, STATUS_PARAM, klashStatusSchema)
   const createdAfter = params.get(CREATED_AFTER_PARAM)
 
   return {
     categories: categories ?? defaultFilters.categories,
-    urgencies: urgencies ?? defaultFilters.urgencies,
+    importances: importances ?? defaultFilters.importances,
     statuses: statuses ?? defaultFilters.statuses,
     createdAfter: createdAfter && /^\d{4}-\d{2}-\d{2}$/.test(createdAfter) ? createdAfter : null,
   }
@@ -61,8 +61,8 @@ export function filtersToSearchParams(filters: KlashFilters): URLSearchParams {
   if (!sameSet(filters.categories, defaultFilters.categories)) {
     params.set(CATEGORY_PARAM, filters.categories.join(','))
   }
-  if (!sameSet(filters.urgencies, defaultFilters.urgencies)) {
-    params.set(URGENCY_PARAM, filters.urgencies.join(','))
+  if (!sameSet(filters.importances, defaultFilters.importances)) {
+    params.set(IMPORTANCE_PARAM, filters.importances.join(','))
   }
   if (!sameSet(filters.statuses, defaultFilters.statuses)) {
     params.set(STATUS_PARAM, filters.statuses.join(','))

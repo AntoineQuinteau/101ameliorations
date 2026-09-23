@@ -3,12 +3,12 @@ import {
   type Klash,
   type KlashCategory,
   type KlashStatus,
-  type KlashUrgency,
+  type KlashImportance,
 } from '../../types/klash'
 
 export interface KlashFilters {
   categories: KlashCategory[]
-  urgencies: KlashUrgency[]
+  importances: KlashImportance[]
   statuses: KlashStatus[]
   /** Only klashs created on or after this date (inclusive), or `null` for no
    * lower bound. An ISO date string (yyyy-mm-dd), not a full timestamp: the
@@ -33,11 +33,11 @@ export const DEFAULT_STATUSES: KlashStatus[] = ALL_STATUSES.filter(
 // Derived from the zod schema rather than listed by hand, so a category
 // added there (the source of truth) doesn't also need updating here.
 export const ALL_CATEGORIES: KlashCategory[] = [...klashCategorySchema.options]
-export const ALL_URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
+export const ALL_IMPORTANCES: KlashImportance[] = ['low', 'medium', 'high']
 
 export const defaultFilters: KlashFilters = {
   categories: ALL_CATEGORIES,
-  urgencies: ALL_URGENCIES,
+  importances: ALL_IMPORTANCES,
   statuses: DEFAULT_STATUSES,
   createdAfter: null,
 }
@@ -48,7 +48,7 @@ export const defaultFilters: KlashFilters = {
 export function isDefaultFilters(filters: KlashFilters): boolean {
   return (
     sameMembers(filters.categories, defaultFilters.categories) &&
-    sameMembers(filters.urgencies, defaultFilters.urgencies) &&
+    sameMembers(filters.importances, defaultFilters.importances) &&
     sameMembers(filters.statuses, defaultFilters.statuses) &&
     filters.createdAfter === defaultFilters.createdAfter
   )
@@ -66,7 +66,7 @@ function sameMembers<T>(a: T[], b: T[]): boolean {
 export function applyFilters(klashes: Klash[], filters: KlashFilters): Klash[] {
   return klashes.filter((klash) => {
     if (!filters.categories.includes(klash.category)) return false
-    if (!filters.urgencies.includes(klash.urgency)) return false
+    if (!filters.importances.includes(klash.importance)) return false
     if (!filters.statuses.includes(klash.status)) return false
     if (filters.createdAfter && klash.createdAt < filters.createdAfter) return false
     return true

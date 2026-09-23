@@ -12,7 +12,7 @@ describe('filtersToSearchParams', () => {
     const filters: KlashFilters = { ...defaultFilters, categories: ['category_1'] }
     const params = filtersToSearchParams(filters)
     expect(params.get('category')).toBe('category_1')
-    expect(params.has('urgency')).toBe(false)
+    expect(params.has('importance')).toBe(false)
     expect(params.has('status')).toBe(false)
   })
 })
@@ -26,7 +26,7 @@ describe('filtersFromSearchParams', () => {
   it('round-trips a non-default filter set through the URL', () => {
     const original: KlashFilters = {
       categories: ['category_1', 'category_3'],
-      urgencies: ['high'],
+      importances: ['high'],
       statuses: ['new', 'in_progress'],
       createdAfter: '2026-01-01',
     }

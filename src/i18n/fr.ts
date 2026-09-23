@@ -23,10 +23,17 @@ export const fr = {
     category_6: 'Zone de conflit avec autres usagers',
     category_7: 'Autre (préciser)',
   },
-  urgency: {
-    low: 'Urgence faible',
-    medium: 'Urgence moyenne',
-    high: 'Urgence élevée',
+  importance: {
+    low: 'Faible',
+    medium: 'Moyenne',
+    high: 'Élevée',
+  },
+  // Same three values as `importance` above, spelled out for contexts (badges)
+  // where the value appears on its own, without a preceding "Importance" label.
+  importanceBadge: {
+    low: 'Importance faible',
+    medium: 'Importance moyenne',
+    high: 'Importance élevée',
   },
   status: {
     new: 'Nouveau',
@@ -76,7 +83,7 @@ export const fr = {
       title: 'Filtres',
       close: 'Fermer',
       categoryLabel: 'Catégorie',
-      urgencyLabel: 'Urgence',
+      importanceLabel: 'Importance',
       statusLabel: 'Statut',
       periodLabel: 'Période',
       periodAny: 'Toute période',
@@ -293,7 +300,7 @@ export const fr = {
       categoryPlaceholder: 'Choisir une catégorie…',
       categoryOtherLabel: 'Précisez',
       categoryOtherPlaceholder: 'Nature du problème…',
-      urgencyLabel: 'Urgence',
+      importanceLabel: 'Importance',
       titleLabel: 'Titre',
       titlePlaceholder: 'Ex. : nid de poule sur la piste cyclable',
       descriptionLabel: 'Description (facultative)',
@@ -405,7 +412,7 @@ export const fr = {
   },
   export: {
     title: 'Export des données',
-    body: 'Tous les signalements publics de 101améliorations, sans donnée personnelle : statut, catégorie, urgence, position, compteurs. Généré depuis les données publiques de la carte.',
+    body: 'Tous les signalements publics de 101améliorations, sans donnée personnelle : statut, catégorie, importance, position, compteurs. Généré depuis les données publiques de la carte.',
     downloadCsv: 'Télécharger en CSV',
     downloadGeoJson: 'Télécharger en GeoJSON',
     preparing: (loaded: number) => `Préparation de l'export… (${loaded} signalements)`,

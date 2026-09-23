@@ -12,7 +12,7 @@ const EXPORT_PAGE_SIZE = 1000
 const MAX_PAGES = 500
 
 const EXPORT_COLUMNS =
-  'id, lat, lng, category, urgency, status, title, description, duplicate_of, confirmations_count, comments_count, created_at, updated_at, resolved_at'
+  'id, lat, lng, category, importance, status, title, description, duplicate_of, confirmations_count, comments_count, created_at, updated_at, resolved_at'
 
 /** Fetches every klash for the public export (spec §6.7), paginating over
  * `klashes_public` rather than a dedicated RPC — the view is already

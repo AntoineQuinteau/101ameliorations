@@ -6,7 +6,7 @@ import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
-import { statusTone, urgencyTone } from '../../lib/klashPresentation'
+import { statusTone, importanceTone } from '../../lib/klashPresentation'
 import { klashCategoryLabel, type Klash } from '../../types/klash'
 import { useAuth } from '../auth/useAuth'
 
@@ -65,7 +65,7 @@ export function DuplicatesStep({
               <p className="text-sm font-medium text-neutral-900">{klash.title}</p>
               <div className="flex flex-wrap gap-1.5">
                 <Badge label={klashCategoryLabel(klash)} tone="gray" />
-                <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
+                <Badge label={fr.importanceBadge[klash.importance]} tone={importanceTone(klash.importance)} />
                 <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
               </div>
               {isOwn ? (

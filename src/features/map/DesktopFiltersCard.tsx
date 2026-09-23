@@ -1,9 +1,9 @@
 import { fr } from '../../i18n/fr'
-import type { KlashCategory, KlashStatus, KlashUrgency } from '../../types/klash'
+import type { KlashCategory, KlashStatus, KlashImportance } from '../../types/klash'
 import {
   ALL_CATEGORIES,
   ALL_STATUSES,
-  ALL_URGENCIES,
+  ALL_IMPORTANCES,
   defaultFilters,
   type KlashFilters,
 } from './klashFilters'
@@ -100,20 +100,20 @@ export function DesktopFiltersCard({
 
         <div>
           <span className="text-xs font-medium text-neutral-500">
-            {fr.map.filters.urgencyLabel}
+            {fr.map.filters.importanceLabel}
           </span>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {ALL_URGENCIES.map((option: KlashUrgency) => (
+            {ALL_IMPORTANCES.map((option: KlashImportance) => (
               <button
                 key={option}
                 type="button"
                 onClick={() =>
-                  onChange({ ...filters, urgencies: toggle(filters.urgencies, option) })
+                  onChange({ ...filters, importances: toggle(filters.importances, option) })
                 }
-                aria-pressed={filters.urgencies.includes(option)}
-                className={toggleButtonClass(filters.urgencies.includes(option))}
+                aria-pressed={filters.importances.includes(option)}
+                className={toggleButtonClass(filters.importances.includes(option))}
               >
-                {fr.urgency[option]}
+                {fr.importance[option]}
               </button>
             ))}
           </div>
