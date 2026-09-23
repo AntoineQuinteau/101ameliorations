@@ -5,9 +5,11 @@ import { MAX_MAP_ZOOM, MAX_SATELLITE_MAP_ZOOM } from '../../config/serviceArea'
 
 /** Applies the active layer's zoom ceiling. `<MapContainer maxZoom>` only reads its prop
  * once, at construction (same caveat as `ServiceAreaBounds`'s docblock on `maxBounds`),
- * so `MapPage` passes the higher of the two ceilings (`MAX_SATELLITE_MAP_ZOOM`) as the
- * static prop and this component narrows it at runtime via `map.setMaxZoom()` when the
- * plan layer is active. Renders nothing. */
+ * so `MapPage` passes the higher of the ceilings (`MAX_SATELLITE_MAP_ZOOM`) as the
+ * static prop and this component narrows it at runtime via `map.setMaxZoom()`.
+ * `cycling` shares the plan layer's ceiling — CyclOSM's own native zoom
+ * (`tileProviders.ts`) is the same order of magnitude as the plan style's. Renders
+ * nothing. */
 export function MapLayerZoom({ layer }: { layer: MapLayer }) {
   const map = useMap()
 

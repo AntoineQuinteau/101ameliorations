@@ -4,7 +4,7 @@ import type { MapLayer } from './MapTiles'
 const STORAGE_KEY = 'map-layer'
 
 function isMapLayer(value: unknown): value is MapLayer {
-  return value === 'plan' || value === 'satellite'
+  return value === 'plan' || value === 'satellite' || value === 'cycling'
 }
 
 /** Reads the persisted layer choice. Exported (alongside `writeStoredMapLayer`) as a
