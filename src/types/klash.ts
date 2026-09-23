@@ -16,8 +16,8 @@ export const klashCategorySchema = z.enum([
 ])
 export type KlashCategory = z.infer<typeof klashCategorySchema>
 
-export const klashUrgencySchema = z.enum(['low', 'medium', 'high'])
-export type KlashUrgency = z.infer<typeof klashUrgencySchema>
+export const klashImportanceSchema = z.enum(['low', 'medium', 'high'])
+export type KlashImportance = z.infer<typeof klashImportanceSchema>
 
 export const klashStatusSchema = z.enum([
   'new',
@@ -42,7 +42,7 @@ export const klashSchema = z.object({
   lng: z.number(),
   category: klashCategorySchema,
   categoryOther: z.string().nullable(),
-  urgency: klashUrgencySchema,
+  importance: klashImportanceSchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
@@ -68,7 +68,7 @@ const klashRowSchema = z.object({
   lng: z.number(),
   category: klashCategorySchema,
   category_other: z.string().nullable(),
-  urgency: klashUrgencySchema,
+  importance: klashImportanceSchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
@@ -94,7 +94,7 @@ export function klashFromRow(row: unknown): Klash {
     lng: parsed.lng,
     category: parsed.category,
     categoryOther: parsed.category_other,
-    urgency: parsed.urgency,
+    importance: parsed.importance,
     status: parsed.status,
     title: parsed.title,
     description: parsed.description,
@@ -121,7 +121,7 @@ const exportKlashRowSchema = z.object({
   lat: z.number(),
   lng: z.number(),
   category: klashCategorySchema,
-  urgency: klashUrgencySchema,
+  importance: klashImportanceSchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
@@ -138,7 +138,7 @@ export const exportKlashSchema = z.object({
   lat: z.number(),
   lng: z.number(),
   category: klashCategorySchema,
-  urgency: klashUrgencySchema,
+  importance: klashImportanceSchema,
   status: klashStatusSchema,
   title: z.string(),
   description: z.string().nullable(),
@@ -159,7 +159,7 @@ export function exportKlashFromRow(row: unknown): ExportKlash {
     lat: parsed.lat,
     lng: parsed.lng,
     category: parsed.category,
-    urgency: parsed.urgency,
+    importance: parsed.importance,
     status: parsed.status,
     title: parsed.title,
     description: parsed.description,

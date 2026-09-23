@@ -1,11 +1,11 @@
-import { klashCategorySchema, type KlashUrgency } from '../../types/klash'
+import { klashCategorySchema, type KlashImportance } from '../../types/klash'
 import { fr } from '../../i18n/fr'
 import type { KlashFormDraft } from './newKlashSchemas'
 
 const CATEGORIES = klashCategorySchema.options
-const URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
+const IMPORTANCES: KlashImportance[] = ['low', 'medium', 'high']
 
-/** The category/urgency/title/description/proposed-solution fields shared
+/** The category/importance/title/description/proposed-solution fields shared
  * by the creation form (KlashFormStep) and the edit form (EditKlashForm) —
  * everything about a klash's content except its position and its photos,
  * which the two forms handle differently (see EditKlashForm's docblock).
@@ -75,22 +75,22 @@ export function KlashFieldset({
 
       <div>
         <span className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.urgencyLabel}
+          {fr.newKlash.form.importanceLabel}
         </span>
         <div className="mt-1 grid grid-cols-3 gap-2">
-          {URGENCIES.map((option) => (
+          {IMPORTANCES.map((option) => (
             <button
               key={option}
               type="button"
-              onClick={() => onChange({ ...value, urgency: option })}
-              aria-pressed={value.urgency === option}
+              onClick={() => onChange({ ...value, importance: option })}
+              aria-pressed={value.importance === option}
               className={`rounded-md border px-2 py-2 text-xs font-medium ${
-                value.urgency === option
+                value.importance === option
                   ? 'border-teal-700 bg-teal-50 text-teal-800'
                   : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
               }`}
             >
-              {fr.urgency[option]}
+              {fr.importance[option]}
             </button>
           ))}
         </div>

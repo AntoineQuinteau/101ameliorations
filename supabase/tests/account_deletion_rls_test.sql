@@ -56,7 +56,7 @@ alter table public.profiles enable trigger profiles_guard_role;
 -- and a status_changes row recording a moderator action on it (changed_by
 -- deliberately the deleting user themselves, to exercise that
 -- reassignment).
-insert into public.klashes (id, author_id, location, category, urgency, title)
+insert into public.klashes (id, author_id, location, category, importance, title)
 values
   ('22222222-1111-4000-8000-000000000001',
    '22222222-0000-4000-8000-000000000001',
@@ -85,7 +85,7 @@ values
    'new', 'new');
 
 -- The authority's own klash, for the C.2 regression case.
-insert into public.klashes (id, author_id, location, category, urgency, title)
+insert into public.klashes (id, author_id, location, category, importance, title)
 values
   ('22222222-1111-4000-8000-000000000002',
    '22222222-0000-4000-8000-000000000004',

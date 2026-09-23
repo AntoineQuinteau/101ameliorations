@@ -55,7 +55,7 @@ update public.profiles set role = 'admin'
 alter table public.profiles enable trigger profiles_guard_role;
 
 -- One klash, owned by the author, to look up.
-insert into public.klashes (id, author_id, location, category, urgency, title)
+insert into public.klashes (id, author_id, location, category, importance, title)
 values
   ('11111111-1111-4000-8000-000000000001',
    '11111111-0000-4000-8000-000000000001',

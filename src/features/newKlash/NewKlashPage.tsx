@@ -289,7 +289,7 @@ export function NewKlashPage() {
           lng: position[1],
           category: action.form.category,
           categoryOther: action.form.categoryOther,
-          urgency: action.form.urgency,
+          importance: action.form.importance,
           title: action.form.title,
           description: action.form.description,
           proposedSolution: action.form.proposedSolution,

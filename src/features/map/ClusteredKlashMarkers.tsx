@@ -76,7 +76,7 @@ export function ClusteredKlashMarkers({
     for (const klash of klashes) {
       if (markers.has(klash.id)) continue
       const marker = L.marker([klash.lat, klash.lng], {
-        icon: getMarkerIcon(klash.urgency, klash.status),
+        icon: getMarkerIcon(klash.importance, klash.status),
       })
       marker.on('click', () => onSelectRef.current(klash))
       marker.on('mouseover', () => {

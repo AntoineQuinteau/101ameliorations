@@ -70,7 +70,7 @@ alter table public.profiles enable trigger profiles_guard_role;
 -- One klash per starting status, plus spares consumed by tests that
 -- successfully transition their klash (a klash that has moved on can't be
 -- reused for a second "from this status" test).
-insert into public.klashes (id, author_id, location, category, urgency, title, status)
+insert into public.klashes (id, author_id, location, category, importance, title, status)
 values
   ('eeeeeeee-1111-4000-8000-000000000001', 'eeeeeeee-0000-4000-8000-000000000001',
    extensions.st_setsrid(extensions.st_makepoint(-1.47, 43.49), 4326)::extensions.geography,
@@ -533,10 +533,10 @@ select throws_ok(
   '42. an authority cannot mark a klash as a duplicate'
 );
 select throws_ok(
-  $$ update public.klashes set urgency = 'high'
+  $$ update public.klashes set importance = 'high'
       where id = 'eeeeeeee-1111-4000-8000-000000000019' $$,
   'an authority can only change a klash status',
-  '43. an authority cannot change a klash urgency'
+  '43. an authority cannot change a klash importance'
 );
 
 select set_config('request.jwt.claims',
@@ -753,7 +753,7 @@ select is(
 -- ========================================================================
 
 set local role postgres;
-insert into public.klashes (id, author_id, location, category, urgency, title, status)
+insert into public.klashes (id, author_id, location, category, importance, title, status)
 values
   ('eeeeeeee-1111-4000-8000-000000000020', 'eeeeeeee-0000-4000-8000-000000000001',
    extensions.st_setsrid(extensions.st_makepoint(-1.47, 43.49), 4326)::extensions.geography,

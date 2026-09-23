@@ -10,7 +10,7 @@ import type { KlashStatus } from '../types/klash'
 // so the UI never offers an edit or delete the database would refuse. The
 // database is still the authority: this only decides what to *show*.
 
-/** Whether `role` may edit a klash's category/urgency/title/description/
+/** Whether `role` may edit a klash's category/importance/title/description/
  * proposed solution and manage its photos (spec §6.3: "Modifier ...
  * (auteur si `new`, moderator, admin)"). An `authority` who is also the
  * klash's author gets edit rights through `isAuthor` like any other role —

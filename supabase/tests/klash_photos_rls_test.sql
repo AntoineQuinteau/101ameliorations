@@ -62,7 +62,7 @@ alter table public.profiles enable trigger profiles_guard_role;
 -- Inserted as `postgres` to bypass the creation triggers entirely
 -- (irrelevant to what's under test here).
 set local role postgres;
-insert into public.klashes (id, author_id, location, category, urgency, title, status)
+insert into public.klashes (id, author_id, location, category, importance, title, status)
 values
   ('cccccccc-1111-4000-8000-000000000001',
    'cccccccc-0000-4000-8000-000000000001',

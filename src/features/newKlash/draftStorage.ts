@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { KlashFormDraft } from './newKlashSchemas'
-import { klashCategorySchema, klashUrgencySchema } from '../../types/klash'
+import { klashCategorySchema, klashImportanceSchema } from '../../types/klash'
 
 const STORAGE_KEY = 'klash-draft'
 const DRAFT_VERSION = 1
@@ -52,7 +52,7 @@ const draftPhotoSchema = z.object({
 const draftFormSchema: z.ZodType<KlashFormDraft> = z.object({
   category: klashCategorySchema.or(z.literal('')),
   categoryOther: z.string(),
-  urgency: klashUrgencySchema,
+  importance: klashImportanceSchema,
   title: z.string(),
   description: z.string(),
   proposedSolution: z.string(),
@@ -143,9 +143,9 @@ export function hasStoredDraft(now: number = Date.now()): boolean {
 }
 
 /** Whether a draft is worth persisting at all — an empty form at the default
- * urgency and no photos is what `/new` looks like on first render, not
+ * importance and no photos is what `/new` looks like on first render, not
  * something the user typed; saving it would make the chip appear on every
- * visit to the report flow. `urgency` alone never counts: it always has a
+ * visit to the report flow. `importance` alone never counts: it always has a
  * value (defaults to 'medium') with no action needed to set it. `category`
  * alone *does* count, deliberately: picking one is a real tap, not a
  * default, and is treated the same as typing a title. */

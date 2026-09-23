@@ -15,7 +15,7 @@ const baseKlash: Klash = {
   lng: -1.47,
   category: 'category_2',
   categoryOther: null,
-  urgency: 'medium',
+  importance: 'medium',
   status: 'new',
   title: 'Nid de poule dangereux',
   description: null,
@@ -38,7 +38,7 @@ function normalise(draft: ReturnType<typeof klashFormDraftFromKlash>) {
   return {
     category: draft.category === '' ? undefined : draft.category,
     categoryOther: draft.categoryOther.trim() === '' ? null : draft.categoryOther,
-    urgency: draft.urgency,
+    importance: draft.importance,
     title: draft.title,
     description: draft.description.trim() === '' ? null : draft.description,
     proposedSolution: draft.proposedSolution.trim() === '' ? null : draft.proposedSolution,
@@ -50,7 +50,7 @@ describe('klashFormDraftFromKlash', () => {
     expect(klashFormDraftFromKlash(baseKlash)).toEqual({
       category: 'category_2',
       categoryOther: '',
-      urgency: 'medium',
+      importance: 'medium',
       title: 'Nid de poule dangereux',
       description: '',
       proposedSolution: '',

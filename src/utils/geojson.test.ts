@@ -8,7 +8,7 @@ function makeKlash(overrides: Partial<ExportKlash> = {}): ExportKlash {
     lat: 43.49,
     lng: -1.47,
     category: 'category_1',
-    urgency: 'medium',
+    importance: 'medium',
     status: 'new',
     title: 'Nid-de-poule',
     description: null,
@@ -43,7 +43,7 @@ describe('toGeoJson', () => {
     expect(geojson.features[0].properties).toEqual({
       id: klash.id,
       category: klash.category,
-      urgency: klash.urgency,
+      importance: klash.importance,
       status: klash.status,
       title: 'Trou profond',
       description: klash.description,

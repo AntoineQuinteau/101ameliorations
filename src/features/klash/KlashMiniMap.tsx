@@ -22,7 +22,7 @@ export function KlashMiniMap({ klash }: { klash: Klash }) {
         keyboard={false}
       >
         <MapTiles layer="plan" />
-        <Marker position={position} icon={getMarkerIcon(klash.urgency, klash.status)} />
+        <Marker position={position} icon={getMarkerIcon(klash.importance, klash.status)} />
       </MapContainer>
     </div>
   )

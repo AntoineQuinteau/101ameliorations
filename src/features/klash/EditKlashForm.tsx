@@ -65,7 +65,7 @@ export function EditKlashForm({
     const result = newKlashFormSchema.safeParse({
       category: value.category === '' ? undefined : value.category,
       categoryOther: value.categoryOther.trim() === '' ? null : value.categoryOther,
-      urgency: value.urgency,
+      importance: value.importance,
       title: value.title,
       description: value.description.trim() === '' ? null : value.description,
       proposedSolution: value.proposedSolution.trim() === '' ? null : value.proposedSolution,

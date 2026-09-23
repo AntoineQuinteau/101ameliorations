@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import {
   klashCategorySchema,
-  klashUrgencySchema,
+  klashImportanceSchema,
   type Klash,
   type KlashCategory,
-  type KlashUrgency,
+  type KlashImportance,
 } from '../../types/klash'
 import { fr } from '../../i18n/fr'
 
@@ -20,7 +20,7 @@ export const newKlashFormSchema = z
   .object({
     category: klashCategorySchema,
     categoryOther: klashCategoryOtherSchema.nullable(),
-    urgency: klashUrgencySchema,
+    importance: klashImportanceSchema,
     title: klashTitleSchema,
     description: klashDescriptionSchema.nullable(),
     proposedSolution: klashProposedSolutionSchema.nullable(),
@@ -42,7 +42,7 @@ export type NewKlashForm = z.infer<typeof newKlashFormSchema>
 export interface KlashFormDraft {
   category: KlashCategory | ''
   categoryOther: string
-  urgency: KlashUrgency
+  importance: KlashImportance
   title: string
   description: string
   proposedSolution: string
@@ -51,7 +51,7 @@ export interface KlashFormDraft {
 export const emptyKlashFormDraft: KlashFormDraft = {
   category: '',
   categoryOther: '',
-  urgency: 'medium',
+  importance: 'medium',
   title: '',
   description: '',
   proposedSolution: '',
@@ -64,7 +64,7 @@ export function klashFormDraftFromKlash(klash: Klash): KlashFormDraft {
   return {
     category: klash.category,
     categoryOther: klash.categoryOther ?? '',
-    urgency: klash.urgency,
+    importance: klash.importance,
     title: klash.title,
     description: klash.description ?? '',
     proposedSolution: klash.proposedSolution ?? '',

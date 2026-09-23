@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
-import { statusTone, urgencyTone } from '../../lib/klashPresentation'
+import { statusTone, importanceTone } from '../../lib/klashPresentation'
 import { klashCategoryLabel, type Klash } from '../../types/klash'
 
 /** Bottom sheet shown for a klash: summary, and (unless `interactive` is false) a close
@@ -42,7 +42,10 @@ export function KlashPreviewCard({
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Badge label={klashCategoryLabel(klash)} tone="gray" />
-          <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
+          <Badge
+            label={fr.importanceBadge[klash.importance]}
+            tone={importanceTone(klash.importance)}
+          />
           <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
         </div>
         <p className="text-xs text-neutral-500">

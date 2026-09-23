@@ -7,7 +7,7 @@ const COLUMNS: Array<{ key: keyof ExportKlash; header: string }> = [
   { key: 'lat', header: 'lat' },
   { key: 'lng', header: 'lng' },
   { key: 'category', header: 'category' },
-  { key: 'urgency', header: 'urgency' },
+  { key: 'importance', header: 'importance' },
   { key: 'status', header: 'status' },
   { key: 'title', header: 'title' },
   { key: 'description', header: 'description' },

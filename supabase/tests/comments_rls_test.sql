@@ -43,7 +43,7 @@ update public.profiles set role = 'moderator'
 alter table public.profiles enable trigger profiles_guard_role;
 
 -- One klash, owned by the author, to comment on.
-insert into public.klashes (id, author_id, location, category, urgency, title)
+insert into public.klashes (id, author_id, location, category, importance, title)
 values
   ('dddddddd-1111-4000-8000-000000000001',
    'dddddddd-0000-4000-8000-000000000001',

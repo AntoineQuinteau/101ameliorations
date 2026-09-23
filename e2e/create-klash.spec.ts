@@ -47,10 +47,10 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   }
   await expect(page.getByRole('heading', { name: 'Décrire le problème' })).toBeVisible()
 
-  // Step 3: form. Category (not category_7), urgency, title, description;
+  // Step 3: form. Category (not category_7), importance, title, description;
   // photos step is optional and skipped entirely by not adding any.
   await page.getByLabel('Catégorie').selectOption('category_1')
-  await page.getByRole('button', { name: 'Urgence élevée' }).click()
+  await page.getByRole('button', { name: 'Élevée' }).click()
   await page.getByLabel('Titre').fill(title)
   await page.getByLabel('Description (facultative)').fill('Signalement créé par le test E2E.')
   await page.getByRole('button', { name: 'Continuer' }).click()
@@ -107,6 +107,6 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   await expect(page).toHaveURL(/\/k\/[0-9a-f-]+/)
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await expect(page.getByText('Trou / bosse ou chaussée abîmée')).toBeVisible()
-  await expect(page.getByText('Urgence élevée')).toBeVisible()
+  await expect(page.getByText('Importance élevée')).toBeVisible()
   await expect(page.getByText('Nouveau', { exact: true })).toBeVisible()
 })

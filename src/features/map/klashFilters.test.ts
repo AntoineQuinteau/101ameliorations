@@ -10,7 +10,7 @@ function makeKlash(overrides: Partial<Klash> = {}): Klash {
     lng: -1.47,
     category: 'category_1',
     categoryOther: null,
-    urgency: 'medium',
+    importance: 'medium',
     status: 'new',
     title: 'Test klash',
     description: null,
@@ -43,12 +43,12 @@ describe('applyFilters', () => {
     expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
 
-  it('filters by urgency', () => {
+  it('filters by importance', () => {
     const klashes = [
-      makeKlash({ id: 'k1', urgency: 'low' }),
-      makeKlash({ id: 'k2', urgency: 'high' }),
+      makeKlash({ id: 'k1', importance: 'low' }),
+      makeKlash({ id: 'k2', importance: 'high' }),
     ]
-    const filters: KlashFilters = { ...defaultFilters, urgencies: ['high'] }
+    const filters: KlashFilters = { ...defaultFilters, importances: ['high'] }
     expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k2'])
   })
 
@@ -72,14 +72,14 @@ describe('applyFilters', () => {
 
   it('cumulates multiple active filters', () => {
     const klashes = [
-      makeKlash({ id: 'k1', category: 'category_1', urgency: 'high' }),
-      makeKlash({ id: 'k2', category: 'category_1', urgency: 'low' }),
-      makeKlash({ id: 'k3', category: 'category_2', urgency: 'high' }),
+      makeKlash({ id: 'k1', category: 'category_1', importance: 'high' }),
+      makeKlash({ id: 'k2', category: 'category_1', importance: 'low' }),
+      makeKlash({ id: 'k3', category: 'category_2', importance: 'high' }),
     ]
     const filters: KlashFilters = {
       ...defaultFilters,
       categories: ['category_1'],
-      urgencies: ['high'],
+      importances: ['high'],
     }
     expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
@@ -99,7 +99,7 @@ describe('isDefaultFilters', () => {
   it('is true for an equivalent filters object built independently', () => {
     const filters: KlashFilters = {
       categories: [...defaultFilters.categories].reverse(),
-      urgencies: [...defaultFilters.urgencies],
+      importances: [...defaultFilters.importances],
       statuses: [...defaultFilters.statuses],
       createdAfter: null,
     }
@@ -108,7 +108,7 @@ describe('isDefaultFilters', () => {
 
   it('is false once any dimension narrows', () => {
     expect(isDefaultFilters({ ...defaultFilters, categories: ['category_1'] })).toBe(false)
-    expect(isDefaultFilters({ ...defaultFilters, urgencies: ['high'] })).toBe(false)
+    expect(isDefaultFilters({ ...defaultFilters, importances: ['high'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, statuses: ['new'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, createdAfter: '2026-01-01' })).toBe(false)
   })

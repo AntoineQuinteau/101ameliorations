@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { Bbox } from '../utils/bbox'
-import { klashFromRow, type Klash, type KlashCategory, type KlashUrgency } from '../types/klash'
+import { klashFromRow, type Klash, type KlashCategory, type KlashImportance } from '../types/klash'
 import { removeKlashPhotoObjects } from './klashPhotos'
 
 /** Klashs visible in a map viewport, via the `klashes_in_bbox` RPC (already excludes
@@ -50,7 +50,7 @@ export interface CreateKlashInput {
   lng: number
   category: KlashCategory
   categoryOther: string | null
-  urgency: KlashUrgency
+  importance: KlashImportance
   title: string
   description: string | null
   proposedSolution: string | null
@@ -64,7 +64,7 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
     lat: input.lat,
     lng: input.lng,
     category: input.category,
-    urgency: input.urgency,
+    importance: input.importance,
     title: input.title,
     // The generated type has `description: string` (gen_types doesn't mark a
     // plain `text` SQL parameter as nullable), but the column and the RPC's
@@ -81,14 +81,14 @@ export async function createKlash(input: CreateKlashInput): Promise<Klash> {
 export interface UpdateKlashInput {
   category: KlashCategory
   categoryOther: string | null
-  urgency: KlashUrgency
+  importance: KlashImportance
   title: string
   description: string | null
   proposedSolution: string | null
 }
 
 /** Updates a klash's editable fields (spec §6.3 "Modifier"): category,
- * urgency, title, description, proposed solution — never position or
+ * importance, title, description, proposed solution — never position or
  * status, which have their own dedicated paths (create_klash builds the
  * PostGIS point; change_klash_status is the only way status moves).
  *
@@ -109,7 +109,7 @@ export async function updateKlash(id: string, input: UpdateKlashInput): Promise<
     .update({
       category: input.category,
       category_other: input.categoryOther,
-      urgency: input.urgency,
+      importance: input.importance,
       title: input.title,
       description: input.description,
       proposed_solution: input.proposedSolution,

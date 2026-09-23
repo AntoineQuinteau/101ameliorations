@@ -1,13 +1,13 @@
-import type { KlashStatus, KlashUrgency } from '../types/klash'
+import type { KlashStatus, KlashImportance } from '../types/klash'
 import type { UserRole } from '../types/profile'
 import { fr } from '../i18n/fr'
 
 export type BadgeTone = 'green' | 'amber' | 'red' | 'gray' | 'blue' | 'indigo'
 
-/** Visual tone for an urgency badge (low → green, medium → amber, high → red). */
-export function urgencyTone(urgency: KlashUrgency): BadgeTone {
-  const tones: Record<KlashUrgency, BadgeTone> = { low: 'green', medium: 'amber', high: 'red' }
-  return tones[urgency]
+/** Visual tone for an importance badge (low → green, medium → amber, high → red). */
+export function importanceTone(importance: KlashImportance): BadgeTone {
+  const tones: Record<KlashImportance, BadgeTone> = { low: 'green', medium: 'amber', high: 'red' }
+  return tones[importance]
 }
 
 /** Visual tone for a status badge. Resolved/rejected/duplicate are muted (gray): they are

@@ -8,7 +8,7 @@ import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { canDeleteKlash, canEditKlash } from '../../lib/klashPermissions'
-import { displayActor, statusTone, urgencyTone } from '../../lib/klashPresentation'
+import { displayActor, statusTone, importanceTone } from '../../lib/klashPresentation'
 import { allowedNextStatuses } from '../../lib/klashTransitions'
 import { klashCategoryLabel, type KlashStatus } from '../../types/klash'
 import type { NewKlashForm } from '../newKlash/newKlashSchemas'
@@ -164,7 +164,10 @@ export function KlashDetailPage() {
 
           <div className="flex flex-wrap gap-1.5">
             <Badge label={klashCategoryLabel(klash)} tone="gray" />
-            <Badge label={fr.urgency[klash.urgency]} tone={urgencyTone(klash.urgency)} />
+            <Badge
+              label={fr.importanceBadge[klash.importance]}
+              tone={importanceTone(klash.importance)}
+            />
             <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
           </div>
 
