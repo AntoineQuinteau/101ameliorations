@@ -377,6 +377,7 @@ export const fr = {
       columnCategory: 'Catégorie',
       columnCreatedAt: 'Créé le',
       columnConfirmations: 'Confirmations',
+      columnComments: 'Commentaires',
       previousPage: 'Page précédente',
       nextPage: 'Page suivante',
       pageIndicator: (page: number, pageCount: number) => `Page ${page} / ${pageCount}`,
