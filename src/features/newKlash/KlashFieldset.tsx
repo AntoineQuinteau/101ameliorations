@@ -1,4 +1,4 @@
-import { klashCategorySchema, type KlashImportance } from '../../types/klash'
+import { CATEGORY_OTHER, klashCategorySchema, type KlashImportance } from '../../types/klash'
 import { fr } from '../../i18n/fr'
 import type { KlashFormDraft } from './newKlashSchemas'
 
@@ -37,7 +37,7 @@ export function KlashFieldset({
               // Switching away from "Autre" drops whatever precision was
               // typed, so it can't be silently resubmitted under a
               // different category.
-              categoryOther: event.target.value === 'category_7' ? value.categoryOther : '',
+              categoryOther: event.target.value === CATEGORY_OTHER ? value.categoryOther : '',
             })
           }
           className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
@@ -53,7 +53,7 @@ export function KlashFieldset({
         </select>
       </div>
 
-      {value.category === 'category_7' && (
+      {value.category === CATEGORY_OTHER && (
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`${idPrefix}-category-other`}

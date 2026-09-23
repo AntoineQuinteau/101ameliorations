@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  CATEGORY_OTHER,
   klashCategorySchema,
   klashImportanceSchema,
   type Klash,
@@ -13,7 +14,7 @@ export const klashTitleSchema = z.string().trim().min(5).max(120)
 export const klashDescriptionSchema = z.string().trim().max(2000)
 export const klashProposedSolutionSchema = z.string().trim().max(2000)
 // Mirrors klashes_category_other_required_check: non-empty when category is
-// 'category_7' ("Autre (préciser)"), absent otherwise.
+// CATEGORY_OTHER ("Autre (préciser)"), absent otherwise.
 export const klashCategoryOtherSchema = z.string().trim().min(1).max(120)
 
 export const newKlashFormSchema = z
@@ -25,8 +26,8 @@ export const newKlashFormSchema = z
     description: klashDescriptionSchema.nullable(),
     proposedSolution: klashProposedSolutionSchema.nullable(),
   })
-  .refine((value) => (value.category === 'category_7') === (value.categoryOther !== null), {
-    message: 'categoryOther is required for category_7 and forbidden otherwise',
+  .refine((value) => (value.category === CATEGORY_OTHER) === (value.categoryOther !== null), {
+    message: 'categoryOther is required for CATEGORY_OTHER and forbidden otherwise',
     path: ['categoryOther'],
   })
 export type NewKlashForm = z.infer<typeof newKlashFormSchema>

@@ -628,6 +628,7 @@ export type Database = {
         | 'category_5'
         | 'category_6'
         | 'category_7'
+        | 'category_8'
       klash_importance: 'low' | 'medium' | 'high'
       klash_status: 'new' | 'acknowledged' | 'in_progress' | 'resolved' | 'rejected' | 'duplicate'
       user_role: 'user' | 'moderator' | 'authority' | 'admin'
@@ -763,6 +764,7 @@ export const Constants = {
         'category_5',
         'category_6',
         'category_7',
+        'category_8',
       ],
       klash_importance: ['low', 'medium', 'high'],
       klash_status: ['new', 'acknowledged', 'in_progress', 'resolved', 'rejected', 'duplicate'],

@@ -22,6 +22,7 @@ export const fr = {
     category_5: 'Zone de conflit avec automobiliste',
     category_6: 'Zone de conflit avec autres usagers',
     category_7: 'Autre (préciser)',
+    category_8: 'Manque de stationnement',
   },
   importance: {
     low: 'Faible',
@@ -425,8 +426,6 @@ export const fr = {
       title: 'Mentions légales',
       publisher: {
         heading: 'Éditeur du site',
-        // TODO: remplacer par les coordonnées réelles de l'association avant
-        // mise en production.
         body: [
           'Le site 101ameliorations.org est édité par :',
           "Association Atelier Vélo Txirrind'Ola** (Association loi 1901).",
@@ -438,14 +437,14 @@ export const fr = {
       },
       publicationDirector: {
         heading: 'Directeur de la publication',
-        body: 'TODO — Nom et qualité du directeur ou de la directrice de la publication.',
+        body: "Collégiale de l'Atelier Vélo Txirrind'Ola.",
       },
       hosting: {
         heading: 'Hébergement',
         body: [
           "Hébergement du site (fichiers statiques et CDN) : Cloudflare, Inc. — 101 Townsend St, San Francisco, CA 94107, États-Unis (Tél. : +1 888 993 5273). Fichiers distribués via un réseau CDN mondial s'appuyant sur des centres de données en France (notamment Bordeaux, Paris, Lyon, Marseille).",
           'Hébergement des données (base de données et authentification) : SUPABASE PTE. LTD. — 65 Chulia Street #38-02/03, OCBC Centre, Singapour 049513 (E-mail : support@supabase.com).',
-          "Localisation physique des données : Les données sont hébergées en France sur les serveurs d'Amazon Web Services (région AWS Paris - eu-west-3).",
+          "Localisation physique des données : les données sont hébergées en France sur les serveurs d'Amazon Web Services (région AWS Paris - eu-west-3).",
         ],
       },
       privacy: {
