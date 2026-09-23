@@ -10,6 +10,7 @@ import { distanceMeters } from '../../utils/distance'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 import { compressPhoto, readPhotoGps, type CompressedPhoto } from '../../utils/photoCompression'
 import {
+  klashFormInputFromDraft,
   messageForKlashFormIssue,
   newKlashFormSchema,
   type KlashFormDraft,
@@ -85,6 +86,12 @@ export function KlashFormStep({
     }
   }, [])
 
+  // Drives the submit button's active/disabled state live, as the user
+  // types — not just the error shown after a click. Uses the same
+  // normalisation as handleSubmit's own safeParse, so the two can't disagree
+  // about what counts as valid.
+  const isFormValid = newKlashFormSchema.safeParse(klashFormInputFromDraft(value)).success
+
   const gpsPrompt = photos
     .map((photo) => {
       if (!photo.gps) return null
@@ -141,14 +148,7 @@ export function KlashFormStep({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
     if (!submitGuardRef.current.claim()) return
-    const result = newKlashFormSchema.safeParse({
-      category: value.category === '' ? undefined : value.category,
-      categoryOther: value.categoryOther.trim() === '' ? null : value.categoryOther,
-      importance: value.importance,
-      title: value.title,
-      description: value.description.trim() === '' ? null : value.description,
-      proposedSolution: value.proposedSolution.trim() === '' ? null : value.proposedSolution,
-    })
+    const result = newKlashFormSchema.safeParse(klashFormInputFromDraft(value))
     if (!result.success) {
       const issue = result.error.issues[0]
       setValidationError(messageForKlashFormIssue(issue?.path[0]))
@@ -261,6 +261,8 @@ export function KlashFormStep({
 
       {validationError && <ErrorMessage message={validationError} />}
 
+      <p className="text-xs text-neutral-500">{fr.newKlash.form.requiredLegend}</p>
+
       <div className="flex gap-2">
         <button
           type="button"
@@ -271,8 +273,8 @@ export function KlashFormStep({
         </button>
         <button
           type="submit"
-          disabled={hasSubmitted}
-          className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!isFormValid || hasSubmitted}
+          className="flex-1 inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:text-neutral-500"
         >
           {fr.newKlash.form.submit}
         </button>

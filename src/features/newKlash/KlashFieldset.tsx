@@ -5,6 +5,20 @@ import type { KlashFormDraft } from './newKlashSchemas'
 const CATEGORIES = klashCategorySchema.options
 const IMPORTANCES: KlashImportance[] = ['low', 'medium', 'high']
 
+/** Red asterisk marking a required field's label, with a screen-reader-only
+ * text equivalent (the asterisk itself is decorative to assistive tech). */
+function RequiredMark() {
+  return (
+    <>
+      <span className="text-red-600" aria-hidden="true">
+        {' '}
+        *
+      </span>
+      <span className="sr-only"> {fr.newKlash.form.requiredMark}</span>
+    </>
+  )
+}
+
 /** The category/importance/title/description/proposed-solution fields shared
  * by the creation form (KlashFormStep) and the edit form (EditKlashForm) —
  * everything about a klash's content except its position and its photos,
@@ -26,6 +40,7 @@ export function KlashFieldset({
       <div className="flex flex-col gap-1">
         <label htmlFor={`${idPrefix}-category`} className="text-sm font-medium text-neutral-700">
           {fr.newKlash.form.categoryLabel}
+          <RequiredMark />
         </label>
         <select
           id={`${idPrefix}-category`}
@@ -40,6 +55,7 @@ export function KlashFieldset({
               categoryOther: event.target.value === CATEGORY_OTHER ? value.categoryOther : '',
             })
           }
+          aria-required="true"
           className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
         >
           <option value="" disabled>
@@ -60,6 +76,7 @@ export function KlashFieldset({
             className="text-sm font-medium text-neutral-700"
           >
             {fr.newKlash.form.categoryOtherLabel}
+            <RequiredMark />
           </label>
           <input
             id={`${idPrefix}-category-other`}
@@ -68,6 +85,7 @@ export function KlashFieldset({
             onChange={(event) => onChange({ ...value, categoryOther: event.target.value })}
             placeholder={fr.newKlash.form.categoryOtherPlaceholder}
             maxLength={120}
+            aria-required="true"
             className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           />
         </div>
@@ -76,6 +94,7 @@ export function KlashFieldset({
       <div>
         <span className="text-sm font-medium text-neutral-700">
           {fr.newKlash.form.importanceLabel}
+          <RequiredMark />
         </span>
         <div className="mt-1 grid grid-cols-3 gap-2">
           {IMPORTANCES.map((option) => (
@@ -99,6 +118,7 @@ export function KlashFieldset({
       <div className="flex flex-col gap-1">
         <label htmlFor={`${idPrefix}-title`} className="text-sm font-medium text-neutral-700">
           {fr.newKlash.form.titleLabel}
+          <RequiredMark />
         </label>
         <input
           id={`${idPrefix}-title`}
@@ -106,6 +126,7 @@ export function KlashFieldset({
           value={value.title}
           onChange={(event) => onChange({ ...value, title: event.target.value })}
           placeholder={fr.newKlash.form.titlePlaceholder}
+          aria-required="true"
           className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
         />
       </div>
