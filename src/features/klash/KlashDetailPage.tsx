@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { fetchKlashById } from '../../api/klashes'
@@ -62,6 +62,22 @@ export function KlashDetailPage() {
     queryFn: () => fetchKlashById(id as string),
     enabled: Boolean(id),
   })
+
+  // KlashDetailPage stays mounted across a navigation from one klash to
+  // another on this same route — including its own "duplicate of" link to
+  // /k/${klash.duplicateOf} — so none of this component's useState resets
+  // on its own. Without this, editing and saving klash A leaves
+  // editFeedback/isEditing/isChangingStatus set when the user clicks
+  // through to klash B: "Modifications enregistrées." would show for a
+  // klash never touched, and worse, a still-open EditKlashForm would stay
+  // mounted with its value state still initialised from klash A while its
+  // onSubmit now targets klash B's id. Resetting isEditing also unmounts
+  // EditKlashForm, clearing its own internal state for free.
+  useEffect(() => {
+    setIsEditing(false)
+    setEditFeedback(null)
+    setIsChangingStatus(false)
+  }, [id])
 
   const { data: hasConfirmed = false } = useMyConfirmation(id ?? '')
   const confirmMutation = useConfirmKlash(id ?? '', hasConfirmed)

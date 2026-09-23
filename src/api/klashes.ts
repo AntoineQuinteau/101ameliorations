@@ -103,7 +103,7 @@ export interface UpdateKlashInput {
  * update into a silent 0-row no-op, not an error — e.g. an author whose
  * klash left `new` mid-edit. `.select('id')` plus this length check is what
  * turns that into a reported failure instead of a false "saved". */
-export async function updateKlash(id: string, input: UpdateKlashInput): Promise<Klash> {
+export async function updateKlash(id: string, input: UpdateKlashInput): Promise<Klash | null> {
   const { data, error } = await supabase
     .from('klashes')
     .update({
@@ -123,14 +123,16 @@ export async function updateKlash(id: string, input: UpdateKlashInput): Promise<
   // The table row doesn't carry lat/lng or the author_* columns
   // klashFromRow expects — re-read through the public view instead. By
   // this point the update already committed (data.length > 0 above), so a
-  // null here is a different failure than "forbidden" — e.g. the klash's
-  // author profile disappeared mid-account-anonymisation, dropping the row
-  // out of klashes_public's inner join on profiles. A distinct message
-  // keeps mapUpdateKlashError from reporting the save as rejected when it
-  // actually succeeded.
-  const updated = await fetchKlashById(id)
-  if (!updated) throw new Error('klash saved but could not be re-read')
-  return updated
+  // null re-read is not a failed save — e.g. the klash's author profile
+  // disappeared mid-account-anonymisation, dropping the row out of
+  // klashes_public's inner join on profiles. Resolving with null rather
+  // than throwing matters: nothing downstream reads this function's
+  // return value (useUpdateKlash and KlashDetailPage's onSuccess both
+  // only react to success vs. failure), so throwing here would report a
+  // committed edit as a failed one — mapUpdateKlashError has no way to
+  // tell "saved, couldn't confirm" apart from "rejected" once it's
+  // reached as a mutation error either way.
+  return await fetchKlashById(id)
 }
 
 /** Deletes a klash. Allowed for its own author while `new`, or for staff
