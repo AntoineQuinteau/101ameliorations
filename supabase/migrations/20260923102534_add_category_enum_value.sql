@@ -1,0 +1,1 @@
+ALTER TYPE public.klash_category ADD VALUE 'category_8';

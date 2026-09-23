@@ -12,9 +12,15 @@ export const klashCategorySchema = z.enum([
   'category_4',
   'category_5',
   'category_6',
+  'category_8',
   'category_7',
 ])
 export type KlashCategory = z.infer<typeof klashCategorySchema>
+
+// The special "Autre (préciser)" category: the only one paired with a
+// free-text categoryOther, and the one kept last in the picker regardless of
+// where new categories are inserted above.
+export const CATEGORY_OTHER: KlashCategory = 'category_7'
 
 export const klashImportanceSchema = z.enum(['low', 'medium', 'high'])
 export type KlashImportance = z.infer<typeof klashImportanceSchema>
@@ -177,6 +183,6 @@ export function exportKlashFromRow(row: unknown): ExportKlash {
  * otherwise. Centralises the rule so every badge (map, detail, duplicates, admin)
  * renders it the same way. */
 export function klashCategoryLabel(klash: Pick<Klash, 'category' | 'categoryOther'>): string {
-  if (klash.category === 'category_7' && klash.categoryOther) return klash.categoryOther
+  if (klash.category === CATEGORY_OTHER && klash.categoryOther) return klash.categoryOther
   return fr.category[klash.category]
 }

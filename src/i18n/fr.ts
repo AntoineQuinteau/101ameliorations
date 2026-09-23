@@ -22,6 +22,7 @@ export const fr = {
     category_5: 'Zone de conflit avec automobiliste',
     category_6: 'Zone de conflit avec autres usagers',
     category_7: 'Autre (préciser)',
+    category_8: 'Manque de stationnement',
   },
   importance: {
     low: 'Faible',
