@@ -437,7 +437,7 @@ export const fr = {
       },
       publicationDirector: {
         heading: 'Directeur de la publication',
-        body: 'Collégiale de l\'Atelier Vélo Txirrind\'Ola.',
+        body: "Collégiale de l'Atelier Vélo Txirrind'Ola.",
       },
       hosting: {
         heading: 'Hébergement',
