@@ -246,7 +246,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 ## 7. PWA
 
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
-- Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 500 entrées, 7 jours). Données Supabase en `NetworkFirst`.
+- Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
 - Hors v1 : file d'attente hors-ligne des signalements (Background Sync).
 
@@ -255,7 +255,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Front** : React 18, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
-- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`. Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
+- **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.

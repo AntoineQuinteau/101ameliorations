@@ -1,7 +1,18 @@
 import { TileLayer } from 'react-leaflet'
 import { env } from '../../env'
+import { DEFAULT_TILE_BASE_URL, buildTileUrlTemplate, resolveTileKey } from './tileUrls'
 
 export type MapLayer = 'plan' | 'satellite'
+
+// Defaults to MapTiler itself so a deployment that never sets this var behaves exactly
+// as before this indirection existed (see tileUrls.ts). Overridden in dev/CI (see
+// vite.config.ts's tile-proxy plugin) to a same-origin path that never reaches MapTiler.
+const TILE_BASE_URL = env.VITE_TILE_BASE_URL ?? DEFAULT_TILE_BASE_URL
+
+// Only ever the MapTiler key when TILE_BASE_URL actually points at MapTiler — see
+// resolveTileKey's docblock. A contributor with both VITE_MAPTILER_KEY and a custom
+// VITE_TILE_BASE_URL set in .env.local must not leak the former to the latter.
+const TILE_KEY = resolveTileKey(TILE_BASE_URL, env.VITE_MAPTILER_KEY)
 
 // MapTiler + OpenStreetMap attribution is legally mandated boilerplate, not app copy —
 // kept here rather than in src/i18n/fr.ts. The satellite tileset's TileJSON returns the
@@ -40,7 +51,7 @@ export function MapTiles({ layer = 'plan' }: { layer?: MapLayer }) {
     return (
       <TileLayer
         key="satellite"
-        url={`https://api.maptiler.com/tiles/satellite-v2/{z}/{x}/{y}.jpg?key=${env.VITE_MAPTILER_KEY}`}
+        url={buildTileUrlTemplate('satellite', TILE_BASE_URL, TILE_KEY)}
         attribution={ATTRIBUTION}
         maxZoom={TILE_LAYER_MAX_ZOOM}
         maxNativeZoom={22}
@@ -51,7 +62,7 @@ export function MapTiles({ layer = 'plan' }: { layer?: MapLayer }) {
   return (
     <TileLayer
       key="plan"
-      url={`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}{r}.png?key=${env.VITE_MAPTILER_KEY}`}
+      url={buildTileUrlTemplate('plan', TILE_BASE_URL, TILE_KEY)}
       attribution={ATTRIBUTION}
       detectRetina
       tileSize={512}
