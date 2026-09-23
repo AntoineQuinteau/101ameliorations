@@ -209,6 +209,10 @@ Une seule application responsive. Routes :
 
 Hors zone de service : message clair et blocage avant le formulaire.
 
+**Brouillon persisté localement** (amélioration post-v1, `docs/plans/ameliorations-3-brouillon.md`) : position, champs du formulaire et photos déjà compressées sont sauvegardés sur l'appareil (localStorage + IndexedDB, un seul brouillon, non lié au compte) et restaurés à la réouverture de `/new` — via une puce « Déclaration en cours » sur la carte ou automatiquement à l'ouverture de l'écran. Purgé à l'envoi, sur suppression explicite (confirmation à l'« Annuler »), ou après 7 jours.
+
+Hors v1 : file d'attente hors-ligne des signalements (Background Sync) — voir §7 et §10 ; le brouillon local ci-dessus ne couvre que la perte accidentelle de saisie, pas l'envoi sans réseau.
+
 ### 6.3 Détail (`/k/:id`)
 
 - Carte réduite, photos (galerie), catégorie, urgence, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, ZoomControl } from 'react-leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
 import { DesktopFiltersCard } from './DesktopFiltersCard'
+import { DraftInProgressChip } from './DraftInProgressChip'
 import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
 import { applyFilters, type KlashFilters } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
@@ -31,6 +32,7 @@ import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import type { Klash } from '../../types/klash'
 import type { Bbox } from '../../utils/bbox'
+import { hasStoredDraft } from '../newKlash/draftStorage'
 
 export function MapPage() {
   const navigate = useNavigate()
@@ -42,6 +44,15 @@ export function MapPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
+  // Read in an effect, not a useState initializer: hasStoredDraft can purge
+  // a stale draft as a side effect (see its docblock), which isn't safe
+  // during render. This route remounts on every return from /new (a real
+  // navigation, not client-side state), which is exactly when the draft
+  // status can have changed (saved, resumed, submitted, or discarded).
+  const [hasDraft, setHasDraft] = useState(false)
+  useEffect(() => {
+    setHasDraft(hasStoredDraft())
+  }, [])
   const serviceArea = useServiceArea()
   const {
     data: klashes = [],
@@ -152,6 +163,10 @@ export function MapPage() {
       </button>
 
       {(hasHover || !isFiltersOpen) && <MapLayerToggle layer={layer} onChange={setLayer} />}
+
+      {hasDraft && !pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
+        <DraftInProgressChip />
+      )}
 
       {!pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
         <button

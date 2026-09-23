@@ -7,7 +7,23 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
 })
 
+const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Europe/Paris',
+})
+
 /** Formats an ISO timestamp as a French long date (e.g. "8 septembre 2026"). */
 export function formatDate(isoDate: string): string {
   return dateFormatter.format(new Date(isoDate))
+}
+
+/** Same as `formatDate`, with the time appended (e.g. "8 septembre 2026 à
+ * 14:32") — used for the draft-resume prompt, where "when was this saved"
+ * matters more than it does for a klash's creation date. */
+export function formatDateTime(isoDate: string): string {
+  return dateTimeFormatter.format(new Date(isoDate))
 }
