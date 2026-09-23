@@ -2,9 +2,11 @@ import { z } from 'zod'
 import {
   klashCategorySchema,
   klashUrgencySchema,
+  type Klash,
   type KlashCategory,
   type KlashUrgency,
 } from '../../types/klash'
+import { fr } from '../../i18n/fr'
 
 // Mirrors the DB CHECK constraints on klashes.title/description/proposed_solution.
 export const klashTitleSchema = z.string().trim().min(5).max(120)
@@ -53,4 +55,37 @@ export const emptyKlashFormDraft: KlashFormDraft = {
   title: '',
   description: '',
   proposedSolution: '',
+}
+
+/** The edit form's starting draft: an existing klash's editable fields,
+ * mapped back to the raw string shape the form's inputs work with
+ * (`null` → `''`, mirroring how `handleSubmit` normalises the other way). */
+export function klashFormDraftFromKlash(klash: Klash): KlashFormDraft {
+  return {
+    category: klash.category,
+    categoryOther: klash.categoryOther ?? '',
+    urgency: klash.urgency,
+    title: klash.title,
+    description: klash.description ?? '',
+    proposedSolution: klash.proposedSolution ?? '',
+  }
+}
+
+/** Maps a failed `newKlashFormSchema` validation to the French message for
+ * its first issue's field — shared by KlashFormStep (creation) and
+ * EditKlashForm (edit) so the two forms report the same errors the same
+ * way. */
+export function messageForKlashFormIssue(field: PropertyKey | undefined): string {
+  switch (field) {
+    case 'category':
+      return fr.newKlash.form.invalidCategory
+    case 'categoryOther':
+      return fr.newKlash.form.invalidCategoryOther
+    case 'description':
+      return fr.newKlash.form.invalidDescription
+    case 'proposedSolution':
+      return fr.newKlash.form.invalidProposedSolution
+    default:
+      return fr.newKlash.form.invalidTitle
+  }
 }

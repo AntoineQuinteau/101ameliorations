@@ -129,6 +129,25 @@ export const fr = {
       noTransitionsAvailable: 'Aucun changement de statut disponible pour votre rôle.',
     },
     editKlash: 'Modifier',
+    edit: {
+      title: 'Modifier le signalement',
+      submit: 'Enregistrer',
+      submitting: 'Enregistrement…',
+      cancel: 'Annuler',
+      saved: 'Modifications enregistrées.',
+      submitError: "Impossible d'enregistrer les modifications.",
+      forbiddenError: 'Vous ne pouvez plus modifier ce signalement.',
+      photosLabel: 'Photos',
+      photosNotice: 'Les ajouts et suppressions de photos sont enregistrés immédiatement.',
+      addPhotoError: "Impossible d'ajouter cette photo.",
+      addPhotoPartialError: (count: number) =>
+        count === 1
+          ? "1 photo n'a pas pu être ajoutée."
+          : `${count} photos n'ont pas pu être ajoutées.`,
+      removePhoto: 'Supprimer cette photo',
+      removePhotoConfirm: 'Supprimer cette photo ?',
+      removePhotoError: 'Impossible de supprimer cette photo.',
+    },
     deleteKlash: 'Supprimer',
     deleteKlashConfirm: 'Supprimer définitivement ce signalement ?',
     deleteKlashError: 'Impossible de supprimer ce signalement.',

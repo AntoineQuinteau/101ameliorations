@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
+import { KlashFieldset } from './KlashFieldset'
 import { PhotoSourceSheet } from './PhotoSourceSheet'
 import { createSubmitGuard } from './submitGuard'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { MAX_PHOTOS_PER_KLASH } from '../../config/photos'
 import { fr } from '../../i18n/fr'
 import { useHasHover } from '../map/useHasHover'
-import { klashCategorySchema, type KlashUrgency } from '../../types/klash'
 import { distanceMeters } from '../../utils/distance'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 import { compressPhoto, readPhotoGps, type CompressedPhoto } from '../../utils/photoCompression'
-import { newKlashFormSchema, type KlashFormDraft, type NewKlashForm } from './newKlashSchemas'
-
-const CATEGORIES = klashCategorySchema.options
-const URGENCIES: KlashUrgency[] = ['low', 'medium', 'high']
+import {
+  messageForKlashFormIssue,
+  newKlashFormSchema,
+  type KlashFormDraft,
+  type NewKlashForm,
+} from './newKlashSchemas'
 
 const MAX_PHOTOS = MAX_PHOTOS_PER_KLASH
 // Compression and upload both run with this many photos in flight at once,
@@ -29,21 +31,6 @@ export interface PendingPhoto {
   compressed: CompressedPhoto
   previewUrl: string
   gps: { lat: number; lng: number } | null
-}
-
-function messageForIssue(field: PropertyKey | undefined): string {
-  switch (field) {
-    case 'category':
-      return fr.newKlash.form.invalidCategory
-    case 'categoryOther':
-      return fr.newKlash.form.invalidCategoryOther
-    case 'description':
-      return fr.newKlash.form.invalidDescription
-    case 'proposedSolution':
-      return fr.newKlash.form.invalidProposedSolution
-    default:
-      return fr.newKlash.form.invalidTitle
-  }
 }
 
 export function KlashFormStep({
@@ -164,7 +151,7 @@ export function KlashFormStep({
     })
     if (!result.success) {
       const issue = result.error.issues[0]
-      setValidationError(messageForIssue(issue?.path[0]))
+      setValidationError(messageForKlashFormIssue(issue?.path[0]))
       submitGuardRef.current.release() // invalid — let the user fix it and resubmit
       return
     }
@@ -177,123 +164,7 @@ export function KlashFormStep({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h2 className="text-lg font-semibold text-neutral-900">{fr.newKlash.form.title}</h2>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="new-klash-category" className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.categoryLabel}
-        </label>
-        <select
-          id="new-klash-category"
-          value={value.category}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              category: event.target.value as KlashFormDraft['category'],
-              // Switching away from "Autre" drops whatever precision was
-              // typed, so it can't be silently resubmitted under a
-              // different category.
-              categoryOther: event.target.value === 'category_7' ? value.categoryOther : '',
-            })
-          }
-          className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
-        >
-          <option value="" disabled>
-            {fr.newKlash.form.categoryPlaceholder}
-          </option>
-          {CATEGORIES.map((option) => (
-            <option key={option} value={option}>
-              {fr.category[option]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {value.category === 'category_7' && (
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor="new-klash-category-other"
-            className="text-sm font-medium text-neutral-700"
-          >
-            {fr.newKlash.form.categoryOtherLabel}
-          </label>
-          <input
-            id="new-klash-category-other"
-            type="text"
-            value={value.categoryOther}
-            onChange={(event) => onChange({ ...value, categoryOther: event.target.value })}
-            placeholder={fr.newKlash.form.categoryOtherPlaceholder}
-            maxLength={120}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
-          />
-        </div>
-      )}
-
-      <div>
-        <span className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.urgencyLabel}
-        </span>
-        <div className="mt-1 grid grid-cols-3 gap-2">
-          {URGENCIES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onChange({ ...value, urgency: option })}
-              aria-pressed={value.urgency === option}
-              className={`rounded-md border px-2 py-2 text-xs font-medium ${
-                value.urgency === option
-                  ? 'border-teal-700 bg-teal-50 text-teal-800'
-                  : 'border-neutral-300 text-neutral-600 hover:bg-neutral-50'
-              }`}
-            >
-              {fr.urgency[option]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="new-klash-title" className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.titleLabel}
-        </label>
-        <input
-          id="new-klash-title"
-          type="text"
-          value={value.title}
-          onChange={(event) => onChange({ ...value, title: event.target.value })}
-          placeholder={fr.newKlash.form.titlePlaceholder}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="new-klash-description" className="text-sm font-medium text-neutral-700">
-          {fr.newKlash.form.descriptionLabel}
-        </label>
-        <textarea
-          id="new-klash-description"
-          value={value.description}
-          onChange={(event) => onChange({ ...value, description: event.target.value })}
-          placeholder={fr.newKlash.form.descriptionPlaceholder}
-          rows={3}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="new-klash-proposed-solution"
-          className="text-sm font-medium text-neutral-700"
-        >
-          {fr.newKlash.form.proposedSolutionLabel}
-        </label>
-        <textarea
-          id="new-klash-proposed-solution"
-          value={value.proposedSolution}
-          onChange={(event) => onChange({ ...value, proposedSolution: event.target.value })}
-          placeholder={fr.newKlash.form.proposedSolutionPlaceholder}
-          rows={3}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
-        />
-      </div>
+      <KlashFieldset value={value} onChange={onChange} idPrefix="new-klash" />
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-neutral-700">{fr.newKlash.form.photosLabel}</span>
