@@ -66,19 +66,32 @@ const SERVICE_AREA_NORTH_LAT = SERVICE_AREA_BBOX.maxLat + SERVICE_AREA_PADDING_D
 // France's at the full service area, so the two overlapped across the *entire*
 // [SERVICE_AREA_SOUTH_LAT, 43.3°N] band — Spain (mounted second, drawn on top) was
 // covering genuinely French towns well inside that band: Pau (43.295°N), Oloron,
-// Mauléon (43.22°N), Saint-Jean-Pied-de-Port (43.16°N). With the two boxes disjoint,
-// that's narrowed to only the tiles whose own rectangle happens to straddle exactly this
-// latitude (Leaflet's `bounds` intersection is per-tile, not per-pixel, so this can't be
-// eliminated by a rectangular split alone — worse at low zoom, where a single tile's
-// footprint is large enough to reach up towards Bayonne). 43.30°N sits just south of
-// Hendaye/Irun (the coastal border crossing, ~43.35°N), so it's chosen to keep that
-// border town pair on the French side, where nearly all of this app's actual usage is —
-// at the cost of Spanish ground north of it (Irun, Hondarribia, Pasaia) getting no IGN
-// layer at all, and inland French ground south of it (around Saint-Jean-Pied-de-Port)
-// still occasionally seeing a Spanish tile at low zoom. Neither this comment nor the
-// code can fully resolve that without either confirming (on a live preview, not this
-// sandbox) that one layer renders genuinely transparent outside its own coverage and
-// ordering accordingly, or clipping to a real border polygon instead of a rectangle.
+// Mauléon (43.22°N), Saint-Jean-Pied-de-Port (43.16°N). It's not a borderline call
+// either: the satellite layer's Spanish tileset (PNOA-MA) is served as JPEG, a format
+// with no alpha channel at all, so any tile it returns outside real Spanish coverage is
+// unconditionally opaque — never merely "likely" to hide what's underneath.
+//
+// With the two boxes disjoint, the residual overlap is narrowed to only the tiles whose
+// own rectangle happens to straddle exactly this latitude (Leaflet's `bounds`
+// intersection is per-tile, not per-pixel, so this can't be eliminated by a rectangular
+// split alone — worse at low zoom, where a single tile's footprint is large enough to
+// reach well past the line).
+//
+// 43.30°N is not a good split even so, and there isn't a better single latitude to pick:
+// Hendaye (France) and Irun (Spain) sit almost exactly across the Bidasoa from each
+// other, at essentially the same latitude (Hendaye ~43.36°N, Irun ~43.34°N) — any
+// horizontal cutoff between them puts one town on the wrong side. 43.30°N keeps Hendaye
+// (and the rest of coastal CAPB, this app's actual core usage) correctly French, at the
+// cost of Irun, Hondarribia, San Sebastián and Pasaia — all genuinely Spanish, all
+// inside `SERVICE_AREA_BBOX` — getting no IGN layer at all (blank, not wrong: France's
+// layer has nothing to show there either). Moving the line north would fix that strip at
+// the direct cost of misclassifying Hendaye and the rest of coastal France as
+// Spain-only, which is worse for this app. Inland, the same rectangle also still lets an
+// occasional low-zoom tile near Saint-Jean-Pied-de-Port (French) show a Spanish tile.
+// Neither this comment nor the code can fully resolve any of that without either
+// confirming (on a live preview, not this sandbox) that one layer renders genuinely
+// transparent outside its own coverage and ordering accordingly, or clipping to a real
+// border polygon instead of a rectangle.
 const IGN_SPAIN_NORTHERN_LIMIT_LAT = 43.3
 
 /** Covers only the part of the padded service area north of the split — mounted first

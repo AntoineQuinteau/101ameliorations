@@ -88,32 +88,47 @@ function triggerFailover(reason: string): void {
 // only inside triggerFailover (which won't run again until the next real failure).
 scheduleExpiryNotification(failoverUntil)
 
-async function probe(doFetch: typeof fetch, url: string): Promise<boolean> {
+// Which readable HTTP statuses actually indicate MapTiler-the-service is in trouble
+// (auth/quota/rate-limit, or its own server erroring), as opposed to this one tile
+// simply not existing (a plain 404 — see reportTileError below for why that matters).
+// 401/403 cover a revoked or domain-restricted key, 429 a rate limit, 5xx a real outage.
+const OUTAGE_STATUSES = new Set([401, 403, 429])
+
+function isOutageStatus(status: number): boolean {
+  return status >= 500 || OUTAGE_STATUSES.has(status)
+}
+
+/** Fetches `url` and returns its HTTP status, or `null` if the fetch itself threw
+ * (network error, timeout, or — per the CORS note below — very plausibly a real outage
+ * that never even produced a readable status). Never throws. */
+async function probe(doFetch: typeof fetch, url: string): Promise<number | null> {
   // Cache-busting, not just `cache: 'no-store'`: that RequestCache option only ever
   // governs the browser's native HTTP cache — it does nothing to a service worker's own
   // Cache Storage, which intercepts by URL regardless of it. Both URLs this is ever
   // called with (the failing MapTiler tile, and INTERNET_REFERENCE_URL's data.geopf.fr
   // host) are matched by a `CacheFirst` Workbox route (vite.config.ts's maptiler-tiles /
-  // ign-tiles), so without this, a single bad response cached during a real outage —
-  // including the known opaque-response gap documented there — would make this probe
-  // report "unreachable" forever after, for a source that has actually recovered, until
-  // that cache entry happens to expire or get evicted. A unique query param on every
-  // call is what actually forces a fresh network round-trip.
+  // ign-tiles, both of which exclude `_probe=` from what they cache — see those rules),
+  // so without this, a single bad response cached during a real outage — including the
+  // known opaque-response gap documented there — would make this probe report
+  // "unreachable" forever after, for a source that has actually recovered, until that
+  // cache entry happens to expire or get evicted. A unique query param on every call is
+  // what actually forces a fresh network round-trip.
   const probeUrl = `${url}${url.includes('?') ? '&' : '?'}_probe=${Date.now()}`
   try {
     const response = await doFetch(probeUrl, {
       cache: 'no-store',
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     })
-    return response.ok
+    return response.status
   } catch {
     // A cross-origin fetch() (unlike the <img> tags TileLayer actually uses) needs a
     // matching CORS header to resolve at all — most APIs, MapTiler included, don't
     // reliably send one on an error response even when they do on success. So a real
-    // quota/outage failure usually surfaces here as a thrown TypeError, not a readable
-    // 4xx/5xx: this branch, not a readable non-ok status, is the expected path for the
-    // failure this function exists to catch.
-    return false
+    // quota/outage failure often surfaces here as a thrown TypeError rather than a
+    // readable 4xx/5xx — null is deliberately treated as "ambiguous, go confirm via
+    // IGN" by reportTileError below, the same as a readable outage status, not as
+    // "healthy" the way a readable non-outage status is.
+    return null
   }
 }
 
@@ -137,11 +152,19 @@ export async function reportTileError(
 
   isProbing = true
   try {
-    const maptilerOk = await probe(doFetch, tileUrl)
-    if (maptilerOk) return // a one-off tileerror on an otherwise-healthy MapTiler
+    const maptilerStatus = await probe(doFetch, tileUrl)
+    // A clean 2xx, or a readable status that isn't itself an outage signal (a plain 404
+    // for one tile that legitimately doesn't exist, say) — this one tileerror doesn't
+    // mean MapTiler-the-service is down, so leave the whole device on it rather than
+    // treating every non-2xx as grounds to fail over.
+    if (maptilerStatus !== null && !isOutageStatus(maptilerStatus)) return
 
-    const ignReachable = await probe(doFetch, INTERNET_REFERENCE_URL)
-    if (ignReachable) triggerFailover(`tileerror on ${tileUrl}, IGN reachable`)
+    const ignStatus = await probe(doFetch, INTERNET_REFERENCE_URL)
+    if (ignStatus !== null) {
+      triggerFailover(
+        `tileerror on ${tileUrl} (maptiler status ${maptilerStatus ?? 'network error'}), IGN reachable`,
+      )
+    }
   } finally {
     isProbing = false
   }

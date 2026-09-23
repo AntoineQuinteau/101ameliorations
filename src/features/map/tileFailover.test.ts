@@ -8,13 +8,13 @@ import {
 
 const STORAGE_KEY = 'tile-failover-until'
 
-function okResponse(): Response {
-  return { ok: true } as Response
+// probe() now reads response.status (not .ok — see tileFailover.ts's isOutageStatus),
+// so every fixture needs an explicit, semantically real status rather than a bare
+// {ok: true/false}.
+function response(status: number): Response {
+  return { status } as Response
 }
-
-function errorResponse(): Response {
-  return { ok: false } as Response
-}
+const okResponse = () => response(200)
 
 beforeEach(() => {
   localStorage.clear()
@@ -57,13 +57,26 @@ describe('reportTileError', () => {
     expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
   })
 
-  it('also fails over on a readable non-ok MapTiler status, confirmed via IGN', async () => {
+  it('fails over on a readable outage status (403: quota/key revoked), confirmed via IGN', async () => {
     const fetch = vi
       .fn()
-      .mockResolvedValueOnce(errorResponse()) // MapTiler probe: readable 4xx/5xx
+      .mockResolvedValueOnce(response(403)) // MapTiler probe
       .mockResolvedValueOnce(okResponse()) // IGN reference probe
     await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', { fetch })
     expect(isTileFailedOver()).toBe(true)
+  })
+
+  it('also fails over on a readable 5xx from MapTiler, confirmed via IGN', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response(503)).mockResolvedValueOnce(okResponse())
+    await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', { fetch })
+    expect(isTileFailedOver()).toBe(true)
+  })
+
+  it('does not fail over on a plain 404 — a missing tile is not a MapTiler outage (regression: PR #33 review, round 3)', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(response(404))
+    await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', { fetch })
+    expect(fetch).toHaveBeenCalledTimes(1) // no IGN confirmation — this was never ambiguous
+    expect(isTileFailedOver()).toBe(false)
   })
 
   it('does not fail over when both MapTiler and IGN are unreachable (this device is offline)', async () => {

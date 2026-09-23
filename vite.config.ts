@@ -77,7 +77,15 @@ export default defineConfig(({ mode }) => {
               // `Access-Control-Allow-Origin`: without it, `crossOrigin` makes the
               // `<img>` request itself fail, which is strictly worse. Left as `[0, 200]`
               // until that's confirmed.
-              urlPattern: ({ url }) => url.hostname === 'api.maptiler.com',
+              // `_probe=` is tileFailover.ts's cache-busting query param on its
+              // reachability checks (see that file's `probe()`) — excluded here so
+              // those one-off requests still get cache-busted at the fetch layer
+              // (this rule would otherwise intercept and answer them from whatever's
+              // already cached, defeating the whole point) without also being written
+              // into Cache Storage as junk entries that would never be reused and would
+              // just evict real tiles once the entry cap is hit.
+              urlPattern: ({ url }) =>
+                url.hostname === 'api.maptiler.com' && !url.searchParams.has('_probe'),
               handler: 'CacheFirst',
               options: {
                 cacheName: 'maptiler-tiles',
@@ -100,9 +108,15 @@ export default defineConfig(({ mode }) => {
               // doesn't evict MapTiler's own still-good cache, and vice versa on
               // recovery. Same known opaque-response caveat as maptiler-tiles above —
               // narrower `bounds` on these layers (a few thousand tiles at most, see
-              // that file) makes a 1000-entry cap generous rather than tight.
+              // that file) makes a 1000-entry cap generous rather than tight. `_probe=`
+              // excluded for the same reason as maptiler-tiles above — this is also
+              // where tileFailover.ts's INTERNET_REFERENCE_URL check lands (a
+              // data.geopf.fr GetCapabilities document, several MB — writing a fresh
+              // copy to Cache Storage on every single probe would be the expensive case
+              // this exclusion actually exists for).
               urlPattern: ({ url }) =>
-                url.hostname === 'data.geopf.fr' || url.hostname === 'www.ign.es',
+                (url.hostname === 'data.geopf.fr' || url.hostname === 'www.ign.es') &&
+                !url.searchParams.has('_probe'),
               handler: 'CacheFirst',
               options: {
                 cacheName: 'ign-tiles',
