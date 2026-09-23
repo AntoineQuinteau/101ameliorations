@@ -1,5 +1,16 @@
 # Plan — proxy de tuiles MapTiler derrière le cache edge Cloudflare
 
+> **Abandonné (23/09/2026).** Les CGU MapTiler Cloud (https://www.maptiler.com/terms/cloud/)
+> interdisent de stocker ou redistribuer les tuiles depuis un cache côté serveur ; un
+> proxy nécessite leur accord préalable et des frais supplémentaires. Ce plan n'est donc
+> pas utilisable tel quel pour MapTiler. Le levier retenu à la place est un secours vers
+> l'IGN (France + Espagne, licence ouverte, sans quota) — voir
+> `src/features/map/tileProviders.ts` et `tileFailover.ts`, et §6.1/§10 de `docs/spec.md`.
+> La mécanique décrite ci-dessous (route Worker, validation stricte du chemin, cache
+> edge, piège Workbox) redevient utilisable telle quelle avec une source sous licence
+> ouverte, si le besoin s'en fait sentir un jour (ex. réduire encore la charge sur les
+> serveurs IGN).
+
 ## Contexte
 
 Suite directe de la réduction de consommation MapTiler (voir le commit qui a introduit
