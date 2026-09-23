@@ -31,7 +31,13 @@ import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
 import { MapTiles } from '../map/MapTiles'
 import { ServiceAreaBounds } from '../map/ServiceAreaBounds'
 import { useKlashesInBbox } from '../map/useKlashesInBbox'
-import { INITIAL_MAP_CENTER, MAX_MAP_ZOOM, MIN_MAP_ZOOM } from '../../config/serviceArea'
+import { readStoredMapLayer } from '../map/useMapLayer'
+import {
+  INITIAL_MAP_CENTER,
+  MAX_MAP_ZOOM,
+  MAX_SATELLITE_MAP_ZOOM,
+  MIN_MAP_ZOOM,
+} from '../../config/serviceArea'
 import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
@@ -138,6 +144,11 @@ export function NewKlashPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [failedPhotoCount, setFailedPhotoCount] = useState(0)
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
+  // Same layer (plan/satellite) as the main map the user just came from, so
+  // placing the pin doesn't silently switch the imagery under them. Read once,
+  // at mount: this page has no layer toggle, so the value can't change here,
+  // which also lets maxZoom below be a plain static prop (no MapLayerZoom).
+  const [mapLayer] = useState(readStoredMapLayer)
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same
@@ -352,12 +363,12 @@ export function NewKlashPage() {
         center={position}
         zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
-        maxZoom={MAX_MAP_ZOOM}
+        maxZoom={mapLayer === 'satellite' ? MAX_SATELLITE_MAP_ZOOM : MAX_MAP_ZOOM}
         bounceAtZoomLimits={false}
         maxBoundsViscosity={1}
         className="h-full w-full"
       >
-        <MapTiles layer="plan" />
+        <MapTiles layer={mapLayer} />
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
