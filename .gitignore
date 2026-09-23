@@ -46,6 +46,7 @@ src/types/database.generated.ts
 # Fichiers IDE / Éditeurs
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 *.suo
 *.ntvsopt
