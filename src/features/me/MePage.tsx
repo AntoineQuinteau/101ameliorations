@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
@@ -57,6 +58,22 @@ export function MePage() {
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.me.title}</h1>
 
       <section className="mt-4 rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5">
+        {profile && (
+          <div className="mb-4 flex flex-col gap-2 border-b border-neutral-200 pb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-neutral-700">{fr.me.roleLabel}</span>
+              <Badge label={fr.role[profile.role]} tone="gray" />
+            </div>
+            {profile.role === 'authority' && profile.organization && (
+              <div>
+                <span className="text-sm font-medium text-neutral-700">
+                  {fr.me.organizationLabel}
+                </span>{' '}
+                <span className="text-sm text-neutral-600">{profile.organization}</span>
+              </div>
+            )}
+          </div>
+        )}
         <DisplayNameForm
           initialValue={profile?.displayName ?? ''}
           submitLabel={fr.me.pseudoSave}

@@ -47,7 +47,7 @@ test('an abandoned report draft is offered back on the map, and can be discarded
   // input directly, regardless of which UI path would normally open it.
   await page.getByLabel('Catégorie').selectOption('category_1')
   await page.getByLabel('Titre').fill(title)
-  await page.getByLabel('Description (facultative)').fill('Brouillon de test E2E.')
+  await page.getByLabel('Description').fill('Brouillon de test E2E.')
   await page.locator('input[type="file"][multiple]').setInputFiles(FIXTURE_PHOTO)
   await expect(page.getByRole('button', { name: 'Retirer cette photo' })).toBeVisible()
 
@@ -81,7 +81,7 @@ test('an abandoned report draft is offered back on the map, and can be discarded
   // ('form') — rather than through the resume-or-start-new prompt.
   await expect(page.getByRole('heading', { name: 'Décrire le problème' })).toBeVisible()
   await expect(page.getByLabel('Titre')).toHaveValue(title)
-  await expect(page.getByLabel('Description (facultative)')).toHaveValue('Brouillon de test E2E.')
+  await expect(page.getByLabel('Description')).toHaveValue('Brouillon de test E2E.')
   await expect(page.getByRole('button', { name: 'Retirer cette photo' })).toBeVisible()
 
   // Cancel again, this time discarding it for good.

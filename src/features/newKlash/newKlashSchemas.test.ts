@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   emptyKlashFormDraft,
   klashFormDraftFromKlash,
+  klashFormInputFromDraft,
   messageForKlashFormIssue,
   newKlashFormSchema,
 } from './newKlashSchemas'
@@ -29,20 +30,6 @@ const baseKlash: Klash = {
   authorDisplayName: "Quelqu'un",
   authorOrganization: null,
   authorRole: 'user',
-}
-
-// Normalises a raw form draft the same way KlashFormStep/EditKlashForm do
-// before handing it to newKlashFormSchema — extracted here so the
-// round-trip test below exercises the exact same shape the forms submit.
-function normalise(draft: ReturnType<typeof klashFormDraftFromKlash>) {
-  return {
-    category: draft.category === '' ? undefined : draft.category,
-    categoryOther: draft.categoryOther.trim() === '' ? null : draft.categoryOther,
-    importance: draft.importance,
-    title: draft.title,
-    description: draft.description.trim() === '' ? null : draft.description,
-    proposedSolution: draft.proposedSolution.trim() === '' ? null : draft.proposedSolution,
-  }
 }
 
 describe('klashFormDraftFromKlash', () => {
@@ -81,14 +68,57 @@ describe('klashFormDraftFromKlash', () => {
     // Proves the edit form can never open on a klash it would then refuse
     // to save: every field the database already accepted must still pass
     // validation once mapped back through the draft and normalised.
-    const result = newKlashFormSchema.safeParse(normalise(klashFormDraftFromKlash(baseKlash)))
+    const result = newKlashFormSchema.safeParse(
+      klashFormInputFromDraft(klashFormDraftFromKlash(baseKlash)),
+    )
     expect(result.success).toBe(true)
   })
 
   it('round-trips a category_7 klash, categoryOther included', () => {
     const klash: Klash = { ...baseKlash, category: 'category_7', categoryOther: 'Autre chose' }
-    const result = newKlashFormSchema.safeParse(normalise(klashFormDraftFromKlash(klash)))
+    const result = newKlashFormSchema.safeParse(
+      klashFormInputFromDraft(klashFormDraftFromKlash(klash)),
+    )
     expect(result.success).toBe(true)
+  })
+})
+
+describe('klashFormInputFromDraft', () => {
+  // Backs the submit handlers and KlashFormStep's live "Continuer" gating —
+  // both must agree on what counts as a valid draft.
+  it('rejects the empty draft', () => {
+    expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(emptyKlashFormDraft)).success).toBe(
+      false,
+    )
+  })
+
+  it('accepts a category plus a 5-character title', () => {
+    const draft = { ...emptyKlashFormDraft, category: 'category_2' as const, title: 'Trou!' }
+    expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(draft)).success).toBe(true)
+  })
+
+  it('rejects category_7 ("Autre") with no precision typed', () => {
+    const draft = {
+      ...emptyKlashFormDraft,
+      category: 'category_7' as const,
+      title: 'Trou dans le sol',
+    }
+    expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(draft)).success).toBe(false)
+  })
+
+  it('accepts category_7 once a precision is typed', () => {
+    const draft = {
+      ...emptyKlashFormDraft,
+      category: 'category_7' as const,
+      categoryOther: 'Poteau mal placé',
+      title: 'Trou dans le sol',
+    }
+    expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(draft)).success).toBe(true)
+  })
+
+  it("doesn't count leading/trailing whitespace toward the title's minimum length", () => {
+    const draft = { ...emptyKlashFormDraft, category: 'category_2' as const, title: '  Ab  ' }
+    expect(newKlashFormSchema.safeParse(klashFormInputFromDraft(draft)).success).toBe(false)
   })
 })
 

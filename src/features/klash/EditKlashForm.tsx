@@ -5,6 +5,7 @@ import type { Klash } from '../../types/klash'
 import { KlashFieldset } from '../newKlash/KlashFieldset'
 import {
   klashFormDraftFromKlash,
+  klashFormInputFromDraft,
   messageForKlashFormIssue,
   newKlashFormSchema,
   type KlashFormDraft,
@@ -62,14 +63,7 @@ export function EditKlashForm({
     event.preventDefault()
     if (!guard.claim()) return
 
-    const result = newKlashFormSchema.safeParse({
-      category: value.category === '' ? undefined : value.category,
-      categoryOther: value.categoryOther.trim() === '' ? null : value.categoryOther,
-      importance: value.importance,
-      title: value.title,
-      description: value.description.trim() === '' ? null : value.description,
-      proposedSolution: value.proposedSolution.trim() === '' ? null : value.proposedSolution,
-    })
+    const result = newKlashFormSchema.safeParse(klashFormInputFromDraft(value))
     if (!result.success) {
       const issue = result.error.issues[0]
       setValidationError(messageForKlashFormIssue(issue?.path[0]))
