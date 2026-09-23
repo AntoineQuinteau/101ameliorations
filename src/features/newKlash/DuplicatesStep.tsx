@@ -65,7 +65,10 @@ export function DuplicatesStep({
               <p className="text-sm font-medium text-neutral-900">{klash.title}</p>
               <div className="flex flex-wrap gap-1.5">
                 <Badge label={klashCategoryLabel(klash)} tone="gray" />
-                <Badge label={fr.importanceBadge[klash.importance]} tone={importanceTone(klash.importance)} />
+                <Badge
+                  label={fr.importanceBadge[klash.importance]}
+                  tone={importanceTone(klash.importance)}
+                />
                 <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
               </div>
               {isOwn ? (

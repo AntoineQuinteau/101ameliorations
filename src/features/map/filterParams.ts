@@ -38,7 +38,11 @@ function parseEnumList<T extends string>(
  * anything absent or unparseable. */
 export function filtersFromSearchParams(params: URLSearchParams): KlashFilters {
   const categories = parseEnumList<KlashCategory>(params, CATEGORY_PARAM, klashCategorySchema)
-  const importances = parseEnumList<KlashImportance>(params, IMPORTANCE_PARAM, klashImportanceSchema)
+  const importances = parseEnumList<KlashImportance>(
+    params,
+    IMPORTANCE_PARAM,
+    klashImportanceSchema,
+  )
   const statuses = parseEnumList<KlashStatus>(params, STATUS_PARAM, klashStatusSchema)
   const createdAfter = params.get(CREATED_AFTER_PARAM)
 

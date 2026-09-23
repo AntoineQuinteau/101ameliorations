@@ -42,7 +42,10 @@ export function KlashPreviewCard({
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Badge label={klashCategoryLabel(klash)} tone="gray" />
-          <Badge label={fr.importanceBadge[klash.importance]} tone={importanceTone(klash.importance)} />
+          <Badge
+            label={fr.importanceBadge[klash.importance]}
+            tone={importanceTone(klash.importance)}
+          />
           <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
         </div>
         <p className="text-xs text-neutral-500">
