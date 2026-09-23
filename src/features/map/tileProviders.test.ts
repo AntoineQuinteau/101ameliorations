@@ -82,6 +82,23 @@ describe('tileLayerSpecs — ign', () => {
     expect(es.attribution).toContain('Instituto Geográfico Nacional')
     expect(fr.attribution).not.toBe(es.attribution)
   })
+
+  it('France and Spain have distinct bounds, not a shared box (regression: PR #33 review)', () => {
+    // Spain (mounted second, drawn on top — see ignSpecs's docblock) sharing France's
+    // full-service-area bounds would let its opaque tiles hide France's real data
+    // everywhere, not just at the border. Asserting the two bounds actually differ, and
+    // that France's northern edge sits above Spain's, is what would have caught that.
+    for (const layer of ['plan', 'satellite'] as const) {
+      const [fr, es] = tileLayerSpecs('ign', layer)
+      expect(fr.bounds).toBeDefined()
+      expect(es.bounds).toBeDefined()
+      expect(fr.bounds).not.toEqual(es.bounds)
+
+      const franceNorth = (fr.bounds as [[number, number], [number, number]])[1][0]
+      const spainNorth = (es.bounds as [[number, number], [number, number]])[1][0]
+      expect(spainNorth).toBeLessThan(franceNorth)
+    }
+  })
 })
 
 describe('tileLayerSpecs — cycling', () => {

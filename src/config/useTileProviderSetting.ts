@@ -11,15 +11,19 @@ import type { TileProviderSetting } from '../types/settings'
  * MapTiler outage is already covered independently by automatic failover
  * (`tileFailover.ts`) — this setting only ever matters for a deliberate admin override.
  *
- * `staleTime` is much shorter than `useServiceArea()`'s: an admin toggling this during a
- * live MapTiler outage should reach already-open tabs within minutes, not only on their
- * next full reload. See `useTileProvider()` for where this combines with
- * `useTileFailover()`. */
+ * `staleTime` is much shorter than `useServiceArea()`'s, and paired with `refetchInterval`
+ * (which `useServiceArea()` has no need for): an admin toggling this during a live
+ * MapTiler outage should reach an already-open tab within minutes, not only on that
+ * tab's next remount or refocus — `staleTime` alone only governs what happens on the
+ * *next* trigger, it never schedules one by itself, so without `refetchInterval` a tab
+ * left in the foreground through a whole outage would never see the override at all.
+ * See `useTileProvider()` for where this combines with `useTileFailover()`. */
 export function useTileProviderSetting(): TileProviderSetting {
   const { data } = useQuery({
     queryKey: settingsKeys.tileProvider(),
     queryFn: fetchTileProviderSetting,
     staleTime: 10 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
     gcTime: Infinity,
     retry: 1,
   })

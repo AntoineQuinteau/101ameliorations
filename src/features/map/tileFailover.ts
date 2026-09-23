@@ -64,8 +64,19 @@ function triggerFailover(reason: string): void {
 }
 
 async function probe(doFetch: typeof fetch, url: string): Promise<boolean> {
+  // Cache-busting, not just `cache: 'no-store'`: that RequestCache option only ever
+  // governs the browser's native HTTP cache — it does nothing to a service worker's own
+  // Cache Storage, which intercepts by URL regardless of it. Both URLs this is ever
+  // called with (the failing MapTiler tile, and INTERNET_REFERENCE_URL's data.geopf.fr
+  // host) are matched by a `CacheFirst` Workbox route (vite.config.ts's maptiler-tiles /
+  // ign-tiles), so without this, a single bad response cached during a real outage —
+  // including the known opaque-response gap documented there — would make this probe
+  // report "unreachable" forever after, for a source that has actually recovered, until
+  // that cache entry happens to expire or get evicted. A unique query param on every
+  // call is what actually forces a fresh network round-trip.
+  const probeUrl = `${url}${url.includes('?') ? '&' : '?'}_probe=${Date.now()}`
   try {
-    const response = await doFetch(url, {
+    const response = await doFetch(probeUrl, {
       cache: 'no-store',
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
     })

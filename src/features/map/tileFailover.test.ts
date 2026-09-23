@@ -24,6 +24,23 @@ describe('reportTileError', () => {
     expect(isTileFailedOver()).toBe(false)
   })
 
+  it('cache-busts the probe URL so a service worker CacheFirst route cannot short-circuit it (regression: PR #33 review)', async () => {
+    // `cache: 'no-store'` (the RequestInit option below) only ever governs the browser's
+    // own HTTP cache — a service worker's Cache Storage (vite.config.ts's maptiler-tiles
+    // CacheFirst route) intercepts by URL regardless of it. Without a cache-busting query
+    // param, a tile cached as an opaque error response during a real outage would make
+    // every future probe of that same URL "fail" forever, even once MapTiler recovers.
+    const fetch = vi.fn().mockResolvedValue(okResponse())
+    const tileUrl = 'https://api.maptiler.com/maps/streets-v2/1/2/3.png?key=abc'
+    await reportTileError(tileUrl, { fetch })
+    const [calledUrl, options] = fetch.mock.calls[0] as [string, RequestInit]
+    expect(calledUrl).not.toBe(tileUrl)
+    expect(calledUrl).toMatch(
+      /^https:\/\/api\.maptiler\.com\/maps\/streets-v2\/1\/2\/3\.png\?key=abc&_probe=\d+$/,
+    )
+    expect(options.cache).toBe('no-store')
+  })
+
   it('fails over when MapTiler is unreachable but IGN answers (a real MapTiler outage)', async () => {
     const fetch = vi
       .fn()

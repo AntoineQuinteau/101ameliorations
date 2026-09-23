@@ -33,13 +33,13 @@ export interface TileLayerSpec {
   tileSize?: number
   zoomOffset?: number
   detectRetina?: boolean
-  /** Restricts requests to the area this specific tileset can plausibly answer for — a
-   * national IGN service has nothing to say outside its own country. Leaflet skips a
-   * tile whose bounds don't intersect this at all, so stacking a France and a Spain
-   * layer only ever double-requests the (small, expected) area where both might have
-   * data. Padded a little past `SERVICE_AREA_BBOX` rather than clipped exactly to it —
-   * the map itself already clamps panning there (`ServiceAreaBounds`), this bounds is a
-   * courtesy to these community/public-service-funded tile hosts, not a hard limit. */
+  /** Restricts requests — and, critically, *rendering* — to the area this specific
+   * tileset can plausibly answer for: a national IGN service has nothing to say outside
+   * its own country, and Leaflet skips a tile whose bounds don't intersect this at all.
+   * On the two stacked IGN layers (`ignSpecs` below) this is not just a request-count
+   * courtesy: whichever layer mounts second draws on top of the first *everywhere their
+   * bounds overlap*, so a shared, wide `bounds` on both would let the top one's opaque
+   * tiles hide the other's real data across the whole overlap, not just at the border. */
   bounds?: LatLngBoundsExpression
   /** Only set on MapTiler specs, and only once their CORS headers are confirmed on a
    * preview (see the tile-edge-proxy follow-up plan) — without a matching
@@ -52,12 +52,20 @@ export interface TileLayerSpec {
 
 const SERVICE_AREA_PADDING_DEG = 0.2
 
-/** `SERVICE_AREA_BBOX`, padded — see `bounds` above. Shared by every IGN spec (both
- * countries): the app's own viewport never strays far outside the service area anyway
- * (`ServiceAreaBounds` clamps panning), so there is no need to hand-split this by the
- * France/Spain border — that border isn't a straight line, and both national tilesets
- * are simply empty (a normal empty/error tile, not a crash) outside their own country. */
-const IGN_BOUNDS: LatLngBoundsExpression = [
+// The France/Spain border through the western Pyrenees isn't a straight line, so this
+// is necessarily an approximation, not a geodata-accurate split — but it has to be
+// *some* split: see `bounds`'s docblock above for why sharing one wide box between both
+// country layers is an actual bug, not just an over-broad request count. 43.30°N sits
+// just south of Hendaye/Irun (the coastal border crossing, ~43.35°N), so it's chosen to
+// keep the border town pair itself on the French side, where nearly all of this app's
+// actual usage is. It is NOT geodata-accurate further inland — the border zigzags well
+// south of this latitude around St-Jean-Pied-de-Port — so Spain's layer stays absent
+// (not merely wrong) for a sliver of French Basque Country near that town; the reverse
+// (France's layer missing over Spanish soil) does not happen, since France's own bounds
+// below cover the entire padded service area.
+const IGN_SPAIN_NORTHERN_LIMIT_LAT = 43.3
+
+const PADDED_SERVICE_AREA: LatLngBoundsExpression = [
   [
     SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG,
     SERVICE_AREA_BBOX.minLng - SERVICE_AREA_PADDING_DEG,
@@ -66,6 +74,22 @@ const IGN_BOUNDS: LatLngBoundsExpression = [
     SERVICE_AREA_BBOX.maxLat + SERVICE_AREA_PADDING_DEG,
     SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DEG,
   ],
+]
+
+/** Covers the whole padded service area — mounted first (see `ignSpecs`), so wherever
+ * `IGN_SPAIN_BOUNDS` below doesn't reach, this is the only IGN layer requested at all. */
+const IGN_FRANCE_BOUNDS = PADDED_SERVICE_AREA
+
+/** The southern slice of the padded service area, roughly where Spain actually is (see
+ * `IGN_SPAIN_NORTHERN_LIMIT_LAT`'s docblock) — deliberately narrower than
+ * `IGN_FRANCE_BOUNDS`, not a copy of it, so the Spain layer (mounted second, drawn on
+ * top) only ever paints over France's layer in the area it's actually meant to replace. */
+const IGN_SPAIN_BOUNDS: LatLngBoundsExpression = [
+  [
+    SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG,
+    SERVICE_AREA_BBOX.minLng - SERVICE_AREA_PADDING_DEG,
+  ],
+  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DEG],
 ]
 
 // MapTiler + OpenStreetMap attribution is legally mandated boilerplate, not app copy —
@@ -124,17 +148,18 @@ function maptilerSpecs(
 /** Quota-free fallback (spec §6.1 follow-up): France via the Géoplateforme (IGN's own
  * successor to wxs.ign.fr, open data since 2021, no key, no documented rate limit on its
  * WMTS tile endpoint specifically) and Spain via IGN España's own WMTS (CC BY 4.0, no
- * key). Two stacked `<TileLayer>`s per app layer, `bounds`-clipped to `IGN_BOUNDS` above
- * so tiles are only ever requested inside the service area.
+ * key). Two stacked `<TileLayer>`s per app layer, each `bounds`-clipped to its own
+ * country (`IGN_FRANCE_BOUNDS` / `IGN_SPAIN_BOUNDS` above) — not to a shared box: Spain
+ * is listed second (drawn on top, since it mounts later — Leaflet stacks same-pane tile
+ * layers in mount order), and without its own narrower bounds it would draw over
+ * France's real tiles everywhere they overlap, including Bayonne, not just at the
+ * border.
  *
  * **To confirm on a preview** (not verifiable from this sandbox — see
- * `docs/plans/tile-edge-proxy.md`'s replacement plan for the full list): which of the
- * two layers should render on top at the France/Spain border (whichever one leaves
- * transparent/empty pixels outside its own country, rather than opaque ones, belongs on
- * top) — France is listed first below as a starting guess, swap the order if the border
- * looks wrong; `maxNativeZoom` (19 here, from IGN's own tile matrix docs, for every IGN
- * layer); and whether either host answers CORS (`crossOrigin` on `TileLayerSpec` is left
- * unset here until then — see its docblock). */
+ * `docs/plans/tile-edge-proxy.md`'s replacement plan for the full list):
+ * `maxNativeZoom` (19 here, from IGN's own tile matrix docs, for every IGN layer); and
+ * whether either host answers CORS (`crossOrigin` on `TileLayerSpec` is left unset here
+ * until then — see its docblock). */
 function ignSpecs(layer: 'plan' | 'satellite'): TileLayerSpec[] {
   if (layer === 'satellite') {
     return [
@@ -143,14 +168,14 @@ function ignSpecs(layer: 'plan' | 'satellite'): TileLayerSpec[] {
         url: 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg',
         attribution: IGN_FRANCE_ATTRIBUTION,
         maxNativeZoom: 19,
-        bounds: IGN_BOUNDS,
+        bounds: IGN_FRANCE_BOUNDS,
       },
       {
         id: 'ign-es-satellite',
         url: 'https://www.ign.es/wmts/pnoa-ma?service=WMTS&request=GetTile&version=1.0.0&layer=OI.OrthoimageCoverage&style=default&format=image/jpeg&tilematrixset=GoogleMapsCompatible&TileMatrix={z}&TileRow={y}&TileCol={x}',
         attribution: IGN_SPAIN_ATTRIBUTION,
         maxNativeZoom: 19,
-        bounds: IGN_BOUNDS,
+        bounds: IGN_SPAIN_BOUNDS,
       },
     ]
   }
@@ -160,14 +185,14 @@ function ignSpecs(layer: 'plan' | 'satellite'): TileLayerSpec[] {
       url: 'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png',
       attribution: IGN_FRANCE_ATTRIBUTION,
       maxNativeZoom: 19,
-      bounds: IGN_BOUNDS,
+      bounds: IGN_FRANCE_BOUNDS,
     },
     {
       id: 'ign-es-plan',
       url: 'https://www.ign.es/wmts/ign-base?service=WMTS&request=GetTile&version=1.0.0&layer=IGNBaseTodo&style=default&format=image/png&tilematrixset=GoogleMapsCompatible&TileMatrix={z}&TileRow={y}&TileCol={x}',
       attribution: IGN_SPAIN_ATTRIBUTION,
       maxNativeZoom: 19,
-      bounds: IGN_BOUNDS,
+      bounds: IGN_SPAIN_BOUNDS,
     },
   ]
 }
