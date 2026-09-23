@@ -72,6 +72,21 @@ export function klashFormDraftFromKlash(klash: Klash): KlashFormDraft {
   }
 }
 
+/** Normalises a raw draft into `newKlashFormSchema`'s input shape: an
+ * unchosen category becomes `undefined` and blank optional text fields become
+ * `null`. Shared by the submit handlers and KlashFormStep's live validity
+ * check, so "can submit" and "does submit" can't disagree. */
+export function klashFormInputFromDraft(draft: KlashFormDraft) {
+  return {
+    category: draft.category === '' ? undefined : draft.category,
+    categoryOther: draft.categoryOther.trim() === '' ? null : draft.categoryOther,
+    importance: draft.importance,
+    title: draft.title,
+    description: draft.description.trim() === '' ? null : draft.description,
+    proposedSolution: draft.proposedSolution.trim() === '' ? null : draft.proposedSolution,
+  }
+}
+
 /** Maps a failed `newKlashFormSchema` validation to the French message for
  * its first issue's field — shared by KlashFormStep (creation) and
  * EditKlashForm (edit) so the two forms report the same errors the same
