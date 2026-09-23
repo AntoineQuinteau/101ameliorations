@@ -14,6 +14,21 @@ const PROBE_TIMEOUT_MS = 5000
 const INTERNET_REFERENCE_URL =
   'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetCapabilities'
 
+/** `AbortSignal.timeout()` — a static method, not just the `AbortSignal`/`AbortController`
+ * constructors — only landed in Safari 16 (Sept 2022). Calling it on an older Safari/iOS
+ * throws a plain `TypeError` synchronously, which `probe()`'s `try` used to let escape
+ * straight into its `catch`: both the MapTiler probe and the IGN reference probe would
+ * then return `null` on every call, so `reportTileError` could never distinguish a real
+ * outage from "this browser can't even attempt the probe" — on exactly the devices this
+ * feature exists to protect, MapTiler running out of quota would just leave the map
+ * blank, forever, with no fallback and no error. `AbortController` + `setTimeout` do the
+ * same job (abort a fetch after `ms`) with much wider support (Safari 12.1+, 2019). */
+function timeoutSignal(ms: number): AbortSignal {
+  const controller = new AbortController()
+  setTimeout(() => controller.abort(), ms)
+  return controller.signal
+}
+
 function readFailoverUntil(): number {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -117,7 +132,7 @@ async function probe(doFetch: typeof fetch, url: string): Promise<number | null>
   try {
     const response = await doFetch(probeUrl, {
       cache: 'no-store',
-      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
+      signal: timeoutSignal(PROBE_TIMEOUT_MS),
     })
     return response.status
   } catch {

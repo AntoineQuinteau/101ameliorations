@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_TILE_BASE_URL } from './tileUrls'
 import { tileLayerSpecs } from './tileProviders'
+import { SERVICE_AREA_BBOX } from '../../config/serviceArea'
+
+type LatLngBox = [[number, number], [number, number]]
+
+function containsPoint(bounds: LatLngBox, lat: number, lng: number): boolean {
+  const [[south, west], [north, east]] = bounds
+  return lat >= south && lat <= north && lng >= west && lng <= east
+}
 
 describe('tileLayerSpecs — maptiler', () => {
   it('reproduces the exact plan-layer TileLayer props this replaces', () => {
@@ -83,26 +91,72 @@ describe('tileLayerSpecs — ign', () => {
     expect(fr.attribution).not.toBe(es.attribution)
   })
 
-  it('France and Spain bounds share only a boundary line, not an overlapping area (regression: PR #33 review, round 2)', () => {
-    // Round 1 only narrowed Spain's box while leaving France's at the full service
-    // area, so the two still overlapped across the entire southern band (Pau, Oloron,
-    // Mauléon and Saint-Jean-Pied-de-Port all inside it) — Spain, mounted second, won
-    // that whole band. Asserting France's south edge sits exactly AT (not below) Spain's
-    // north edge is what actually catches a shared-area regression; the round-1 test's
-    // "spainNorth < franceNorth" passed even on the buggy code, since it compared the
-    // wrong pair of edges (both boxes' northern edges, not the shared one).
+  it('France bounds cover the whole service area (regression: PR #33 review, round 4 — a coverage gap)', () => {
+    // Round 2's fix (making the two boxes disjoint by latitude alone) capped
+    // IGN_FRANCE_BOUNDS's south edge at the France/Spain split, so French territory
+    // south of it — Pau, Oloron, Mauléon, Saint-Jean-Pied-de-Port — got no French IGN
+    // layer requested at all, not merely a lower z-order under Spain's. France's box
+    // must reach at least as far as SERVICE_AREA_BBOX in every direction.
+    for (const layer of ['plan', 'satellite'] as const) {
+      const [fr] = tileLayerSpecs('ign', layer)
+      const [[south, west], [north, east]] = fr.bounds as LatLngBox
+      expect(south).toBeLessThanOrEqual(SERVICE_AREA_BBOX.minLat)
+      expect(west).toBeLessThanOrEqual(SERVICE_AREA_BBOX.minLng)
+      expect(north).toBeGreaterThanOrEqual(SERVICE_AREA_BBOX.maxLat)
+      expect(east).toBeGreaterThanOrEqual(SERVICE_AREA_BBOX.maxLng)
+    }
+  })
+
+  it("Spain's bounds are a real 2D corner, not a latitude-only band (regression: PR #33 review, round 1/2/4)", () => {
+    // A latitude-only band (rounds 1-2's approach) would span the same full longitude
+    // range as France's box — asserting Spain's box is narrower in *both* dimensions is
+    // what actually distinguishes a proper south-west corner from a band.
     for (const layer of ['plan', 'satellite'] as const) {
       const [fr, es] = tileLayerSpecs('ign', layer)
-      expect(fr.bounds).toBeDefined()
-      expect(es.bounds).toBeDefined()
+      const [, [franceNorth, franceEast]] = fr.bounds as LatLngBox
+      const [[spainSouth, spainWest], [spainNorth, spainEast]] = es.bounds as LatLngBox
 
-      const [[franceSouth], [franceNorth]] = fr.bounds as [[number, number], [number, number]]
-      const [[spainSouth], [spainNorth]] = es.bounds as [[number, number], [number, number]]
+      expect(spainSouth).toBeLessThan(spainNorth) // non-degenerate
+      expect(spainWest).toBeLessThan(spainEast) // non-degenerate
+      expect(spainNorth).toBeLessThan(franceNorth) // narrower in latitude
+      expect(spainEast).toBeLessThan(franceEast) // narrower in longitude too
+    }
+  })
 
-      expect(spainSouth).toBeLessThan(spainNorth) // Spain's own box is non-degenerate
-      expect(franceSouth).toBeLessThan(franceNorth) // France's own box is non-degenerate
-      // The regression guard: no shared latitude range between the two boxes.
-      expect(franceSouth).toBe(spainNorth)
+  it('places every named town (from four rounds of review) on its correct side of the split', () => {
+    const frenchTowns = {
+      Pau: [43.295, -0.37],
+      Oloron: [43.19, -0.61],
+      Mauléon: [43.22, -0.89],
+      'Saint-Jean-Pied-de-Port': [43.16, -1.24],
+    } as const
+    const spanishTowns = {
+      'San Sebastián': [43.32, -1.98],
+      Irun: [43.34, -1.79],
+      Hondarribia: [43.37, -1.79],
+      Pamplona: [42.82, -1.64],
+    } as const
+
+    for (const layer of ['plan', 'satellite'] as const) {
+      const [fr, es] = tileLayerSpecs('ign', layer)
+      const franceBounds = fr.bounds as LatLngBox
+      const spainBounds = es.bounds as LatLngBox
+
+      for (const [name, [lat, lng]] of Object.entries(frenchTowns)) {
+        expect(containsPoint(franceBounds, lat, lng), `${name} should be in France's bounds`).toBe(
+          true,
+        )
+        expect(
+          containsPoint(spainBounds, lat, lng),
+          `${name} should NOT be in Spain's bounds`,
+        ).toBe(false)
+      }
+
+      for (const [name, [lat, lng]] of Object.entries(spanishTowns)) {
+        expect(containsPoint(spainBounds, lat, lng), `${name} should be in Spain's bounds`).toBe(
+          true,
+        )
+      }
     }
   })
 })

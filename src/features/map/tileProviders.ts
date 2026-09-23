@@ -39,7 +39,11 @@ export interface TileLayerSpec {
    * On the two stacked IGN layers (`ignSpecs` below) this is not just a request-count
    * courtesy: whichever layer mounts second draws on top of the first *everywhere their
    * bounds overlap*, so a shared, wide `bounds` on both would let the top one's opaque
-   * tiles hide the other's real data across the whole overlap, not just at the border. */
+   * tiles hide the other's real data across the whole overlap — and, the other way
+   * round, giving one layer a `bounds` that doesn't reach some of the area it should
+   * cover means that area gets no tiles from it at all, not merely a lower z-order. Two
+   * rounds of review on this exact code each found a real instance of one of those two
+   * failure modes (see `IGN_SPAIN_BOUNDS`'s docblock) — this isn't a hypothetical. */
   bounds?: LatLngBoundsExpression
   /** Only set on MapTiler specs, and only once their CORS headers are confirmed on a
    * preview (see the tile-edge-proxy follow-up plan) — without a matching
@@ -57,58 +61,66 @@ const SERVICE_AREA_EAST_LNG = SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DE
 const SERVICE_AREA_SOUTH_LAT = SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG
 const SERVICE_AREA_NORTH_LAT = SERVICE_AREA_BBOX.maxLat + SERVICE_AREA_PADDING_DEG
 
-// The France/Spain border through the western Pyrenees isn't a straight line, so this
-// is necessarily an approximation, not a geodata-accurate split — but it has to be
-// *some* split, and — critically — `IGN_FRANCE_BOUNDS` and `IGN_SPAIN_BOUNDS` below must
-// not merely be narrower than the full service area each, they must share NO area with
-// each other (only this one latitude as a boundary line): a round of review on this
-// exact code found that an earlier version narrowed only Spain's box while leaving
-// France's at the full service area, so the two overlapped across the *entire*
-// [SERVICE_AREA_SOUTH_LAT, 43.3°N] band — Spain (mounted second, drawn on top) was
-// covering genuinely French towns well inside that band: Pau (43.295°N), Oloron,
-// Mauléon (43.22°N), Saint-Jean-Pied-de-Port (43.16°N). It's not a borderline call
-// either: the satellite layer's Spanish tileset (PNOA-MA) is served as JPEG, a format
-// with no alpha channel at all, so any tile it returns outside real Spanish coverage is
-// unconditionally opaque — never merely "likely" to hide what's underneath.
-//
-// With the two boxes disjoint, the residual overlap is narrowed to only the tiles whose
-// own rectangle happens to straddle exactly this latitude (Leaflet's `bounds`
-// intersection is per-tile, not per-pixel, so this can't be eliminated by a rectangular
-// split alone — worse at low zoom, where a single tile's footprint is large enough to
-// reach well past the line).
-//
-// 43.30°N is not a good split even so, and there isn't a better single latitude to pick:
-// Hendaye (France) and Irun (Spain) sit almost exactly across the Bidasoa from each
-// other, at essentially the same latitude (Hendaye ~43.36°N, Irun ~43.34°N) — any
-// horizontal cutoff between them puts one town on the wrong side. 43.30°N keeps Hendaye
-// (and the rest of coastal CAPB, this app's actual core usage) correctly French, at the
-// cost of Irun, Hondarribia, San Sebastián and Pasaia — all genuinely Spanish, all
-// inside `SERVICE_AREA_BBOX` — getting no IGN layer at all (blank, not wrong: France's
-// layer has nothing to show there either). Moving the line north would fix that strip at
-// the direct cost of misclassifying Hendaye and the rest of coastal France as
-// Spain-only, which is worse for this app. Inland, the same rectangle also still lets an
-// occasional low-zoom tile near Saint-Jean-Pied-de-Port (French) show a Spanish tile.
-// Neither this comment nor the code can fully resolve any of that without either
-// confirming (on a live preview, not this sandbox) that one layer renders genuinely
-// transparent outside its own coverage and ordering accordingly, or clipping to a real
-// border polygon instead of a rectangle.
-const IGN_SPAIN_NORTHERN_LIMIT_LAT = 43.3
-
-/** Covers only the part of the padded service area north of the split — mounted first
- * (see `ignSpecs`), so within `IGN_SPAIN_BOUNDS` below, only the Spain layer is
- * requested at all; outside it (to the north), only this one is. */
+/** Covers the whole padded service area — France's real territory here spans nearly
+ * the full height of `SERVICE_AREA_BBOX` (see `IGN_SPAIN_BOUNDS`'s docblock for why
+ * that rules out separating the two countries by latitude alone), so this layer is
+ * mounted first (see `ignSpecs`) and simply always requested everywhere; only
+ * `IGN_SPAIN_BOUNDS` below is what keeps Spain's layer, drawn on top of this one, from
+ * covering real French territory. */
 const IGN_FRANCE_BOUNDS: LatLngBoundsExpression = [
-  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_WEST_LNG],
+  [SERVICE_AREA_SOUTH_LAT, SERVICE_AREA_WEST_LNG],
   [SERVICE_AREA_NORTH_LAT, SERVICE_AREA_EAST_LNG],
 ]
 
-/** Covers only the part of the padded service area south of the split — see
- * `IGN_FRANCE_BOUNDS` just above; the two share the `IGN_SPAIN_NORTHERN_LIMIT_LAT` edge
- * and nothing else, deliberately, so the Spain layer (mounted second, drawn on top)
- * paints over France's layer only in the area it's actually meant to replace. */
+// The France/Spain border through the western Pyrenees isn't a straight line, so this is
+// necessarily an approximation, not a geodata-accurate split.
+//
+// Two rounds of review on this exact code each found a real bug from trying to model it
+// with a single latitude cutoff: narrowing only Spain's box (an earlier version) left
+// the two overlapping across the whole [SERVICE_AREA_SOUTH_LAT, 43.3°N] band, with
+// Spain (mounted second, drawn on top) covering genuinely French towns inside it — Pau
+// (43.295°N), Oloron, Mauléon (43.22°N), Saint-Jean-Pied-de-Port (43.16°N). Not a
+// borderline call: PNOA-MA (the Spanish satellite tileset) is JPEG, a format with no
+// alpha channel at all, so a tile it returns outside real Spanish coverage is
+// unconditionally opaque. Then narrowing France's box to match, so the two shared only
+// the boundary line (a later version) swapped that bug for the opposite one: France's
+// box no longer reached that whole band at all, so those same towns got no French layer
+// requested there either — a gap, not an overlap, but just as wrong.
+//
+// The reason neither fix converged: a latitude-only cutoff can't work here at all.
+// France's real territory in this bbox runs nearly the full height of
+// `SERVICE_AREA_BBOX` — there is no latitude south of which "it's Spain" holds. Spain,
+// on the other hand, really is confined to the bbox's south-WEST corner — it needs a
+// longitude bound as well as a latitude one. `IGN_SPAIN_BOUNDS` below is genuinely 2D
+// (`SPAIN_LAT_LIMIT` and `SPAIN_LNG_LIMIT` together) rather than a full-width band,
+// checked by hand against every town named in this comment and in both review rounds:
+//   - Spanish, correctly inside the box: San Sebastián (43.32°N, -1.98°E), Irun
+//     (43.34°N, -1.79°E), Hondarribia (43.37°N, -1.79°E), Pamplona (42.82°N, -1.64°E).
+//   - French, correctly outside it (all east of SPAIN_LNG_LIMIT, so never touched by
+//     Spain's layer at all): Pau (-0.37°E), Oloron (-0.61°E), Mauléon (-0.89°E),
+//     Saint-Jean-Pied-de-Port (-1.24°E) — none of these were excluded by a latitude
+//     cutoff alone; longitude is what actually separates them from Spain here.
+//
+// Residual, and still not fixable by any rectangle: Hendaye (France, ~43.36°N,
+// ~-1.77°E) falls inside `IGN_SPAIN_BOUNDS` too — it and Irun sit at essentially the
+// same (latitude, longitude) on opposite banks of the Bidasoa, so no axis-aligned box
+// can separate that one coastal crossing. That residual is now a small coastal patch,
+// not a full-width band — the actual improvement this round makes, not a full fix.
+// Also residual: Navarra east of SPAIN_LNG_LIMIT (e.g. the Roncal valley) gets no IGN
+// layer at all, the same trade-off as Irun/Hondarribia had against the old latitude-only
+// cutoff — accepted for the same reason (very sparsely populated, unlike the towns
+// above). Fully resolving any of this needs either confirming, on a live preview (not
+// this sandbox), that one layer renders genuinely transparent outside its own coverage
+// and ordering accordingly, or clipping to a real border polygon instead of a rectangle.
+const SPAIN_LAT_LIMIT = 43.4
+const SPAIN_LNG_LIMIT = -1.3
+
+/** See the block comment above — a real 2D box (not a latitude-only band) covering
+ * Spain's actual south-west corner of the service area. Mounted second (see
+ * `ignSpecs`), so drawn on top of `IGN_FRANCE_BOUNDS` above only inside this box. */
 const IGN_SPAIN_BOUNDS: LatLngBoundsExpression = [
   [SERVICE_AREA_SOUTH_LAT, SERVICE_AREA_WEST_LNG],
-  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_EAST_LNG],
+  [SPAIN_LAT_LIMIT, SPAIN_LNG_LIMIT],
 ]
 
 // MapTiler + OpenStreetMap attribution is legally mandated boilerplate, not app copy —
@@ -167,12 +179,13 @@ function maptilerSpecs(
 /** Quota-free fallback (spec §6.1 follow-up): France via the Géoplateforme (IGN's own
  * successor to wxs.ign.fr, open data since 2021, no key, no documented rate limit on its
  * WMTS tile endpoint specifically) and Spain via IGN España's own WMTS (CC BY 4.0, no
- * key). Two stacked `<TileLayer>`s per app layer, each `bounds`-clipped to its own
- * country (`IGN_FRANCE_BOUNDS` / `IGN_SPAIN_BOUNDS` above) — not to a shared box: Spain
- * is listed second (drawn on top, since it mounts later — Leaflet stacks same-pane tile
- * layers in mount order), and without its own narrower bounds it would draw over
- * France's real tiles everywhere they overlap, including Bayonne, not just at the
- * border.
+ * key). Two stacked `<TileLayer>`s per app layer: France (`IGN_FRANCE_BOUNDS`, the
+ * whole service area) mounted first, Spain (`IGN_SPAIN_BOUNDS`, a real 2D south-west
+ * corner — see that constant's docblock for why a latitude-only split doesn't work
+ * here) mounted second and drawn on top of France *only inside that corner* — Leaflet
+ * stacks same-pane tile layers in mount order, so without Spain's own narrower bounds
+ * it would draw over France's real tiles everywhere the two overlap, not just at the
+ * actual border.
  *
  * **To confirm on a preview** (not verifiable from this sandbox — see
  * `docs/plans/tile-edge-proxy.md`'s replacement plan for the full list):

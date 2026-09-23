@@ -79,6 +79,27 @@ describe('reportTileError', () => {
     expect(isTileFailedOver()).toBe(false)
   })
 
+  it('still detects an outage when AbortSignal.timeout is unavailable, e.g. Safari < 16 (regression: PR #33 review, round 4)', async () => {
+    // AbortSignal.timeout is a static method that only landed in Safari 16 — deleting
+    // it here simulates an older browser. On the bug this guards against, probe() called
+    // it directly and let the resulting TypeError escape into its own catch, so BOTH
+    // probes silently returned null and reportTileError could never confirm an outage —
+    // failover would never trigger on such a device, exactly when it matters most.
+    const original = AbortSignal.timeout
+    // @ts-expect-error — simulating a runtime where this static method doesn't exist
+    delete AbortSignal.timeout
+    try {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(response(403)) // MapTiler probe
+        .mockResolvedValueOnce(okResponse()) // IGN reference probe
+      await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', { fetch })
+      expect(isTileFailedOver()).toBe(true)
+    } finally {
+      AbortSignal.timeout = original
+    }
+  })
+
   it('does not fail over when both MapTiler and IGN are unreachable (this device is offline)', async () => {
     const fetch = vi.fn().mockRejectedValue(new Error('network error'))
     await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', {
