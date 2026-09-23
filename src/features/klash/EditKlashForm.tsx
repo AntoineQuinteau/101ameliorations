@@ -93,10 +93,20 @@ export function EditKlashForm({
       )}
 
       <div className="flex gap-2">
+        {/* Disabled while submitting, not just the submit button: closing
+            this form mid-save lets the parent reopen a fresh EditKlashForm
+            before the original mutate() call resolves. updateMutation.reset()
+            on reopen clears the mutation's *state* but does not abort the
+            still-in-flight request or its per-call onSuccess — when that
+            fires, it would close the just-reopened form and discard
+            whatever the user had retyped. Keeping Cancel disabled until the
+            mutation settles makes that reopen-while-pending sequence
+            unreachable. */}
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          disabled={isSubmitting}
+          className="flex-1 inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {fr.detail.edit.cancel}
         </button>
