@@ -84,9 +84,9 @@ export function EditKlashForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <h1 className="text-lg font-semibold text-neutral-900">{fr.detail.edit.title}</h1>
 
-      <KlashFieldset value={value} onChange={setValue} idPrefix="edit-klash" />
-
       <KlashPhotoEditor klashId={klash.id} />
+
+      <KlashFieldset value={value} onChange={setValue} idPrefix="edit-klash" />
 
       {(validationError ?? submitErrorMessage) && (
         <ErrorMessage message={validationError ?? submitErrorMessage ?? ''} />
