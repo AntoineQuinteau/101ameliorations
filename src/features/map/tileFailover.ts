@@ -43,6 +43,7 @@ function writeFailoverUntil(until: number): void {
 let failoverUntil = readFailoverUntil()
 let isProbing = false
 const listeners = new Set<() => void>()
+let expiryTimer: ReturnType<typeof setTimeout> | undefined
 
 function notify(): void {
   for (const listener of listeners) listener()
@@ -56,12 +57,36 @@ export function isTileFailedOver(now = Date.now()): boolean {
   return now < failoverUntil
 }
 
+/** `useSyncExternalStore` only ever re-reads `getSnapshot` on a subscriber notification
+ * or a render that was going to happen anyway — never on its own timer. Without this,
+ * `isTileFailedOver()` still flips to `false` the moment `Date.now()` passes
+ * `failoverUntil`, but nothing tells React to look again: a tab left open and idle
+ * through the whole failover window (MapTiles.tsx's own tiles load once and don't
+ * re-render on a clock) would keep rendering IGN tiles indefinitely after MapTiler has
+ * actually recovered, until some unrelated re-render happened to occur. Called both from
+ * `triggerFailover` and once at module init (below), covering a reload that lands
+ * mid-window from a still-valid persisted `failoverUntil`. Clears any previously
+ * scheduled timer first, so calling this again (a fresh failover extending an existing
+ * window) replaces rather than stacks a stale one firing early. */
+function scheduleExpiryNotification(until: number): void {
+  clearTimeout(expiryTimer)
+  const delay = until - Date.now()
+  if (delay <= 0) return
+  expiryTimer = setTimeout(notify, delay)
+}
+
 function triggerFailover(reason: string): void {
   failoverUntil = Date.now() + FAILOVER_DURATION_MS
   writeFailoverUntil(failoverUntil)
+  scheduleExpiryNotification(failoverUntil)
   reportTileFailover(reason)
   notify()
 }
+
+// Covers a page load that lands mid-window: `failoverUntil` above was just read from a
+// still-valid persisted value, so the expiry notification needs arming here too, not
+// only inside triggerFailover (which won't run again until the next real failure).
+scheduleExpiryNotification(failoverUntil)
 
 async function probe(doFetch: typeof fetch, url: string): Promise<boolean> {
   // Cache-busting, not just `cache: 'no-store'`: that RequestCache option only ever
@@ -139,10 +164,23 @@ export function useTileFailover(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
+/** Test-only: exposes the store's subscribe function directly — this project has no
+ * `@testing-library/react` to render `useTileFailover` itself and observe it re-render,
+ * so `tileFailover.test.ts` subscribes a plain listener instead to assert `notify()` was
+ * actually called (as opposed to merely `isTileFailedOver()` eventually returning
+ * `false` on its own, which `Date.now()` alone already guarantees and was never the bug
+ * — see `scheduleExpiryNotification`'s docblock). */
+export function __subscribeTileFailoverForTests(listener: () => void): () => void {
+  return subscribe(listener)
+}
+
 /** Test-only: resets the module-level store between Vitest cases — `localStorage.clear()`
- * alone doesn't reset the in-memory `failoverUntil` mirror this module keeps. */
+ * alone doesn't reset the in-memory `failoverUntil` mirror this module keeps, or clear a
+ * timer `scheduleExpiryNotification` may have armed from a previous case. */
 export function __resetTileFailoverForTests(): void {
   failoverUntil = 0
   isProbing = false
   writeFailoverUntil(0)
+  clearTimeout(expiryTimer)
+  expiryTimer = undefined
 }

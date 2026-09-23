@@ -52,44 +52,50 @@ export interface TileLayerSpec {
 
 const SERVICE_AREA_PADDING_DEG = 0.2
 
+const SERVICE_AREA_WEST_LNG = SERVICE_AREA_BBOX.minLng - SERVICE_AREA_PADDING_DEG
+const SERVICE_AREA_EAST_LNG = SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DEG
+const SERVICE_AREA_SOUTH_LAT = SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG
+const SERVICE_AREA_NORTH_LAT = SERVICE_AREA_BBOX.maxLat + SERVICE_AREA_PADDING_DEG
+
 // The France/Spain border through the western Pyrenees isn't a straight line, so this
 // is necessarily an approximation, not a geodata-accurate split — but it has to be
-// *some* split: see `bounds`'s docblock above for why sharing one wide box between both
-// country layers is an actual bug, not just an over-broad request count. 43.30°N sits
-// just south of Hendaye/Irun (the coastal border crossing, ~43.35°N), so it's chosen to
-// keep the border town pair itself on the French side, where nearly all of this app's
-// actual usage is. It is NOT geodata-accurate further inland — the border zigzags well
-// south of this latitude around St-Jean-Pied-de-Port — so Spain's layer stays absent
-// (not merely wrong) for a sliver of French Basque Country near that town; the reverse
-// (France's layer missing over Spanish soil) does not happen, since France's own bounds
-// below cover the entire padded service area.
+// *some* split, and — critically — `IGN_FRANCE_BOUNDS` and `IGN_SPAIN_BOUNDS` below must
+// not merely be narrower than the full service area each, they must share NO area with
+// each other (only this one latitude as a boundary line): a round of review on this
+// exact code found that an earlier version narrowed only Spain's box while leaving
+// France's at the full service area, so the two overlapped across the *entire*
+// [SERVICE_AREA_SOUTH_LAT, 43.3°N] band — Spain (mounted second, drawn on top) was
+// covering genuinely French towns well inside that band: Pau (43.295°N), Oloron,
+// Mauléon (43.22°N), Saint-Jean-Pied-de-Port (43.16°N). With the two boxes disjoint,
+// that's narrowed to only the tiles whose own rectangle happens to straddle exactly this
+// latitude (Leaflet's `bounds` intersection is per-tile, not per-pixel, so this can't be
+// eliminated by a rectangular split alone — worse at low zoom, where a single tile's
+// footprint is large enough to reach up towards Bayonne). 43.30°N sits just south of
+// Hendaye/Irun (the coastal border crossing, ~43.35°N), so it's chosen to keep that
+// border town pair on the French side, where nearly all of this app's actual usage is —
+// at the cost of Spanish ground north of it (Irun, Hondarribia, Pasaia) getting no IGN
+// layer at all, and inland French ground south of it (around Saint-Jean-Pied-de-Port)
+// still occasionally seeing a Spanish tile at low zoom. Neither this comment nor the
+// code can fully resolve that without either confirming (on a live preview, not this
+// sandbox) that one layer renders genuinely transparent outside its own coverage and
+// ordering accordingly, or clipping to a real border polygon instead of a rectangle.
 const IGN_SPAIN_NORTHERN_LIMIT_LAT = 43.3
 
-const PADDED_SERVICE_AREA: LatLngBoundsExpression = [
-  [
-    SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG,
-    SERVICE_AREA_BBOX.minLng - SERVICE_AREA_PADDING_DEG,
-  ],
-  [
-    SERVICE_AREA_BBOX.maxLat + SERVICE_AREA_PADDING_DEG,
-    SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DEG,
-  ],
+/** Covers only the part of the padded service area north of the split — mounted first
+ * (see `ignSpecs`), so within `IGN_SPAIN_BOUNDS` below, only the Spain layer is
+ * requested at all; outside it (to the north), only this one is. */
+const IGN_FRANCE_BOUNDS: LatLngBoundsExpression = [
+  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_WEST_LNG],
+  [SERVICE_AREA_NORTH_LAT, SERVICE_AREA_EAST_LNG],
 ]
 
-/** Covers the whole padded service area — mounted first (see `ignSpecs`), so wherever
- * `IGN_SPAIN_BOUNDS` below doesn't reach, this is the only IGN layer requested at all. */
-const IGN_FRANCE_BOUNDS = PADDED_SERVICE_AREA
-
-/** The southern slice of the padded service area, roughly where Spain actually is (see
- * `IGN_SPAIN_NORTHERN_LIMIT_LAT`'s docblock) — deliberately narrower than
- * `IGN_FRANCE_BOUNDS`, not a copy of it, so the Spain layer (mounted second, drawn on
- * top) only ever paints over France's layer in the area it's actually meant to replace. */
+/** Covers only the part of the padded service area south of the split — see
+ * `IGN_FRANCE_BOUNDS` just above; the two share the `IGN_SPAIN_NORTHERN_LIMIT_LAT` edge
+ * and nothing else, deliberately, so the Spain layer (mounted second, drawn on top)
+ * paints over France's layer only in the area it's actually meant to replace. */
 const IGN_SPAIN_BOUNDS: LatLngBoundsExpression = [
-  [
-    SERVICE_AREA_BBOX.minLat - SERVICE_AREA_PADDING_DEG,
-    SERVICE_AREA_BBOX.minLng - SERVICE_AREA_PADDING_DEG,
-  ],
-  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_BBOX.maxLng + SERVICE_AREA_PADDING_DEG],
+  [SERVICE_AREA_SOUTH_LAT, SERVICE_AREA_WEST_LNG],
+  [IGN_SPAIN_NORTHERN_LIMIT_LAT, SERVICE_AREA_EAST_LNG],
 ]
 
 // MapTiler + OpenStreetMap attribution is legally mandated boilerplate, not app copy —

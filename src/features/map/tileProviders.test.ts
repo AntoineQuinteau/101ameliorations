@@ -83,20 +83,26 @@ describe('tileLayerSpecs — ign', () => {
     expect(fr.attribution).not.toBe(es.attribution)
   })
 
-  it('France and Spain have distinct bounds, not a shared box (regression: PR #33 review)', () => {
-    // Spain (mounted second, drawn on top — see ignSpecs's docblock) sharing France's
-    // full-service-area bounds would let its opaque tiles hide France's real data
-    // everywhere, not just at the border. Asserting the two bounds actually differ, and
-    // that France's northern edge sits above Spain's, is what would have caught that.
+  it('France and Spain bounds share only a boundary line, not an overlapping area (regression: PR #33 review, round 2)', () => {
+    // Round 1 only narrowed Spain's box while leaving France's at the full service
+    // area, so the two still overlapped across the entire southern band (Pau, Oloron,
+    // Mauléon and Saint-Jean-Pied-de-Port all inside it) — Spain, mounted second, won
+    // that whole band. Asserting France's south edge sits exactly AT (not below) Spain's
+    // north edge is what actually catches a shared-area regression; the round-1 test's
+    // "spainNorth < franceNorth" passed even on the buggy code, since it compared the
+    // wrong pair of edges (both boxes' northern edges, not the shared one).
     for (const layer of ['plan', 'satellite'] as const) {
       const [fr, es] = tileLayerSpecs('ign', layer)
       expect(fr.bounds).toBeDefined()
       expect(es.bounds).toBeDefined()
-      expect(fr.bounds).not.toEqual(es.bounds)
 
-      const franceNorth = (fr.bounds as [[number, number], [number, number]])[1][0]
-      const spainNorth = (es.bounds as [[number, number], [number, number]])[1][0]
-      expect(spainNorth).toBeLessThan(franceNorth)
+      const [[franceSouth], [franceNorth]] = fr.bounds as [[number, number], [number, number]]
+      const [[spainSouth], [spainNorth]] = es.bounds as [[number, number], [number, number]]
+
+      expect(spainSouth).toBeLessThan(spainNorth) // Spain's own box is non-degenerate
+      expect(franceSouth).toBeLessThan(franceNorth) // France's own box is non-degenerate
+      // The regression guard: no shared latitude range between the two boxes.
+      expect(franceSouth).toBe(spainNorth)
     }
   })
 })

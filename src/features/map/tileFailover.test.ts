@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { __resetTileFailoverForTests, isTileFailedOver, reportTileError } from './tileFailover'
+import {
+  __resetTileFailoverForTests,
+  __subscribeTileFailoverForTests,
+  isTileFailedOver,
+  reportTileError,
+} from './tileFailover'
 
 const STORAGE_KEY = 'tile-failover-until'
 
@@ -111,6 +116,33 @@ describe('reportTileError', () => {
     await Promise.all([first, second])
     expect(isTileFailedOver()).toBe(false)
   })
+
+  it('notifies subscribers when the failover window naturally expires (regression: PR #33 review, round 2)', async () => {
+    // isTileFailedOver() flipping to false on its own (Date.now() alone guarantees
+    // that) was never the bug — useSyncExternalStore only re-reads it on a subscriber
+    // notification or an unrelated re-render, so the real regression this guards is
+    // "does a subscriber actually get called", which only a real listener can catch.
+    vi.useFakeTimers()
+    try {
+      const fetch = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('network error')) // MapTiler probe
+        .mockResolvedValueOnce(okResponse()) // IGN reference probe
+      await reportTileError('https://api.maptiler.com/maps/streets-v2/1/2/3.png', { fetch })
+      expect(isTileFailedOver()).toBe(true)
+
+      const listener = vi.fn()
+      const unsubscribe = __subscribeTileFailoverForTests(listener)
+
+      vi.advanceTimersByTime(6 * 60 * 60 * 1000)
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect(isTileFailedOver()).toBe(false)
+      unsubscribe()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })
 
 describe('a persisted failover survives a reload', () => {
@@ -125,6 +157,9 @@ describe('a persisted failover survives a reload', () => {
     vi.resetModules()
     const fresh = await import('./tileFailover')
     expect(fresh.isTileFailedOver()).toBe(true)
+    // Module init also arms a real 60s expiry timer (scheduleExpiryNotification) on
+    // this fresh instance — clear it rather than leaving it pending past this test.
+    fresh.__resetTileFailoverForTests()
   })
 
   it('starts not failed over when the persisted timestamp has already expired', async () => {
