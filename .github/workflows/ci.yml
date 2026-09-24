@@ -8,7 +8,10 @@ on:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
+  # Only PR runs are cancellable: a push to `main` now runs `db push` against
+  # STAGING and production, and a newer merge must queue behind it rather than
+  # kill it halfway through a migration.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -140,13 +143,52 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+  migrate-staging:
+    name: Push migrations to STAGING
+    # Same fork guard as `preview`: the `staging` environment's secret is not
+    # exposed to forks. Also runs on push to `main`, so a merge can only reach
+    # production after its migrations have applied cleanly on STAGING — and
+    # STAGING never lags behind production.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    # Only after every migration has replayed from scratch and the RLS tests
+    # pass on a throwaway local database.
+    needs: database
+    runs-on: ubuntu-latest
+    # Holds the STAGING-only SUPABASE_DB_URL secret. See README, "Promotion
+    # STAGING → production".
+    environment: staging
+    concurrency:
+      # One STAGING database shared by every open PR: serialize the pushes.
+      group: supabase-staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: supabase db push (STAGING)
+        env:
+          # Session pooler connection string (IPv4), not the direct
+          # db.<ref>.supabase.co host: GitHub-hosted runners have no IPv6.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        # Fails — on purpose — if STAGING holds a migration this branch doesn't
+        # have (another PR's, not yet merged here): rebase on main, or clean
+        # STAGING up (README, "Promotion STAGING → production").
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
+
   preview:
     name: Preview deployment + QR
     # Secrets are not exposed to pull requests coming from forks.
     if: >-
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name == github.repository
-    needs: quality
+    # The preview runs against STAGING's schema: never deploy a bundle that
+    # expects migrations STAGING doesn't have yet.
+    needs: [quality, migrate-staging]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -172,11 +214,17 @@ jobs:
           # Required: vite-plugins/buildEnvGuard.ts fails the build without
           # it, since Supabase's captcha is on and a bundle without a site
           # key sends no token — every login would be rejected.
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+          # STAGING's own Turnstile widget (its secret goes in STAGING's
+          # Supabase captcha settings), falling back to production's while
+          # that widget doesn't exist yet — harmless as long as STAGING's
+          # captcha is off, since Supabase then ignores the token.
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_STAGING_TURNSTILE_SITE_KEY || vars.VITE_TURNSTILE_SITE_KEY }}
           # Optional — see src/lib/sentry.ts. Empty is fine: the build
           # behaves identically either way, which is exactly what the
           # `quality` job's smoke build (no Sentry var at all) already covers.
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          # Tells preview errors apart from production ones in Sentry.
+          VITE_SENTRY_ENVIRONMENT: staging
 
       - name: Upload preview version
         id: upload
@@ -238,13 +286,30 @@ jobs:
   deploy-production:
     name: Deploy to production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality, database]
+    needs: [quality, database, migrate-staging]
     runs-on: ubuntu-latest
+    # Holds production's SUPABASE_DB_URL. Restricted to the `main` branch in
+    # the environment's settings, so no PR workflow can ever read it.
+    environment: production
     concurrency:
       group: deploy-production
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: supabase db push (production)
+        env:
+          # Session pooler connection string — see migrate-staging.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        # Schema first, then the bundle that relies on it. If this step fails,
+        # nothing below runs and the previous version keeps serving — which
+        # is why migrations must stay backward compatible with the currently
+        # deployed bundle (add first, drop in a later release).
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
@@ -258,6 +323,7 @@ jobs:
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: production
       - name: wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
