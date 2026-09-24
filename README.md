@@ -33,7 +33,7 @@ npm run dev
 | `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`)                                           |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)                                                      |
 | `VITE_MAPTILER_KEY`             | Clé API MapTiler — **optionnelle** si `VITE_TILE_BASE_URL` ci-dessous pointe ailleurs que MapTiler |
-| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — **optionnelle**, voir ci-dessous                                |
+| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — optionnelle en local, **obligatoire** pour un build de prod     |
 | `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans                                                   |
 | `VITE_TILE_BASE_URL`            | **Optionnelle**, vide en prod. Recommandée en local : `/__tiles`, voir ci-dessous                  |
 | `MAPTILER_KEY`                  | Clé MapTiler du proxy de dev ci-dessous — **sans préfixe `VITE_`**, jamais dans le bundle          |
@@ -188,6 +188,7 @@ mode production, prioritaire sur `.env.local`) :
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --project-ref <ref>
 VITE_MAPTILER_KEY=…                              # même clé qu'en local
+VITE_TURNSTILE_SITE_KEY=0x4…                     # obligatoire, le build échoue sans
 VITE_SENTRY_DSN=…                                # facultative
 ```
 
@@ -263,6 +264,7 @@ fausse impression de confidentialité :
 gh variable set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
 gh variable set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
 gh variable set VITE_MAPTILER_KEY
+gh variable set VITE_TURNSTILE_SITE_KEY         # obligatoire — le build de prod échoue sans
 gh variable set VITE_SENTRY_DSN                 # facultative — voir la section Monitoring
 gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
 gh secret set CLOUDFLARE_ACCOUNT_ID
