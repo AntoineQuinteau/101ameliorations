@@ -6,7 +6,7 @@
 >
 > **Préalable si cette migration est retenue** : `docs/spec.md` §8 « Stack et
 > outillage » (ligne 247) et `README.md` (ligne 8) disent « React 18 ». Le spec
-> fait autorité (cf. CLAUDE.md), il doit donc être amendé *avant* de toucher au
+> fait autorité (cf. CLAUDE.md), il doit donc être amendé _avant_ de toucher au
 > code.
 
 ## Pourquoi ce n'est pas déjà fait
@@ -27,10 +27,10 @@ Le code applicatif ne bloque pas. Scan des 2 758 lignes de `src/` :
 
 Les dépendances de l'écosystème acceptent déjà React 19 :
 
-| Paquet | Peer dependency | Verdict |
-| --- | --- | --- |
-| `@tanstack/react-query` 5.x | `^18 \|\| ^19` | OK sans changement |
-| `react-router-dom` 7.x | `>=18` | OK sans changement |
+| Paquet                       | Peer dependency                   | Verdict            |
+| ---------------------------- | --------------------------------- | ------------------ |
+| `@tanstack/react-query` 5.x  | `^18 \|\| ^19`                    | OK sans changement |
+| `react-router-dom` 7.x       | `>=18`                            | OK sans changement |
 | `@vitejs/plugin-react` 4.7.0 | `vite ^4 \|\| ^5 \|\| ^6 \|\| ^7` | OK sans changement |
 
 ## Le seul vrai blocage : react-leaflet
@@ -42,13 +42,13 @@ qui embarque `@react-leaflet/core` 3.x au lieu de 2.x.
 C'est un changement de major sur la brique centrale de l'app. La surface reste
 néanmoins petite — 5 fichiers, 5 symboles :
 
-| Fichier | Symboles importés |
-| --- | --- |
-| `src/features/map/MapPage.tsx` | `MapContainer` |
-| `src/features/map/MapTiles.tsx` | `TileLayer` |
-| `src/features/map/BboxWatcher.tsx` | `useMap`, `useMapEvents` |
-| `src/features/map/ClusteredKlashMarkers.tsx` | `useMap` |
-| `src/features/klash/KlashMiniMap.tsx` | `MapContainer`, `Marker` |
+| Fichier                                      | Symboles importés        |
+| -------------------------------------------- | ------------------------ |
+| `src/features/map/MapPage.tsx`               | `MapContainer`           |
+| `src/features/map/MapTiles.tsx`              | `TileLayer`              |
+| `src/features/map/BboxWatcher.tsx`           | `useMap`, `useMapEvents` |
+| `src/features/map/ClusteredKlashMarkers.tsx` | `useMap`                 |
+| `src/features/klash/KlashMiniMap.tsx`        | `MapContainer`, `Marker` |
 
 Circonstance favorable : `ClusteredKlashMarkers.tsx` contourne déjà react-leaflet
 pour le clustering (le `MarkerClusterGroup` est piloté à la main via `useMap()`,
