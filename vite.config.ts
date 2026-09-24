@@ -3,14 +3,20 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { assertDeployableBuildEnv } from './vite-plugins/buildEnvGuard'
 import { tileProxy } from './vite-plugins/tileProxy'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   // Third argument '' (rather than the default 'VITE_' prefix) so this also picks up
   // MAPTILER_KEY — deliberately unprefixed, see vite-plugins/tileProxy.ts, so it never
   // gets inlined into the client bundle the way a VITE_-prefixed var would.
   const env = loadEnv(mode, process.cwd(), '')
+
+  // Whatever runs the build (GitHub Actions, a laptop, a Cloudflare Git
+  // integration), a production bundle missing a required VITE_* must fail
+  // here rather than replace a working site — see vite-plugins/buildEnvGuard.ts.
+  if (command === 'build' && mode === 'production') assertDeployableBuildEnv(env)
 
   return {
     plugins: [
@@ -114,7 +120,7 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'jsdom',
       globals: true,
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      include: ['src/**/*.{test,spec}.{ts,tsx}', 'vite-plugins/**/*.test.ts'],
     },
   }
 })

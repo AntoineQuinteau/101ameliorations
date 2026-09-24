@@ -33,7 +33,7 @@ npm run dev
 | `VITE_SUPABASE_URL`             | URL de l'API Supabase (local : `http://127.0.0.1:54321`)                                           |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publishable Supabase (`sb_publishable_…`)                                                      |
 | `VITE_MAPTILER_KEY`             | Clé API MapTiler — **optionnelle** si `VITE_TILE_BASE_URL` ci-dessous pointe ailleurs que MapTiler |
-| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — **optionnelle**, voir ci-dessous                                |
+| `VITE_TURNSTILE_SITE_KEY`       | Clé de site Cloudflare Turnstile — optionnelle en local, **obligatoire** pour un build de prod     |
 | `VITE_SENTRY_DSN`               | DSN Sentry — **optionnelle**, l'app démarre sans                                                   |
 | `VITE_TILE_BASE_URL`            | **Optionnelle**, vide en prod. Recommandée en local : `/__tiles`, voir ci-dessous                  |
 | `MAPTILER_KEY`                  | Clé MapTiler du proxy de dev ci-dessous — **sans préfixe `VITE_`**, jamais dans le bundle          |
@@ -188,6 +188,7 @@ mode production, prioritaire sur `.env.local`) :
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --project-ref <ref>
 VITE_MAPTILER_KEY=…                              # même clé qu'en local
+VITE_TURNSTILE_SITE_KEY=0x4…                     # obligatoire, le build échoue sans
 VITE_SENTRY_DSN=…                                # facultative
 ```
 
@@ -214,20 +215,21 @@ données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.
 
 ## CI (GitHub Actions)
 
-Le repo est aussi connecté à **Cloudflare Workers Builds** (intégration Git native).
-Son déclencheur Preview a un bug d'UI connu : les _Build variables and secrets_ saisies
-dans Settings → Build ne s'appliquent qu'au déclencheur de production, pas à celui de
-preview, et l'UI n'offre aucun emplacement pour en saisir sur ce scope. Résultat vérifié
-sur une preview de branche : le bundle ne contient aucune des trois `VITE_*` inlinées,
-`src/env.ts` lève « Invalid environment variables » et la page est blanche — alors que
-les builds de `main` contiennent bien les valeurs.
+**GitHub Actions est le seul à déployer.** L'intégration Git native de Cloudflare
+(**Workers Builds**, Worker → Settings → Build) doit rester **déconnectée** : elle
+construisait `main` sans les variables `VITE_*` de GitHub et déployait sur le même
+Worker, écrasant la bonne version selon l'ordre d'arrivée. Le 2026-09-24, elle a
+mis en prod un bundle sans `VITE_TURNSTILE_SITE_KEY` : Turnstile ne tournait plus,
+aucune demande de code ne portait de jeton, et Supabase (captcha activé) refusait
+toutes les connexions (« no captcha_token found »). Dans l'onglet Deployments du
+Worker, une version marquée `main` (et non « Wrangler ») signale que cette
+intégration a été reconnectée.
 
-C'est pour ça que `.github/workflows/ci.yml` construit les previews à la place : les
-valeurs viennent des secrets GitHub, dont le scope n'a pas cette limitation. Pour éviter
-deux builds concurrents par PR sur le même Worker, le déclencheur **Preview** de
-Cloudflare doit être désactivé (Worker → Settings → Builds), en ne gardant que
-`main` → production côté Cloudflare. **Action manuelle restant à faire dans le dashboard
-Cloudflare** — rien côté CI ne peut le faire à sa place.
+Filet de sécurité : `vite-plugins/buildEnvGuard.ts` fait échouer tout `vite build`
+de production (quelle qu'en soit l'origine) si `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY` ou `VITE_TURNSTILE_SITE_KEY` manque, ou si la clé
+Turnstile est une clé de test Cloudflare. Pour un build local jetable uniquement :
+`ALLOW_INCOMPLETE_BUILD_ENV=1 npm run build`.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
@@ -256,6 +258,7 @@ fausse impression de confidentialité :
 gh variable set VITE_SUPABASE_URL               # https://<project-ref>.supabase.co
 gh variable set VITE_SUPABASE_PUBLISHABLE_KEY   # sb_publishable_…
 gh variable set VITE_MAPTILER_KEY
+gh variable set VITE_TURNSTILE_SITE_KEY         # obligatoire — le build de prod échoue sans
 gh variable set VITE_SENTRY_DSN                 # facultative — voir la section Monitoring
 gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
 gh secret set CLOUDFLARE_ACCOUNT_ID
