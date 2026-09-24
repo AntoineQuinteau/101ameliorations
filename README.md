@@ -63,6 +63,25 @@ consomme donc plus aucun quota MapTiler. Laisser les deux vides pour
 continuer comme avant (tuiles MapTiler directes, nécessite
 `VITE_MAPTILER_KEY`).
 
+### Source du fond de carte (MapTiler / IGN)
+
+Voir `src/features/map/tileProviders.ts` (les sources), `tileFailover.ts` (le
+secours automatique par appareil) et §6.1/§10 de `docs/spec.md`.
+
+- **Forcer le secours IGN pour tout le monde** (ex. pour préserver le reste
+  du quota MapTiler du mois), depuis Supabase Studio → SQL :
+  ```sql
+  update public.settings set value = '"ign"'::jsonb where key = 'tile_provider';
+  ```
+  Revenir sur MapTiler : remplacer `'"ign"'` par `'"maptiler"'`. Effectif sur
+  les onglets déjà ouverts sous 10 minutes (`staleTime` de
+  `useTileProviderSetting`), immédiatement sur un rechargement.
+- **Bascule automatique** : indépendante du réglage ci-dessus, par appareil,
+  stockée dans `localStorage` (`tile-failover-until`) pendant 6 h après une
+  panne MapTiler confirmée. Pour la vider manuellement pendant un test :
+  `localStorage.removeItem('tile-failover-until')` dans la console du
+  navigateur, puis recharger.
+
 ## Scripts
 
 | Commande               | Effet                                                                      |

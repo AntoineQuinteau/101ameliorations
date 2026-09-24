@@ -95,10 +95,13 @@ export const fr = {
       viewOnMap: 'Voir sur la carte',
     },
     layer: {
+      groupLabel: 'Fond de carte',
       plan: 'Plan',
       satellite: 'Satellite',
+      cycling: 'Vélo',
       switchToPlan: 'Afficher le plan',
       switchToSatellite: 'Afficher la vue satellite',
+      switchToCycling: 'Afficher les aménagements cyclables',
     },
   },
   detail: {
@@ -501,6 +504,8 @@ export const fr = {
           'Supabase Inc. (base de données, authentification, stockage des photos) — région Union européenne.',
           'Cloudflare, Inc. (hébergement du site, vérification anti-robot Turnstile).',
           'MapTiler (fond de carte).',
+          "Institut national de l'information géographique et forestière (IGN) et Instituto Geográfico Nacional (Espagne) (fond de carte de secours, utilisé en cas d'indisponibilité de MapTiler).",
+          'OpenStreetMap France (couche « Vélo » optionnelle, mettant en avant les aménagements cyclables).',
           'Sentry (suivi des erreurs techniques, aucune donnée personnelle transmise).',
         ],
       },

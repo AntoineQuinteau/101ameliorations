@@ -22,6 +22,11 @@ describe('readStoredMapLayer', () => {
     expect(readStoredMapLayer()).toBe('plan')
   })
 
+  it('round-trips the cycling layer', () => {
+    writeStoredMapLayer('cycling')
+    expect(readStoredMapLayer()).toBe('cycling')
+  })
+
   it('falls back to plan when localStorage throws', () => {
     const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('SecurityError')
