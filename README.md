@@ -215,21 +215,27 @@ données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.
 
 ## CI (GitHub Actions)
 
-**GitHub Actions est le seul à déployer.** L'intégration Git native de Cloudflare
-(**Workers Builds**, Worker → Settings → Build) doit rester **déconnectée** : elle
-construisait `main` sans les variables `VITE_*` de GitHub et déployait sur le même
-Worker, écrasant la bonne version selon l'ordre d'arrivée. Le 2026-09-24, elle a
-mis en prod un bundle sans `VITE_TURNSTILE_SITE_KEY` : Turnstile ne tournait plus,
-aucune demande de code ne portait de jeton, et Supabase (captcha activé) refusait
-toutes les connexions (« no captcha_token found »). Dans l'onglet Deployments du
-Worker, une version marquée `main` (et non « Wrangler ») signale que cette
-intégration a été reconnectée.
+Le déploiement passe uniquement par `.github/workflows/ci.yml` et `wrangler`, pas par
+l'intégration Git native **Cloudflare Workers Builds** — le Worker n'y est pas connecté
+(Worker → Settings → Builds). Ce choix vient d'un bug d'UI constaté sur cette
+intégration : les _Build variables and secrets_ saisies dans Settings → Build ne
+s'appliquaient qu'au déclencheur de production, pas à celui de preview, et l'UI
+n'offrait aucun emplacement pour en saisir sur ce scope. Résultat vérifié sur une
+preview de branche à l'époque : le bundle ne contenait aucune des trois `VITE_*`
+inlinées, `src/env.ts` levait « Invalid environment variables » et la page était
+blanche — alors que les builds de `main` contenaient bien les valeurs.
 
-Filet de sécurité : `vite-plugins/buildEnvGuard.ts` fait échouer tout `vite build`
-de production (quelle qu'en soit l'origine) si `VITE_SUPABASE_URL`,
-`VITE_SUPABASE_PUBLISHABLE_KEY` ou `VITE_TURNSTILE_SITE_KEY` manque, ou si la clé
-Turnstile est une clé de test Cloudflare. Pour un build local jetable uniquement :
-`ALLOW_INCOMPLETE_BUILD_ENV=1 npm run build`.
+`.github/workflows/ci.yml` construit donc les previews et la prod lui-même : les
+valeurs viennent des secrets/variables GitHub, dont le scope n'a pas cette limitation.
+Cloudflare a depuis ajouté des onglets Production / Preview séparés dans Settings, ce
+qui pourrait lever la limitation d'origine — mais rester sur la CI garde des avantages
+que l'intégration native n'offre pas : le déploiement en prod n'a lieu que si `quality`
+et `database` passent (tests, lint, migrations, RLS), les previews et la prod utilisent
+chacune leur propre projet Supabase (STAGING vs. production) jusque dans les variables
+d'exécution du Worker (`--var`), et le commentaire de PR fournit un alias stable et un
+QR code pour tester sur téléphone. Si le repo est reconnecté un jour à Cloudflare
+Workers Builds, désactiver ses deux déclencheurs (Production et Preview) pour éviter un
+déploiement concurrent qui court-circuiterait ces garanties.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
