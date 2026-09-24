@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { fr } from '../../i18n/fr'
 import { authErrorMessageKey } from './authErrors'
+import { captchaFailureRef, reportCaptchaFailure } from './captchaDiagnostics'
 import { pseudoPromptStorageKey, shouldPromptForPseudo } from './nicknamePrompt'
 import { useAuth } from './useAuth'
 import { useResendCooldown } from './useResendCooldown'
 import { useTurnstile } from './useTurnstile'
 import { useUpdateDisplayName } from './useUpdateDisplayName'
+import type { TurnstileResult } from '../../lib/turnstile'
 
 export type OtpLoginStep = 'email' | 'code' | 'nickname'
 
@@ -53,17 +55,38 @@ export function useOtpLogin() {
     }
   }
 
+  /** Requests a Turnstile token, then the OTP email. A missing token is
+   * still sent (as `undefined`): if Supabase's captcha protection is off,
+   * the send succeeds anyway, which keeps that dashboard toggle usable as a
+   * kill switch whenever Turnstile itself is broken. */
+  async function sendOtp(targetEmail: string) {
+    const turnstileResult = await turnstile.getToken()
+    try {
+      await signInWithOtp(targetEmail, turnstileResult.ok ? turnstileResult.token : undefined)
+    } catch (error) {
+      throw new OtpSendError(error, turnstileResult)
+    }
+  }
+
+  function sendErrorMessage(error: unknown): string {
+    const cause = error instanceof OtpSendError ? error.cause : error
+    const key = authErrorMessageKey(cause)
+    if (key !== 'captcha' || !(error instanceof OtpSendError)) return fr.login.errors[key]
+    reportCaptchaFailure(error.turnstileResult, cause)
+    const ref = captchaFailureRef(error.turnstileResult, cause)
+    return `${fr.login.errors.captcha} ${fr.login.turnstile.reference(ref)}`
+  }
+
   async function submitEmail(submittedEmail: string) {
     setIsSubmitting(true)
     setErrorMessage(null)
     try {
-      const captchaToken = await turnstile.getToken()
-      await signInWithOtp(submittedEmail, captchaToken)
+      await sendOtp(submittedEmail)
       setEmail(submittedEmail)
       setStep('code')
       resendCooldown.start()
     } catch (error) {
-      setErrorMessage(fr.login.errors[authErrorMessageKey(error)])
+      setErrorMessage(sendErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }
@@ -72,11 +95,10 @@ export function useOtpLogin() {
   async function resend() {
     setErrorMessage(null)
     try {
-      const captchaToken = await turnstile.getToken()
-      await signInWithOtp(email, captchaToken)
+      await sendOtp(email)
       resendCooldown.start()
     } catch (error) {
-      setErrorMessage(fr.login.errors[authErrorMessageKey(error)])
+      setErrorMessage(sendErrorMessage(error))
       resendCooldown.start()
     }
   }
@@ -126,5 +148,16 @@ export function useOtpLogin() {
     isNicknameSubmitting: updateDisplayName.isPending,
     hasSkippedPseudoPrompt,
     shouldPromptForPseudo,
+  }
+}
+
+/** Carries the Turnstile outcome alongside the Supabase error, so a
+ * `captcha_failed` can be traced back to what happened client-side. */
+class OtpSendError extends Error {
+  constructor(
+    readonly cause: unknown,
+    readonly turnstileResult: TurnstileResult,
+  ) {
+    super('signInWithOtp failed')
   }
 }
