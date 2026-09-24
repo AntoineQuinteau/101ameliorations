@@ -36,6 +36,8 @@ jobs:
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_placeholder
           VITE_MAPTILER_KEY: placeholder
+          # Required by vite-plugins/buildEnvGuard.ts for any production build.
+          VITE_TURNSTILE_SITE_KEY: placeholder
 
   database:
     name: Migrations and RLS tests
@@ -167,9 +169,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ vars.VITE_STAGING_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_STAGING_SUPABASE_PUBLISHABLE_KEY }}
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
-          # Optional — see src/env.ts and src/features/auth/useTurnstile.ts.
-          # Empty until the Turnstile widget is created (step 9); the app
-          # runs with captcha disabled either way, same as VITE_SENTRY_DSN.
+          # Required: vite-plugins/buildEnvGuard.ts fails the build without
+          # it, since Supabase's captcha is on and a bundle without a site
+          # key sends no token — every login would be rejected.
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           # Optional — see src/lib/sentry.ts. Empty is fine: the build
           # behaves identically either way, which is exactly what the
