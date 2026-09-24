@@ -33,17 +33,25 @@ export interface TileLayerSpec {
   tileSize?: number
   zoomOffset?: number
   detectRetina?: boolean
-  /** Restricts requests — and, critically, *rendering* — to the area this specific
-   * tileset can plausibly answer for: a national IGN service has nothing to say outside
-   * its own country, and Leaflet skips a tile whose bounds don't intersect this at all.
-   * On the three stacked IGN layers (`ignSpecs` below) this is not just a request-count
-   * courtesy: whichever layer mounts later draws on top of the earlier ones *everywhere
-   * their bounds overlap*, so a shared, wide `bounds` would let the later one's opaque
-   * tiles hide the earlier one's real data across the whole overlap — and, the other way
-   * round, giving a layer a `bounds` that doesn't reach some of the area it should cover
-   * means that area gets no tiles from it at all, not merely a lower z-order. Three
-   * rounds of review on this exact code each found a real instance of one of those two
-   * failure modes (see `IGN_SPAIN_COAST_BOUNDS`'s docblock) — this isn't a hypothetical. */
+  /** Restricts requests — and, via `ClippedTileLayer` (`MapTiles.tsx` renders any spec
+   * that sets this through that component, never a plain `<TileLayer>`), *rendering
+   * too* — to the area this specific tileset can plausibly answer for: a national IGN
+   * service has nothing to say outside its own country. On the three stacked IGN layers
+   * (`ignSpecs` below) this is not just a request-count courtesy: whichever layer mounts
+   * later draws on top of the earlier ones *everywhere their bounds overlap*, so a
+   * shared, wide `bounds` would let the later one's opaque tiles hide the earlier one's
+   * real data across the whole overlap — and, the other way round, giving a layer a
+   * `bounds` that doesn't reach some of the area it should cover means that area gets no
+   * tiles from it at all, not merely a lower z-order. Four rounds of review on this
+   * exact code each found a real instance of one of those two failure modes (see
+   * `IGN_SPAIN_COAST_BOUNDS`'s docblock) — this isn't a hypothetical.
+   *
+   * That "via `ClippedTileLayer`" matters: Leaflet's OWN `bounds` option — what a plain
+   * `<TileLayer bounds={...}>` gets — only ever gates whether a tile is *requested*
+   * (`GridLayer._isValidTile` checks `bounds.overlaps(tileBounds)`, not containment); a
+   * tile that merely touches the box, however little of it the box actually covers, is
+   * still drawn in full. `tileClip.ts`'s docblock has the concrete case a fifth review
+   * round found from exactly this: the app's own default view. */
   bounds?: LatLngBoundsExpression
   /** Only set on MapTiler specs, and only once their CORS headers are confirmed on a
    * preview (see the tile-edge-proxy follow-up plan) — without a matching

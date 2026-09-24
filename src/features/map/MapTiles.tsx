@@ -5,6 +5,7 @@ import { DEFAULT_TILE_BASE_URL, resolveTileKey } from './tileUrls'
 import { tileLayerSpecs } from './tileProviders'
 import type { MapLayer } from './tileProviders'
 import { tileLayerProps } from './tileLayerProps'
+import { ClippedTileLayer } from './ClippedTileLayer'
 import { reportTileError } from './tileFailover'
 import { useTileProvider } from './useTileProvider'
 
@@ -50,15 +51,27 @@ export function MapTiles({ layer = 'plan' }: { layer?: MapLayer }) {
 
   return (
     <>
-      {specs.map((spec) => (
-        <TileLayer
-          key={spec.id}
-          {...tileLayerProps(spec)}
-          eventHandlers={
-            canFailover ? { tileerror: (event) => handleTileError(event, spec.url) } : undefined
-          }
-        />
-      ))}
+      {specs.map((spec) => {
+        const props = tileLayerProps(spec)
+        // A spec with `bounds` (every IGN one — see tileProviders.ts) needs
+        // ClippedTileLayer's per-tile clip, not just Leaflet's own `bounds` option,
+        // which only decides whether to *request* a tile at all — see tileClip.ts's
+        // docblock for why a plain `<TileLayer bounds={...}>` still draws that tile in
+        // full the instant it merely touches the box. Every other spec (MapTiler,
+        // CyclOSM) never sets `bounds` and keeps the plain, lighter-weight `<TileLayer>`.
+        if (props.bounds) {
+          return <ClippedTileLayer key={spec.id} {...props} bounds={props.bounds} />
+        }
+        return (
+          <TileLayer
+            key={spec.id}
+            {...props}
+            eventHandlers={
+              canFailover ? { tileerror: (event) => handleTileError(event, spec.url) } : undefined
+            }
+          />
+        )
+      })}
     </>
   )
 }
