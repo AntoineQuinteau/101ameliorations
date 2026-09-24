@@ -214,20 +214,27 @@ données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.
 
 ## CI (GitHub Actions)
 
-Le repo est aussi connecté à **Cloudflare Workers Builds** (intégration Git native).
-Son déclencheur Preview a un bug d'UI connu : les _Build variables and secrets_ saisies
-dans Settings → Build ne s'appliquent qu'au déclencheur de production, pas à celui de
-preview, et l'UI n'offre aucun emplacement pour en saisir sur ce scope. Résultat vérifié
-sur une preview de branche : le bundle ne contient aucune des trois `VITE_*` inlinées,
-`src/env.ts` lève « Invalid environment variables » et la page est blanche — alors que
-les builds de `main` contiennent bien les valeurs.
+Le déploiement passe uniquement par `.github/workflows/ci.yml` et `wrangler`, pas par
+l'intégration Git native **Cloudflare Workers Builds** — le Worker n'y est pas connecté
+(Worker → Settings → Builds). Ce choix vient d'un bug d'UI constaté sur cette
+intégration : les _Build variables and secrets_ saisies dans Settings → Build ne
+s'appliquaient qu'au déclencheur de production, pas à celui de preview, et l'UI
+n'offrait aucun emplacement pour en saisir sur ce scope. Résultat vérifié sur une
+preview de branche à l'époque : le bundle ne contenait aucune des trois `VITE_*`
+inlinées, `src/env.ts` levait « Invalid environment variables » et la page était
+blanche — alors que les builds de `main` contenaient bien les valeurs.
 
-C'est pour ça que `.github/workflows/ci.yml` construit les previews à la place : les
-valeurs viennent des secrets GitHub, dont le scope n'a pas cette limitation. Pour éviter
-deux builds concurrents par PR sur le même Worker, le déclencheur **Preview** de
-Cloudflare doit être désactivé (Worker → Settings → Builds), en ne gardant que
-`main` → production côté Cloudflare. **Action manuelle restant à faire dans le dashboard
-Cloudflare** — rien côté CI ne peut le faire à sa place.
+`.github/workflows/ci.yml` construit donc les previews et la prod lui-même : les
+valeurs viennent des secrets/variables GitHub, dont le scope n'a pas cette limitation.
+Cloudflare a depuis ajouté des onglets Production / Preview séparés dans Settings, ce
+qui pourrait lever la limitation d'origine — mais rester sur la CI garde des avantages
+que l'intégration native n'offre pas : le déploiement en prod n'a lieu que si `quality`
+et `database` passent (tests, lint, migrations, RLS), les previews et la prod utilisent
+chacune leur propre projet Supabase (STAGING vs. production) jusque dans les variables
+d'exécution du Worker (`--var`), et le commentaire de PR fournit un alias stable et un
+QR code pour tester sur téléphone. Si le repo est reconnecté un jour à Cloudflare
+Workers Builds, désactiver ses deux déclencheurs (Production et Preview) pour éviter un
+déploiement concurrent qui court-circuiterait ces garanties.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
