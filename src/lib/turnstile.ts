@@ -27,7 +27,10 @@ const SCRIPT_LOAD_TIMEOUT_MS = 10_000
 export interface TurnstileRenderOptions {
   sitekey: string
   callback: (token: string) => void
-  'error-callback'?: () => void
+  /** Receives Cloudflare's error code (e.g. `110200`, "domain not allowed").
+   * Returning `true` tells Turnstile the error was handled, so it doesn't
+   * also throw it into the console as an uncaught error. */
+  'error-callback'?: (errorCode: string) => boolean | void
   'expired-callback'?: () => void
   'timeout-callback'?: () => void
   'before-interactive-callback'?: () => void
@@ -36,7 +39,7 @@ export interface TurnstileRenderOptions {
   size?: 'normal' | 'compact' | 'invisible'
 }
 
-interface TurnstileApi {
+export interface TurnstileApi {
   render: (container: HTMLElement, options: TurnstileRenderOptions) => string
   execute: (container: HTMLElement | string) => void
   reset: (widgetId?: string) => void
@@ -87,4 +90,85 @@ export function loadTurnstile(): Promise<TurnstileApi> {
     throw error
   })
   return loadPromise
+}
+
+/** Why no token came back. `errorCode` is Cloudflare's own code, only set
+ * for `widget-error` — see
+ * https://developers.cloudflare.com/turnstile/troubleshooting/client-side-errors/error-codes/ */
+export type TurnstileFailure =
+  | { reason: 'no-site-key' }
+  | { reason: 'script-unavailable' }
+  | { reason: 'no-container' }
+  | { reason: 'render-threw' }
+  | { reason: 'widget-error'; errorCode: string }
+  | { reason: 'expired' }
+  | { reason: 'challenge-timeout' }
+  | { reason: 'no-response' }
+
+export type TurnstileResult = { ok: true; token: string } | ({ ok: false } & TurnstileFailure)
+
+export interface RequestTurnstileTokenOptions {
+  siteKey: string
+  /** Widget rendered by a previous call on this container, removed first. */
+  previousWidgetId: string | null
+  /** Called with the new widget id as soon as it is rendered. */
+  onRendered: (widgetId: string) => void
+  /** Called with `true` when Cloudflare is about to show a checkbox, and
+   * with `false` on every exit. */
+  onInteractiveChange: (isInteractive: boolean) => void
+  /** Ceiling on the whole challenge — see TOKEN_TIMEOUT_MS in useTurnstile. */
+  timeoutMs: number
+}
+
+/**
+ * Renders one fresh widget into `container`, executes it, and resolves with
+ * either a token or the reason there is none. Never rejects and never hangs:
+ * every exit — Turnstile's own callbacks, a throwing `render`, and the
+ * `timeoutMs` backstop — goes through one `settle`.
+ *
+ * Kept free of React so every failure path can be unit-tested against a fake
+ * API; `useTurnstile` owns the refs and state around it.
+ */
+export function requestTurnstileToken(
+  api: TurnstileApi,
+  container: HTMLElement,
+  options: RequestTurnstileTokenOptions,
+): Promise<TurnstileResult> {
+  return new Promise<TurnstileResult>((resolve) => {
+    let settled = false
+    const settle = (result: TurnstileResult) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutId)
+      options.onInteractiveChange(false)
+      resolve(result)
+    }
+    const timeoutId = setTimeout(
+      () => settle({ ok: false, reason: 'no-response' }),
+      options.timeoutMs,
+    )
+
+    try {
+      // A Turnstile token is single-use, so every call gets its own widget
+      // rather than replaying a spent one.
+      if (options.previousWidgetId) api.remove(options.previousWidgetId)
+      const widgetId = api.render(container, {
+        sitekey: options.siteKey,
+        appearance: 'interaction-only',
+        execution: 'execute',
+        callback: (token) => settle({ ok: true, token }),
+        'error-callback': (errorCode) => {
+          settle({ ok: false, reason: 'widget-error', errorCode: String(errorCode) })
+          return true
+        },
+        'expired-callback': () => settle({ ok: false, reason: 'expired' }),
+        'timeout-callback': () => settle({ ok: false, reason: 'challenge-timeout' }),
+        'before-interactive-callback': () => options.onInteractiveChange(true),
+      })
+      options.onRendered(widgetId)
+      api.execute(container)
+    } catch {
+      settle({ ok: false, reason: 'render-threw' })
+    }
+  })
 }

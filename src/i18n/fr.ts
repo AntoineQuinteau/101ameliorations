@@ -228,6 +228,7 @@ export const fr = {
     },
     turnstile: {
       interactive: 'Merci de confirmer que vous n’êtes pas un robot pour continuer.',
+      reference: (ref: string) => `Référence : ${ref}`,
     },
     errors: {
       invalidEmail: 'Adresse email invalide.',
