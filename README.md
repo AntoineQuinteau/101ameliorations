@@ -354,7 +354,8 @@ reviewer_ sur `production` pour une validation explicite en plus du merge.
 `SUPABASE_DB_URL` = chaîne de connexion **Session pooler** du projet (dashboard →
 **Connect** → Session pooler), mot de passe inclus et encodé en pourcent s'il contient
 des caractères spéciaux :
-`postgresql://postgres.<ref>:<mot-de-passe>@aws-0-<région>.pooler.supabase.com:5432/postgres`.
+`postgresql://postgres.<ref>:<mot-de-passe>@aws-<n>-<région>.pooler.supabase.com:5432/postgres`
+(copier l'hôte tel quel, sans les crochets de `[YOUR-PASSWORD]`).
 Pas la connexion directe `db.<ref>.supabase.co` : elle est en IPv6 seulement et les
 runners GitHub n'ont pas d'IPv6.
 
