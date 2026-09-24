@@ -21,7 +21,9 @@ export function initSentry(): void {
 
   Sentry.init({
     dsn,
-    environment: import.meta.env.MODE,
+    // Set by CI (`staging` for previews, `production` for main): MODE alone
+    // is `production` for every `vite build`, previews included.
+    environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
     // Free-tier friendly: errors only, no performance tracing or session replay.
     tracesSampleRate: 0,
     replaysSessionSampleRate: 0,

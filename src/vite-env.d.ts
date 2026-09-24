@@ -8,6 +8,9 @@ interface ImportMetaEnv {
   // Optional — see src/lib/sentry.ts. Not in src/env.ts's schema: it must
   // stay valid with this unset.
   readonly VITE_SENTRY_DSN?: string
+  // Optional — Sentry's `environment` tag, falls back to MODE. See
+  // src/lib/sentry.ts.
+  readonly VITE_SENTRY_ENVIRONMENT?: string
   // Optional — overrides MapTiler's own host for the dev/CI tile proxy. See
   // src/env.ts and src/features/map/tileUrls.ts.
   readonly VITE_TILE_BASE_URL?: string

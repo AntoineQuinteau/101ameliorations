@@ -208,7 +208,8 @@ npx wrangler versions upload \
 Config : [`wrangler.jsonc`](wrangler.jsonc) (dossier d'assets `./dist`, fallback SPA,
 Worker `workers/app/src/index.ts` sur `/k/*` seulement).
 
-Nouvelle migration à pousser en prod : `npx supabase db push`. Rejouer `seed.sql` en
+Les migrations partent sur STAGING puis en prod **par la CI** (voir « Promotion STAGING
+→ production » plus bas) — plus de `npx supabase db push` manuel en prod. Rejouer `seed.sql` en
 prod (données de test) : `npx supabase db query --linked -f supabase/seed.sql` — le
 script est idempotent (voir son en-tête). Avant l'ouverture au public, supprimer ces
 données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.sql`.
@@ -239,12 +240,13 @@ déploiement concurrent qui court-circuiterait ces garanties.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
-| Job                 | Déclencheur             | Fait                                                                                                                                    |
-| ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `quality`           | PR + push `main`        | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                     |
-| `database`          | PR + push `main`        | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                              |
-| `preview`           | PR (pas depuis un fork) | Build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR) |
-| `deploy-production` | push `main`             | Build avec les vrais `VITE_*`, `wrangler deploy --var …`                                                                                |
+| Job                 | Déclencheur                           | Fait                                                                                                                                                              |
+| ------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`           | PR + push `main`                      | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                                               |
+| `database`          | PR + push `main`                      | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                                                        |
+| `migrate-staging`   | PR (pas depuis un fork) + push `main` | Après `database` : `supabase db push` sur STAGING (environnement GitHub `staging`)                                                                                |
+| `preview`           | PR (pas depuis un fork)               | Après `migrate-staging` : build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR) |
+| `deploy-production` | push `main`                           | Après `migrate-staging` : `supabase db push` en prod (environnement GitHub `production`), puis build avec les vrais `VITE_*` et `wrangler deploy --var …`         |
 
 Le job `preview` est sauté sur les PR venant d'un fork (les secrets ne leur sont pas
 exposés) — dans ce cas, tester avec le workflow habituel (`wrangler versions upload` en
@@ -269,7 +271,13 @@ gh variable set VITE_SENTRY_DSN                 # facultative — voir la sectio
 gh secret set CLOUDFLARE_API_TOKEN              # scope minimal : Workers Scripts:Edit
 gh secret set CLOUDFLARE_ACCOUNT_ID
 gh variable set QR_WORKER_URL                   # URL du worker QR, voir ci-dessous
+gh variable set VITE_STAGING_SUPABASE_URL
+gh variable set VITE_STAGING_SUPABASE_PUBLISHABLE_KEY
+gh variable set VITE_STAGING_TURNSTILE_SITE_KEY # facultative — widget Turnstile de STAGING
 ```
+
+Plus un secret **par environnement GitHub** (pas au niveau du dépôt), pour les
+migrations — voir « Promotion STAGING → production » ci-dessous.
 
 Les `VITE_*` sont celles de `.env.production.local` (voir section Déploiement).
 `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` sont aussi réutilisées, sans
@@ -318,3 +326,53 @@ psql "$(npx supabase status -o env --linked | grep DB_URL | cut -d= -f2-)" \
 
 Supprime les klashs, confirmations et le compte de cet email uniquement. Distinct de
 `scripts/cleanup-seed-data.sql`, qui cible seulement les 12 utilisateurs de seed.
+
+### Promotion STAGING → production
+
+Une migration suit toujours le même chemin, sans `db push` manuel :
+
+1. **PR** : `database` rejoue toutes les migrations sur une base jetable et passe les
+   tests RLS ; `migrate-staging` les pousse sur STAGING ; `preview` déploie le bundle
+   de la PR contre ce schéma. On teste la preview (URL + QR dans la PR).
+2. **Merge sur `main`** (la validation humaine) : `migrate-staging` repasse (no-op si
+   la PR a déjà tout poussé), puis `deploy-production` pousse les migrations en prod
+   et **ensuite seulement** déploie le bundle. Si le `db push` de prod échoue, rien
+   n'est déployé et la version précédente continue de servir.
+
+**Mise en place (une fois)** — **Settings → Environments** du dépôt :
+
+| Environnement | Secret            | Deployment branches                           |
+| ------------- | ----------------- | --------------------------------------------- |
+| `staging`     | `SUPABASE_DB_URL` | aucune restriction (les PR doivent y accéder) |
+| `production`  | `SUPABASE_DB_URL` | **Selected branches → `main` uniquement**     |
+
+La restriction à `main` est ce qui empêche une branche de PR (qui peut modifier
+`ci.yml`) de lire l'accès à la base de prod : c'est pour ça que ces secrets vivent dans
+des environnements et pas au niveau du dépôt. Facultatif : ajouter un _required
+reviewer_ sur `production` pour une validation explicite en plus du merge.
+
+`SUPABASE_DB_URL` = chaîne de connexion **Session pooler** du projet (dashboard →
+**Connect** → Session pooler), mot de passe inclus et encodé en pourcent s'il contient
+des caractères spéciaux :
+`postgresql://postgres.<ref>:<mot-de-passe>@aws-0-<région>.pooler.supabase.com:5432/postgres`.
+Pas la connexion directe `db.<ref>.supabase.co` : elle est en IPv6 seulement et les
+runners GitHub n'ont pas d'IPv6.
+
+**Règles qui en découlent** :
+
+- **Migrations rétrocompatibles.** Le schéma change avant le bundle : pendant quelques
+  secondes, l'ancien bundle tourne sur le nouveau schéma. Ajouter d'abord (colonne,
+  fonction), retirer dans une release ultérieure.
+- **Une migration poussée sur STAGING est « appliquée ».** La modifier ensuite dans la
+  PR ne la rejoue pas (`db push` ne regarde que les versions) : STAGING divergerait
+  en silence. Créer une nouvelle migration à la place.
+- **STAGING est partagé par toutes les PR.** Si une autre PR a poussé une migration que
+  ta branche n'a pas, `migrate-staging` échoue (« Remote migration versions not found
+  in local migrations directory ») : rebaser sur `main` une fois l'autre PR mergée.
+  Si cette autre PR est abandonnée, nettoyer STAGING à la main : défaire son effet en
+  SQL puis `npx supabase migration repair --status reverted <version> --linked` (lié à
+  STAGING), ou repartir de zéro avec `npx supabase db reset --linked`.
+- **La config Auth n'est pas dans les migrations.** SMTP, templates, longueur d'OTP,
+  captcha, URLs : réglés à la main dans chaque dashboard (checklist de la section Auth).
+  Tout changement fait en prod doit être reporté sur STAGING, sinon la preview ne
+  teste plus la même chose.
