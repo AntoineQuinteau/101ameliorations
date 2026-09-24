@@ -32,9 +32,19 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
   const rows = page.locator('tbody tr')
   await expect(rows.first()).toBeVisible()
 
+  // Checking isEnabled() before each click races the click's own
+  // actionability wait: the click that actually lands on the last page can
+  // disable the button while that same click is still retrying (page
+  // re-render mid-transition), and Playwright then keeps retrying against
+  // an element that has legitimately become permanently disabled until the
+  // *test's* 30s timeout — not this loop's condition — kills it. Capping
+  // the click's own timeout well below that and swallowing that one
+  // expected failure fixes it: either the click lands before the button
+  // disables (the common case), or it doesn't and the loop's next
+  // isEnabled() check exits normally.
   const lastPageButton = page.getByRole('button', { name: 'Page suivante' })
   while (await lastPageButton.isEnabled()) {
-    await lastPageButton.click()
+    await lastPageButton.click({ timeout: 3_000 }).catch(() => {})
     await expect(rows.first()).toBeVisible()
   }
 
