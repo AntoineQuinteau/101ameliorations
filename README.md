@@ -240,13 +240,13 @@ déploiement concurrent qui court-circuiterait ces garanties.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
-| Job                 | Déclencheur                           | Fait                                                                                                                                                              |
-| ------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quality`           | PR + push `main`                      | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                                               |
-| `database`          | PR + push `main`                      | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                                                        |
-| `migrate-staging`   | PR (pas depuis un fork) + push `main` | Après `database` : `supabase db push` sur STAGING (environnement GitHub `staging`)                                                                                |
-| `preview`           | PR (pas depuis un fork)               | Après `migrate-staging` : build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR) |
-| `deploy-production` | push `main`                           | Après `migrate-staging` : `supabase db push` en prod (environnement GitHub `production`), puis build avec les vrais `VITE_*` et `wrangler deploy --var …`         |
+| Job                 | Déclencheur                           | Fait                                                                                                                                                               |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `quality`           | PR + push `main`                      | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                                                |
+| `database`          | PR + push `main`                      | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                                                         |
+| `migrate-staging`   | PR (pas depuis un fork) + push `main` | Après `database` : `supabase db push` sur STAGING (environnement GitHub `staging`)                                                                                 |
+| `preview`           | PR (pas depuis un fork)               | Après `migrate-staging` : build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR)  |
+| `deploy-production` | push `main`                           | Après `e2e` et `migrate-staging` : `supabase db push` en prod (environnement GitHub `production`), puis build avec les vrais `VITE_*` et `wrangler deploy --var …` |
 
 Le job `preview` est sauté sur les PR venant d'un fork (les secrets ne leur sont pas
 exposés) — dans ce cas, tester avec le workflow habituel (`wrangler versions upload` en

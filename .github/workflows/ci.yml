@@ -286,7 +286,9 @@ jobs:
   deploy-production:
     name: Deploy to production
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [quality, database, migrate-staging]
+    # e2e included: a push that breaks a Playwright spec must not reach
+    # production (e2e itself needs quality, listed anyway for clarity).
+    needs: [quality, database, e2e, migrate-staging]
     runs-on: ubuntu-latest
     # Holds production's SUPABASE_DB_URL. Restricted to the `main` branch in
     # the environment's settings, so no PR workflow can ever read it.
