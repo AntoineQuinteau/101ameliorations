@@ -210,7 +210,8 @@ export const fr = {
       submitting: 'Envoi en cours…',
     },
     codeStep: {
-      instructions: (email: string) => `Saisissez le code à 6 chiffres envoyé à ${email}.`,
+      instructions: (email: string) =>
+        `Saisissez le code à 6 chiffres envoyé à ${email}. Si vous ne recevez pas l'email, pensez à regarder dans vos spams.`,
       label: 'Code de connexion',
       submit: 'Valider',
       submitting: 'Vérification…',
