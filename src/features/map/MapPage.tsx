@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { MapContainer, ZoomControl } from 'react-leaflet'
+import { MapContainer } from 'react-leaflet'
+import type L from 'leaflet'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
 import { DesktopFiltersCard } from './DesktopFiltersCard'
 import { DraftInProgressChip } from './DraftInProgressChip'
 import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
-import { applyFilters, type KlashFilters } from './klashFilters'
+import { applyFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
 import { MapClickToReport } from './MapClickToReport'
+import { MapControlButton } from './MapControlButton'
 import { MapLayerToggle } from './MapLayerToggle'
 import { MapLayerZoom } from './MapLayerZoom'
 import { MapTiles } from './MapTiles'
+import { MapZoomLocateControls } from './MapZoomLocateControls'
 import { MobileFiltersSheet } from './MobileFiltersSheet'
 import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
 import { ServiceAreaBounds } from './ServiceAreaBounds'
+import { UserPositionMarker } from './UserPositionMarker'
 import { useHasHover } from './useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
 import { useMapLayer } from './useMapLayer'
 import { AppFooterLinks } from '../../components/AppFooterLinks'
 import { ErrorMessage } from '../../components/ErrorMessage'
+import { FilterIcon } from '../../components/icons'
 import {
   INITIAL_MAP_CENTER,
   INITIAL_MAP_ZOOM,
@@ -44,6 +49,10 @@ export function MapPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
+  const [map, setMap] = useState<L.Map | null>(null)
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number; accuracyM: number } | null>(
+    null,
+  )
   // Read in an effect, not a useState initializer: hasStoredDraft can purge
   // a stale draft as a side effect (see its docblock), which isn't safe
   // during render. This route remounts on every return from /new (a real
@@ -116,6 +125,7 @@ export function MapPage() {
   return (
     <div className="relative h-dvh w-full">
       <MapContainer
+        ref={setMap}
         center={INITIAL_MAP_CENTER}
         zoom={INITIAL_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
@@ -130,9 +140,6 @@ export function MapPage() {
       >
         <MapTiles layer={layer} />
         <MapLayerZoom layer={layer} />
-        {/* Moved off the default topleft: that's where the filters button
-            (and, on desktop, the filters card) lives. */}
-        <ZoomControl position="bottomright" />
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers
@@ -142,27 +149,53 @@ export function MapPage() {
         />
         <MapClickToReport onPick={(lat, lng) => setPendingPin({ lat, lng })} />
         {pendingPin && <PendingPinMarker position={[pendingPin.lat, pendingPin.lng]} />}
+        {userPosition && (
+          <UserPositionMarker
+            position={[userPosition.lat, userPosition.lng]}
+            accuracyM={userPosition.accuracyM}
+          />
+        )}
       </MapContainer>
 
       <AuthBadge />
 
       {(hasHover || !isFiltersOpen) && <AppFooterLinks />}
 
+      {(hasHover || !isFiltersOpen) && <MapLayerToggle layer={layer} onChange={setLayer} />}
+
       {/* On desktop the filters card is a small, semi-transparent overlay
           that never covers the map, so the other floating controls stay
           visible and usable regardless of isFiltersOpen. On mobile the
           filters sheet takes over the whole screen, so they hide while it's
-          open (mirrored below). */}
-      <button
-        type="button"
-        onClick={() => setIsFiltersOpen((open) => !open)}
-        aria-pressed={isFiltersOpen}
-        className="absolute top-3 left-3 z-[1000] rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow hover:bg-white"
-      >
-        {fr.map.filters.open}
-      </button>
+          open (mirrored below). Sits just below the layer switch, same
+          left-edge column. A dot badge stands in for the old text label,
+          flagging that filters differ from the default now that the
+          button is icon-only. */}
+      {(hasHover || !isFiltersOpen) && (
+        <div className="absolute top-16 left-3 z-[1000]">
+          <MapControlButton
+            label={fr.map.filters.open}
+            onClick={() => setIsFiltersOpen((open) => !open)}
+            pressed={isFiltersOpen}
+            className="relative"
+          >
+            <FilterIcon className="h-5 w-5" />
+            {!isDefaultFilters(filters) && (
+              <>
+                <span
+                  aria-hidden
+                  className="absolute top-1 right-1 h-2 w-2 rounded-full bg-teal-600 ring-2 ring-white"
+                />
+                <span className="sr-only">{fr.map.controls.filtersActive}</span>
+              </>
+            )}
+          </MapControlButton>
+        </div>
+      )}
 
-      {(hasHover || !isFiltersOpen) && <MapLayerToggle layer={layer} onChange={setLayer} />}
+      {(hasHover || !isFiltersOpen) && (
+        <MapZoomLocateControls map={map} onLocate={setUserPosition} />
+      )}
 
       {hasDraft && !pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
         <DraftInProgressChip />
@@ -186,7 +219,7 @@ export function MapPage() {
       )}
 
       {isFetching && !isError && (
-        <div className="absolute top-3 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1 text-xs text-neutral-600 shadow">
+        <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-xs text-neutral-600 shadow">
           {fr.common.loading}
         </div>
       )}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
+import type L from 'leaflet'
 import { CancelDraftSheet } from './CancelDraftSheet'
 import { DraggablePin } from './DraggablePin'
 import { clearDraftPhotos, loadDraftPhotos } from './draftPhotoStore'
@@ -28,10 +29,14 @@ import { klashKeys } from '../../api/queryKeys'
 import { BottomSheet } from '../../components/BottomSheet'
 import { BboxWatcher } from '../map/BboxWatcher'
 import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
+import { MapLayerToggle } from '../map/MapLayerToggle'
+import { MapLayerZoom } from '../map/MapLayerZoom'
 import { MapTiles } from '../map/MapTiles'
+import { MapZoomLocateControls } from '../map/MapZoomLocateControls'
 import { ServiceAreaBounds } from '../map/ServiceAreaBounds'
+import { UserPositionMarker } from '../map/UserPositionMarker'
 import { useKlashesInBbox } from '../map/useKlashesInBbox'
-import { readStoredMapLayer } from '../map/useMapLayer'
+import { useMapLayer } from '../map/useMapLayer'
 import {
   INITIAL_MAP_CENTER,
   MAX_MAP_ZOOM,
@@ -144,11 +149,16 @@ export function NewKlashPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [failedPhotoCount, setFailedPhotoCount] = useState(0)
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
-  // Same layer (plan/satellite) as the main map the user just came from, so
-  // placing the pin doesn't silently switch the imagery under them. Read once,
-  // at mount: this page has no layer toggle, so the value can't change here,
-  // which also lets maxZoom below be a plain static prop (no MapLayerZoom).
-  const [mapLayer] = useState(readStoredMapLayer)
+  // Same layer (plan/satellite) as the main map the user just came from,
+  // initially — but now switchable here too (spec §6.1 follow-up: the layer
+  // toggle is one of the controls every map screen carries), so `maxZoom`
+  // below is a static prop covering both ceilings and `MapLayerZoom` narrows
+  // it at runtime, same as MapPage.
+  const [mapLayer, setMapLayer] = useMapLayer()
+  const [map, setMap] = useState<L.Map | null>(null)
+  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number; accuracyM: number } | null>(
+    null,
+  )
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same
@@ -360,21 +370,47 @@ export function NewKlashPage() {
   return (
     <div className="relative h-dvh w-full">
       <MapContainer
+        ref={setMap}
         center={position}
         zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
-        maxZoom={mapLayer === 'satellite' ? MAX_SATELLITE_MAP_ZOOM : MAX_MAP_ZOOM}
+        // The higher of the two layers' ceilings, as a static prop (see
+        // MapPage's identical comment) — MapLayerZoom narrows it at runtime
+        // now that the layer can change after mount.
+        maxZoom={MAX_SATELLITE_MAP_ZOOM}
         bounceAtZoomLimits={false}
         maxBoundsViscosity={1}
+        zoomControl={false}
         className="h-full w-full"
       >
         <MapTiles layer={mapLayer} />
+        <MapLayerZoom layer={mapLayer} />
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
         <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
         <MapRecenter position={recenterTarget} />
+        {userPosition && (
+          <UserPositionMarker
+            position={[userPosition.lat, userPosition.lng]}
+            accuracyM={userPosition.accuracyM}
+          />
+        )}
       </MapContainer>
+
+      <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />
+      <MapZoomLocateControls
+        map={map}
+        onLocate={(result) => {
+          setUserPosition(result)
+          // Locate here also moves the pin (user decision — differs from
+          // MapPage, where locate only recentres): the user is actively
+          // placing a klash, so "my position" is a legitimate pin target,
+          // not just a viewport convenience. The pin stays draggable
+          // afterwards, same as any other placement.
+          setPosition([result.lat, result.lng])
+        }}
+      />
 
       <BottomSheet scrollable>
         {step === 'resume' && restorableDraft && (

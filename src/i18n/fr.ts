@@ -95,10 +95,17 @@ export const fr = {
       viewOnMap: 'Voir sur la carte',
     },
     layer: {
-      plan: 'Plan',
-      satellite: 'Satellite',
       switchToPlan: 'Afficher le plan',
       switchToSatellite: 'Afficher la vue satellite',
+    },
+    controls: {
+      zoomIn: 'Zoomer',
+      zoomOut: 'Dézoomer',
+      locate: 'Me localiser',
+      locating: 'Localisation…',
+      locateError: 'Position indisponible',
+      filtersActive: 'Filtres actifs',
+      profile: 'Mon espace',
     },
   },
   detail: {

@@ -191,16 +191,16 @@ Une seule application responsive. Routes :
 ### 6.1 Carte (`/`)
 
 - Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), zoom maximum 20 en plan et 22 en vue satellite (zoom natif de chaque tuileset), contrainte aux bounds de la zone de service.
-- Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), bascule via un bouton flottant, dernier choix mémorisé en local sur l'appareil.
+- Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), bascule directe via un bouton flottant icône (pas de modale de choix — un tap suffit pour deux couches), dernier choix mémorisé en local sur l'appareil.
 - Marqueurs colorés par importance, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
 - Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
 - Mobile : bouton flottant **« Signaler ici »** (utilise la géoloc) + tap long sur la carte pour signaler à un point précis. Desktop : clic sur la carte → pin → « Signaler ici ».
-- Bouton « Ma position » (géoloc, mobile seulement).
+- Contrôles flottants façon maps.me, communs à la carte et à la création (§6.2) : bouton de type de carte (icône calques) en haut à gauche, filtres (icône entonnoir, avec pastille si des filtres sont actifs) juste en dessous, profil (icône silhouette) en haut à droite, zoom (+/−) et « Ma position » (icône cible, géoloc — sur tous les appareils, pas seulement mobile) en colonne à droite.
 
 ### 6.2 Création (`/new`)
 
-Étapes dans une feuille glissante, la carte reste visible derrière avec le pin déplaçable :
+Étapes dans une feuille glissante, la carte reste visible derrière avec le pin déplaçable. Elle porte les mêmes contrôles flottants que la carte principale (§6.1) — bascule de couche, zoom, « Ma position » — le bouton « Ma position » y recentre la vue **et** déplace le pin (le pin reste ensuite déplaçable normalement) :
 
 1. **Position** : pin déplaçable, adresse approximative affichée (reverse geocoding Nominatim, facultatif, avec cache). Précision GPS affichée si < 50 m sinon avertissement « affinez la position ».
 2. **Doublons** : appel `klashes_nearby(50 m)`. S'il y a des résultats : liste avec « C'est le même problème → je confirme » (crée une `confirmation` et termine) ou « Non, c'est un autre problème → continuer ».
