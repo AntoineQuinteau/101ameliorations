@@ -156,9 +156,11 @@ export function NewKlashPage() {
   // it at runtime, same as MapPage.
   const [mapLayer, setMapLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
-  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number; accuracyM: number } | null>(
-    null,
-  )
+  const [userPosition, setUserPosition] = useState<{
+    lat: number
+    lng: number
+    accuracyM: number
+  } | null>(null)
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same

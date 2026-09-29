@@ -50,9 +50,11 @@ export function MapPage() {
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
-  const [userPosition, setUserPosition] = useState<{ lat: number; lng: number; accuracyM: number } | null>(
-    null,
-  )
+  const [userPosition, setUserPosition] = useState<{
+    lat: number
+    lng: number
+    accuracyM: number
+  } | null>(null)
   // Read in an effect, not a useState initializer: hasStoredDraft can purge
   // a stale draft as a side effect (see its docblock), which isn't safe
   // during render. This route remounts on every return from /new (a real
