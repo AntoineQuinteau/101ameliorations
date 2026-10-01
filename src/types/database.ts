@@ -10,12 +10,7 @@ export type Database = {
     }
     Functions: {
       graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
+        Args: { extensions?: Json; operationName?: string; query?: string; variables?: Json }
         Returns: Json
       }
     }
@@ -335,17 +330,17 @@ export type Database = {
         Row: {
           key: string
           updated_at: string
-          value: Json
+          value: NonNullable<Json>
         }
         Insert: {
           key: string
           updated_at?: string
-          value: Json
+          value: NonNullable<Json>
         }
         Update: {
           key?: string
           updated_at?: string
-          value?: Json
+          value?: NonNullable<Json>
         }
         Relationships: []
       }
@@ -536,10 +531,10 @@ export type Database = {
         }
       }
       current_user_role: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: Database['public']['Enums']['user_role']
       }
-      delete_my_account: { Args: never; Returns: undefined }
+      delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       find_profile_by_email: {
         Args: { email: string }
         Returns: {
@@ -551,12 +546,7 @@ export type Database = {
       }
       get_klash_author_contact: { Args: { klash_id: string }; Returns: string }
       klashes_in_bbox: {
-        Args: {
-          max_lat: number
-          max_lng: number
-          min_lat: number
-          min_lng: number
-        }
+        Args: { max_lat: number; max_lng: number; min_lat: number; min_lng: number }
         Returns: {
           author_display_name: string | null
           author_id: string | null
@@ -617,7 +607,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      purge_author_contact_lookups: { Args: never; Returns: undefined }
+      purge_author_contact_lookups: { Args: Record<PropertyKey, never>; Returns: undefined }
     }
     Enums: {
       klash_category:
@@ -653,9 +643,7 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
@@ -678,9 +666,7 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
@@ -702,9 +688,7 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
@@ -726,9 +710,7 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never) = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
@@ -742,9 +724,7 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never) = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
