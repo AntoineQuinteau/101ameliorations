@@ -48,6 +48,7 @@ import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import type { Klash } from '../../types/klash'
 import { isPointInBbox, type Bbox } from '../../utils/bbox'
+import type { GeolocationResult } from '../../utils/geolocation'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 
 const NEW_KLASH_MAP_ZOOM = MAX_MAP_ZOOM - 2
@@ -156,11 +157,10 @@ export function NewKlashPage() {
   // it at runtime, same as MapPage.
   const [mapLayer, setMapLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
-  const [userPosition, setUserPosition] = useState<{
-    lat: number
-    lng: number
-    accuracyM: number
-  } | null>(null)
+  const [userPosition, setUserPosition] = useState<GeolocationResult | null>(null)
+  // Lifted out of MapZoomLocateControls — see its own docblock on why
+  // `isLocating` is a controlled prop, not local state.
+  const [isLocating, setIsLocating] = useState(false)
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same
@@ -171,6 +171,12 @@ export function NewKlashPage() {
 
   const geolocation = useGeolocation()
   const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox, serviceArea)
+  // The accuracy PositionStep shows (spec §6.2 step 1: "< 50 m" vs "affinez
+  // la position") for whichever fix the pin is actually on right now — the
+  // mount-time geolocation() fix initially, then whatever "Me localiser"
+  // last reported. Kept separate from `geolocation.result.accuracyM` itself,
+  // which never updates after mount, so it wouldn't describe a later locate.
+  const [latestAccuracyM, setLatestAccuracyM] = useState<number | null>(null)
 
   // hasExplicitPosition is computed above, alongside the draft-restore logic
   // that also depends on it — also skipped when a draft was auto-restored,
@@ -181,6 +187,7 @@ export function NewKlashPage() {
   useEffect(() => {
     if (hasExplicitPosition || shouldAutoRestoreDraft || !geolocation.result) return
     setPosition([geolocation.result.lat, geolocation.result.lng])
+    setLatestAccuracyM(geolocation.result.accuracyM)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geolocation.result])
 
@@ -293,6 +300,22 @@ export function NewKlashPage() {
     setStep('duplicates')
   }
 
+  // "Me localiser" always updates the blue dot, but only moves the pin while
+  // still on the position step, before duplicate detection has run at all.
+  // Past that point, the pin's current spot already went through
+  // klashes_nearby (spec §6.2 step 2) — handleUsePhotoPosition re-routes
+  // back through 'duplicates' for exactly this reason when a photo's GPS
+  // moves the pin after that check. A locate during 'form'/'submit'/'done'
+  // has no equivalent re-check to route through, so rather than silently
+  // invalidate an already-passed check, it leaves the pin alone.
+  function handleLocate(result: GeolocationResult) {
+    setUserPosition(result)
+    setLatestAccuracyM(result.accuracyM)
+    if (step === 'position') {
+      setPosition([result.lat, result.lng])
+    }
+  }
+
   async function runPendingAction(action: PendingAction) {
     // Both SubmitStep's onReady effect and startAction's own call below can
     // reach here for the same tap; only the first is let through. Released
@@ -401,17 +424,18 @@ export function NewKlashPage() {
       </MapContainer>
 
       <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />
+      {/* Anchored near the top rather than vertically centred (MapPage's
+          default): BottomSheet can grow to max-h-[70vh] and shares this
+          same z-[1000], painting over a centred column on tall steps (the
+          form). The top ~140px (below the layer toggle) is the one band
+          BottomSheet's 70vh ceiling never reaches, on any phone. */}
       <MapZoomLocateControls
         map={map}
-        onLocate={(result) => {
-          setUserPosition(result)
-          // Locate here also moves the pin (user decision — differs from
-          // MapPage, where locate only recentres): the user is actively
-          // placing a klash, so "my position" is a legitimate pin target,
-          // not just a viewport convenience. The pin stays draggable
-          // afterwards, same as any other placement.
-          setPosition([result.lat, result.lng])
-        }}
+        serviceArea={serviceArea}
+        isLocating={isLocating}
+        onLocatingChange={setIsLocating}
+        className="absolute top-20 right-3 z-[1000] flex flex-col gap-2"
+        onLocate={handleLocate}
       />
 
       <BottomSheet scrollable>
@@ -426,7 +450,7 @@ export function NewKlashPage() {
 
         {step === 'position' && (
           <PositionStep
-            accuracyM={geolocation.result?.accuracyM ?? null}
+            accuracyM={latestAccuracyM ?? geolocation.result?.accuracyM ?? null}
             isOutOfArea={isOutOfArea}
             onContinue={() => setStep('duplicates')}
             onCancel={handleCancel}

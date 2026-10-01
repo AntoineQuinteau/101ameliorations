@@ -16,7 +16,7 @@ test('map floating controls are present and interactive', async ({ page }) => {
   await page.goto('/')
   await dismissInstallBanner(page)
 
-  const layerButton = page.getByRole('button', { name: 'Afficher la vue satellite' })
+  const layerButton = page.getByRole('button', { name: 'Vue satellite' })
   const filtersButton = page.getByRole('button', { name: 'Filtres' })
   // exact: true — "Zoomer" would otherwise substring-match "Dézoomer" too.
   const zoomInButton = page.getByRole('button', { name: 'Zoomer', exact: true })
@@ -30,12 +30,24 @@ test('map floating controls are present and interactive', async ({ page }) => {
   await expect(locateButton).toBeVisible()
   await expect(page.getByRole('link', { name: 'Se connecter' })).toBeVisible()
 
-  // Layer toggle flips its accessible name (plan <-> satellite).
+  // Layer toggle keeps a stable accessible name (see MapLayerToggle's
+  // docblock on why — a toggle's name shouldn't flip with its own pressed
+  // state) and instead communicates the switch via aria-pressed.
+  await expect(layerButton).toHaveAttribute('aria-pressed', 'false')
   await layerButton.click()
-  await expect(page.getByRole('button', { name: 'Afficher le plan' })).toBeVisible()
+  await expect(layerButton).toHaveAttribute('aria-pressed', 'true')
 
-  // Zoom buttons drive the Leaflet map, not just render — the zoom-out
-  // button becomes reachable/disabled at the configured minimum.
+  // Zoom buttons actually drive the Leaflet map, not just render: the
+  // initial zoom is 10 (INITIAL_MAP_ZOOM) and the configured minimum is 8
+  // (MIN_MAP_ZOOM, src/config/serviceArea.ts) — two zoom-outs reach it and
+  // the button disables itself there, same as the "+" button at the max.
+  // Leaflet's zoomOut() animates (~250ms) and a second call while that
+  // animation is still running is a no-op rather than queued, so each click
+  // waits for Leaflet's zoomend before the next one is sent — otherwise two
+  // clicks fired back to back only move the map one level, not two.
   await expect(zoomOutButton).toBeEnabled()
   await zoomOutButton.click()
+  await page.waitForTimeout(400)
+  await zoomOutButton.click()
+  await expect(zoomOutButton).toBeDisabled()
 })

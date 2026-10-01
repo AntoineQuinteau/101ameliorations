@@ -12,9 +12,8 @@ import { mapControlButtonClassName } from './mapControlButtonStyle'
  * routing/accessibility, and a `<button>` can't nest inside one); the two
  * auth states share the icon and are told apart by fill — teal when signed
  * in, white otherwise — rather than by different icons. The accessible name
- * still carries the state (`fr.auth.mySpace`/`signIn`), not just
- * `fr.map.controls.profile`, so e2e specs asserting on that text
- * (e.g. "Se connecter") keep working. */
+ * still carries the state (`fr.auth.mySpace`/`signIn`), so e2e specs
+ * asserting on that text (e.g. "Se connecter") keep working. */
 export function AuthBadge() {
   const { user, isInitializing } = useAuth()
 

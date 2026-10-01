@@ -95,8 +95,13 @@ export const fr = {
       viewOnMap: 'Voir sur la carte',
     },
     layer: {
-      switchToPlan: 'Afficher le plan',
-      switchToSatellite: 'Afficher la vue satellite',
+      // A stable name, not an action label that flips with the state
+      // ("Afficher le plan"/"Afficher la vue satellite"): paired with
+      // aria-pressed on the toggle button, a label that also changes would
+      // have a screen reader announce e.g. "Afficher le plan, pressed" while
+      // satellite is showing — ARIA guidance is that a toggle's name
+      // shouldn't change with its own pressed state.
+      satelliteView: 'Vue satellite',
     },
     controls: {
       zoomIn: 'Zoomer',
@@ -104,8 +109,8 @@ export const fr = {
       locate: 'Me localiser',
       locating: 'Localisation…',
       locateError: 'Position indisponible',
+      locateOutOfArea: 'Hors de la zone de service',
       filtersActive: 'Filtres actifs',
-      profile: 'Mon espace',
     },
   },
   detail: {

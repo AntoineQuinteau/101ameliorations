@@ -9,7 +9,13 @@ import type { MapLayer } from './MapTiles'
  * `MapZoomLocateControls` and (on `MapPage`) the filters button are positioned
  * around it. A direct plan ↔ satellite toggle rather than a picker modal — with
  * only two layers, one tap beats a modal for a binary choice; this can grow into a
- * picker the day a third layer is added, without moving the button. */
+ * picker the day a third layer is added, without moving the button.
+ *
+ * The label is the stable "Vue satellite" ("satellite view"), not an action
+ * that flips between "Afficher le plan"/"Afficher la vue satellite" — see
+ * `fr.map.layer.satelliteView`'s own comment for why, now that the button is
+ * icon-only and that label is its whole accessible name. `aria-pressed`
+ * alone communicates which state is active. */
 export function MapLayerToggle({
   layer,
   onChange,
@@ -20,11 +26,10 @@ export function MapLayerToggle({
   className?: string
 }) {
   const isSatellite = layer === 'satellite'
-  const label = isSatellite ? fr.map.layer.switchToPlan : fr.map.layer.switchToSatellite
 
   return (
     <MapControlButton
-      label={label}
+      label={fr.map.layer.satelliteView}
       onClick={() => onChange(isSatellite ? 'plan' : 'satellite')}
       pressed={isSatellite}
       className={className}

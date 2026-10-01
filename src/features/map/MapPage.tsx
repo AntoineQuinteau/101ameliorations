@@ -37,6 +37,7 @@ import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import type { Klash } from '../../types/klash'
 import type { Bbox } from '../../utils/bbox'
+import { requestCurrentPosition, type GeolocationResult } from '../../utils/geolocation'
 import { hasStoredDraft } from '../newKlash/draftStorage'
 
 export function MapPage() {
@@ -50,11 +51,13 @@ export function MapPage() {
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
-  const [userPosition, setUserPosition] = useState<{
-    lat: number
-    lng: number
-    accuracyM: number
-  } | null>(null)
+  const [userPosition, setUserPosition] = useState<GeolocationResult | null>(null)
+  // Lifted out of MapZoomLocateControls, not local to it: that component
+  // unmounts while the mobile filters sheet is open (see the
+  // showFloatingControls conditionals below), and local state would forget
+  // an in-flight locate request across that unmount/remount, letting a
+  // second tap start a parallel one (see its own docblock).
+  const [isLocating, setIsLocating] = useState(false)
   // Read in an effect, not a useState initializer: hasStoredDraft can purge
   // a stale draft as a side effect (see its docblock), which isn't safe
   // during render. This route remounts on every return from /new (a real
@@ -109,20 +112,24 @@ export function MapPage() {
   }
 
   function handleReportHereButton() {
-    if (!navigator.geolocation) {
-      const center = viewportCenter()
-      goToNewKlash(center.lat, center.lng)
-      return
-    }
-    navigator.geolocation.getCurrentPosition(
-      (position) => goToNewKlash(position.coords.latitude, position.coords.longitude),
+    requestCurrentPosition({ enableHighAccuracy: true, timeout: 5_000 }).then(
+      (result) => goToNewKlash(result.lat, result.lng),
       () => {
+        // No geolocation API, permission denied, or timed out — all fall
+        // back the same way, to the centre of what's currently on screen.
         const center = viewportCenter()
         goToNewKlash(center.lat, center.lng)
       },
-      { enableHighAccuracy: true, timeout: 5_000 },
     )
   }
+
+  // Computed once rather than repeated inline at every floating control
+  // below: on desktop the filters card is a small overlay that never covers
+  // the map, so the other controls stay visible regardless of
+  // isFiltersOpen; on mobile the filters sheet takes over the whole screen,
+  // so they hide while it's open.
+  const showFloatingControls = hasHover || !isFiltersOpen
+  const filtersActive = !isDefaultFilters(filters)
 
   return (
     <div className="relative h-dvh w-full">
@@ -161,49 +168,50 @@ export function MapPage() {
 
       <AuthBadge />
 
-      {(hasHover || !isFiltersOpen) && <AppFooterLinks />}
+      {showFloatingControls && <AppFooterLinks />}
 
-      {(hasHover || !isFiltersOpen) && <MapLayerToggle layer={layer} onChange={setLayer} />}
+      {showFloatingControls && <MapLayerToggle layer={layer} onChange={setLayer} />}
 
-      {/* On desktop the filters card is a small, semi-transparent overlay
-          that never covers the map, so the other floating controls stay
-          visible and usable regardless of isFiltersOpen. On mobile the
-          filters sheet takes over the whole screen, so they hide while it's
-          open (mirrored below). Sits just below the layer switch, same
-          left-edge column. A dot badge stands in for the old text label,
-          flagging that filters differ from the default now that the
-          button is icon-only. */}
-      {(hasHover || !isFiltersOpen) && (
-        <div className="absolute top-16 left-3 z-[1000]">
-          <MapControlButton
-            label={fr.map.filters.open}
-            onClick={() => setIsFiltersOpen((open) => !open)}
-            pressed={isFiltersOpen}
-            className="relative"
-          >
-            <FilterIcon className="h-5 w-5" />
-            {!isDefaultFilters(filters) && (
-              <>
-                <span
-                  aria-hidden
-                  className="absolute top-1 right-1 h-2 w-2 rounded-full bg-teal-600 ring-2 ring-white"
-                />
-                <span className="sr-only">{fr.map.controls.filtersActive}</span>
-              </>
-            )}
-          </MapControlButton>
-        </div>
+      {/* Sits just below the layer switch, same left-edge column. The
+          accessible label itself (not a separate sr-only span) carries
+          whether filters are active: MapControlButton sets aria-label on
+          the button, which overrides any name an inner span would
+          otherwise contribute, so a visually-hidden span next to the dot
+          would never reach screen readers. */}
+      {showFloatingControls && (
+        <MapControlButton
+          label={
+            filtersActive
+              ? `${fr.map.filters.open} – ${fr.map.controls.filtersActive}`
+              : fr.map.filters.open
+          }
+          onClick={() => setIsFiltersOpen((open) => !open)}
+          pressed={isFiltersOpen}
+          className="absolute top-16 left-3 z-[1000]"
+        >
+          <FilterIcon className="h-5 w-5" />
+          {filtersActive && (
+            <span
+              aria-hidden
+              className="absolute top-1 right-1 h-2 w-2 rounded-full bg-teal-600 ring-2 ring-white"
+            />
+          )}
+        </MapControlButton>
       )}
 
-      {(hasHover || !isFiltersOpen) && (
-        <MapZoomLocateControls map={map} onLocate={setUserPosition} />
+      {showFloatingControls && (
+        <MapZoomLocateControls
+          map={map}
+          serviceArea={serviceArea}
+          isLocating={isLocating}
+          onLocatingChange={setIsLocating}
+          onLocate={setUserPosition}
+        />
       )}
 
-      {hasDraft && !pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
-        <DraftInProgressChip />
-      )}
+      {hasDraft && !pendingPin && !selectedKlash && showFloatingControls && <DraftInProgressChip />}
 
-      {!pendingPin && !selectedKlash && (hasHover || !isFiltersOpen) && (
+      {!pendingPin && !selectedKlash && showFloatingControls && (
         <button
           type="button"
           onClick={handleReportHereButton}
@@ -213,7 +221,7 @@ export function MapPage() {
         </button>
       )}
 
-      {pendingPin && (hasHover || !isFiltersOpen) && (
+      {pendingPin && showFloatingControls && (
         <PinConfirmCard
           onConfirm={() => goToNewKlash(pendingPin.lat, pendingPin.lng)}
           onCancel={() => setPendingPin(null)}

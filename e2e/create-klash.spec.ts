@@ -32,7 +32,7 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   // Spec §6.1 follow-up: /new carries the same floating map controls as the
   // main map (layer toggle, zoom, locate) — previously it only had
   // Leaflet's default zoom control and no layer switch.
-  await expect(page.getByRole('button', { name: 'Afficher la vue satellite' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Vue satellite' })).toBeVisible()
   // exact: true — "Zoomer" would otherwise substring-match "Dézoomer" too.
   await expect(page.getByRole('button', { name: 'Zoomer', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Dézoomer' })).toBeVisible()
