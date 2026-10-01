@@ -192,6 +192,10 @@ export function NewKlashPage() {
   }, [geolocation.result])
 
   const isOutOfArea = !isPointInBbox(position[0], position[1], serviceArea)
+  // Whether the pin can still move at this step — see the controls' own
+  // comment below for why the layer/zoom/locate column is tied to this
+  // instead of always showing.
+  const isAdjustingPosition = step === 'resume' || step === 'position' || step === 'duplicates'
 
   // Rebuilds PendingPhoto[] from IndexedDB for a draft being applied — either
   // automatically on mount (shouldAutoRestoreDraft) or via "Reprendre ma
@@ -423,20 +427,31 @@ export function NewKlashPage() {
         )}
       </MapContainer>
 
-      <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />
-      {/* Anchored near the top rather than vertically centred (MapPage's
-          default): BottomSheet can grow to max-h-[70vh] and shares this
-          same z-[1000], painting over a centred column on tall steps (the
-          form). The top ~140px (below the layer toggle) is the one band
-          BottomSheet's 70vh ceiling never reaches, on any phone. */}
-      <MapZoomLocateControls
-        map={map}
-        serviceArea={serviceArea}
-        isLocating={isLocating}
-        onLocatingChange={setIsLocating}
-        className="absolute top-20 right-3 z-[1000] flex flex-col gap-2"
-        onLocate={handleLocate}
-      />
+      {/* The pin's position is only still adjustable through 'duplicates'
+          (DuplicatesStep can send the user back a step, and the pin stays
+          visible/draggable there) — from 'form' onward it's fixed (spec
+          §6.2: placing the pin is step 1, "Décrire le problème" is step 3
+          and has nothing to do with the map), so the layer/zoom/locate
+          controls that exist to help position it have no more purpose and
+          would otherwise float uselessly over the creation sheet. */}
+      {isAdjustingPosition && (
+        <>
+          <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />
+          {/* Anchored near the top rather than vertically centred (MapPage's
+              default): BottomSheet can grow to max-h-[70vh] and shares this
+              same z-[1000], painting over a centred column on tall steps.
+              The top ~140px (below the layer toggle) is the one band
+              BottomSheet's 70vh ceiling never reaches, on any phone. */}
+          <MapZoomLocateControls
+            map={map}
+            serviceArea={serviceArea}
+            isLocating={isLocating}
+            onLocatingChange={setIsLocating}
+            className="absolute top-20 right-3 z-[1000] flex flex-col gap-2"
+            onLocate={handleLocate}
+          />
+        </>
+      )}
 
       <BottomSheet scrollable>
         {step === 'resume' && restorableDraft && (

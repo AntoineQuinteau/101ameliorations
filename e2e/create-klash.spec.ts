@@ -57,6 +57,12 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   }
   await expect(page.getByRole('heading', { name: 'Décrire le problème' })).toBeVisible()
 
+  // The pin is fixed from here on (placing it was step 1) — the layer/zoom/
+  // locate controls that exist to help position it have no purpose on the
+  // form step and would otherwise float uselessly over the creation sheet.
+  await expect(page.getByRole('button', { name: 'Vue satellite' })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Me localiser' })).toBeHidden()
+
   // Step 3: form. Category (not category_7), importance, title, description;
   // photos step is optional and skipped entirely by not adding any.
   await page.getByLabel('Catégorie').selectOption('category_1')
