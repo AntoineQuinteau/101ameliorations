@@ -100,7 +100,7 @@ export function AdminKlashTable() {
   useEffect(() => {
     setSearchInput(params.searchText)
   }, [params.searchText])
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
     () => () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)

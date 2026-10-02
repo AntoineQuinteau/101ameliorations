@@ -8,9 +8,10 @@ import { getMarkerIcon } from './markerIcons'
 const HOVER_OUT_GRACE_MS = 120
 
 /** Imperative marker layer: leaflet.markercluster has no maintained React wrapper for
- * react-leaflet v4, so the cluster group is driven directly via useMap(). Markers are
- * diffed by klash id on every data change (added/removed, never rebuilt wholesale) so
- * panning across ~500 klashs doesn't reconstruct the whole layer on each render. */
+ * react-leaflet (still true as of v5), so the cluster group is driven directly via
+ * useMap(). Markers are diffed by klash id on every data change (added/removed, never
+ * rebuilt wholesale) so panning across ~500 klashs doesn't reconstruct the whole layer
+ * on each render. */
 export function ClusteredKlashMarkers({
   klashes,
   onSelect,

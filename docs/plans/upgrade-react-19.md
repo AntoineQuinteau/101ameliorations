@@ -1,8 +1,10 @@
 # Migration React 18 → 19
 
-> Migration exécutée le 2026-10-02, après l'étape 9 du plan de construction
+> Migration réalisée le 2026-10-02, après l'étape 9 du plan de construction
 > (spec §9), comme recommandé par la version précédente de ce document
-> (relevé du 2026-09-11, conservé ci-dessous en historique).
+> (relevé du 2026-09-11, conservé ci-dessous en historique). Code, dépendances
+> et CI validés ; la vérification sur téléphone réel ci-dessous reste à faire
+> avant merge.
 
 ## Résumé
 
@@ -101,9 +103,9 @@ npm run lint && npm run typecheck && npm test && npm run build
 
 ## Vérification sur téléphone réel
 
-Checklist suivie avant merge (carte et création sont la surface à risque —
-double montage plus strict en `StrictMode` React 19, typiquement une carte
-Leaflet initialisée deux fois) :
+**À faire avant merge** (carte et création sont la surface à risque — double
+montage plus strict en `StrictMode` React 19, typiquement une carte Leaflet
+initialisée deux fois) :
 
 - [ ] Carte `/` : rendu, clustering, survol/sélection marqueur
 - [ ] Chargement par bbox au déplacement de la carte (`BboxWatcher`,

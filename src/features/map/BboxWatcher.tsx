@@ -19,7 +19,7 @@ function boundsToBbox(bounds: LatLngBounds): Bbox {
 export function BboxWatcher({ onChange }: { onChange: (bbox: Bbox) => void }) {
   const map = useMap()
   const onChangeRef = useRef(onChange)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     onChangeRef.current = onChange

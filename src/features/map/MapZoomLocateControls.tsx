@@ -172,8 +172,8 @@ export function MapZoomLocateControls({
         // — MapContainer has then already called map.remove(), and flyTo on
         // a removed map throws. Nothing left to update once that's
         // happened, so this returns without calling finish() at all (a
-        // setState on an unmounted tree is a silent no-op in React 18, but
-        // there's no reason to even try).
+        // setState on an unmounted tree is a silent no-op (still true in
+        // React 19), but there's no reason to even try).
         if (!isMountedRef.current) {
           settled = true
           clearTimeout(stuckFallback)
