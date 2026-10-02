@@ -10,6 +10,7 @@ import { useRole } from '../auth/useRole'
 import { AdminKlashTable } from './AdminKlashTable'
 import { RoleManagement } from './RoleManagement'
 import { TriageQueue } from './TriageQueue'
+import { ArrowLeft } from 'lucide-react'
 
 /** `/admin` (spec §6.6, rôles ≥ moderator). Scoped for this step to a
  * paginated/filtered klash table, the "à trier" queue, and role management
@@ -44,7 +45,11 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="size-4" />
         {fr.common.backToMap}
       </Link>
 

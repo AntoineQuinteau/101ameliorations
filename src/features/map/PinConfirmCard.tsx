@@ -1,5 +1,6 @@
 import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
+import { X } from 'lucide-react'
 
 /** Bottom sheet shown after a candidate point is picked on the map (click or
  * long-press, spec §6.1): confirm to go to `/new` at that point, or dismiss.
@@ -19,9 +20,9 @@ export function PinConfirmCard({
           type="button"
           onClick={onCancel}
           aria-label={fr.common.close}
-          className="shrink-0 text-lg leading-none text-neutral-400 hover:text-neutral-600"
+          className="shrink-0 text-neutral-400 hover:text-neutral-600"
         >
-          ×
+          <X aria-hidden className="size-5" />
         </button>
         <button
           type="button"

@@ -11,6 +11,7 @@ import { compressPhoto } from '../../utils/photoCompression'
 import { useHasHover } from '../map/useHasHover'
 import { PhotoSourceSheet } from '../newKlash/PhotoSourceSheet'
 import { useAddKlashPhotos, useDeleteKlashPhoto } from './useKlashPhotoMutations'
+import { X } from 'lucide-react'
 
 // Same reasoning as KlashFormStep's PHOTO_CONCURRENCY: bounded so several
 // compressions don't all run at once and risk the acceptance budget.
@@ -101,9 +102,9 @@ export function KlashPhotoEditor({ klashId }: { klashId: string }) {
                 onClick={() => handleRemovePhoto(photo)}
                 disabled={deletePhoto.isPending}
                 aria-label={fr.detail.edit.removePhoto}
-                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900/80 text-xs leading-none text-white hover:bg-neutral-900 disabled:opacity-60"
+                className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900/80 text-white hover:bg-neutral-900 disabled:opacity-60"
               >
-                ×
+                <X aria-hidden className="size-3.5" />
               </button>
             </div>
           ))}

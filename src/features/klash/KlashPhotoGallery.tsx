@@ -5,6 +5,7 @@ import { klashKeys } from '../../api/queryKeys'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 /** Photo gallery for the detail page (spec §6.3): a thumbnail grid, and a
  * full-screen viewer on tap. Renders nothing if the klash has no photo — no
@@ -99,9 +100,9 @@ function PhotoLightbox({
         type="button"
         onClick={onClose}
         aria-label={fr.detail.closePhoto}
-        className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl leading-none text-white hover:bg-white/20"
+        className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
       >
-        ×
+        <X aria-hidden className="size-5" />
       </button>
 
       {photos.length > 1 && (
@@ -113,9 +114,9 @@ function PhotoLightbox({
               onIndexChange((index - 1 + photos.length) % photos.length)
             }}
             aria-label={fr.detail.previousPhoto}
-            className="absolute left-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl leading-none text-white hover:bg-white/20"
+            className="absolute left-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
-            ‹
+            <ChevronLeft aria-hidden className="size-6" />
           </button>
           <button
             type="button"
@@ -124,9 +125,9 @@ function PhotoLightbox({
               onIndexChange((index + 1) % photos.length)
             }}
             aria-label={fr.detail.nextPhoto}
-            className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl leading-none text-white hover:bg-white/20"
+            className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
-            ›
+            <ChevronRight aria-hidden className="size-6" />
           </button>
         </>
       )}

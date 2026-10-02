@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { useKlashExport } from './useKlashExport'
+import { ArrowLeft } from 'lucide-react'
 
 /** Public data export (spec §6.7): CSV and GeoJSON of every klash, with no
  * personal data (see `fetchAllKlashesForExport`). No auth guard — the route
@@ -11,7 +12,11 @@ export function ExportPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
+      >
+        <ArrowLeft aria-hidden className="size-4" />
         {fr.common.backToMap}
       </Link>
 

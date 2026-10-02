@@ -4,6 +4,7 @@ import { BottomSheet } from '../../components/BottomSheet'
 import { fr } from '../../i18n/fr'
 import { statusTone, importanceTone } from '../../lib/klashPresentation'
 import { klashCategoryLabel, type Klash } from '../../types/klash'
+import { X } from 'lucide-react'
 
 /** Bottom sheet shown for a klash: summary, and (unless `interactive` is false) a close
  * button and a link to the full detail page. Deliberately not a Leaflet popup — mixing
@@ -34,9 +35,9 @@ export function KlashPreviewCard({
               type="button"
               onClick={onClose}
               aria-label={fr.common.close}
-              className="shrink-0 text-lg leading-none text-neutral-400 hover:text-neutral-600"
+              className="shrink-0 text-neutral-400 hover:text-neutral-600"
             >
-              ×
+              <X aria-hidden className="size-5" />
             </button>
           )}
         </div>

@@ -16,6 +16,7 @@ import {
   type KlashFormDraft,
   type NewKlashForm,
 } from './newKlashSchemas'
+import { X } from 'lucide-react'
 
 const MAX_PHOTOS = MAX_PHOTOS_PER_KLASH
 // Compression and upload both run with this many photos in flight at once,
@@ -180,9 +181,9 @@ export function KlashFormStep({
                   type="button"
                   onClick={() => handleRemovePhoto(photo.id)}
                   aria-label={fr.newKlash.form.removePhoto}
-                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900/80 text-xs leading-none text-white hover:bg-neutral-900"
+                  className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900/80 text-white hover:bg-neutral-900"
                 >
-                  ×
+                  <X aria-hidden className="size-3.5" />
                 </button>
               </div>
             ))}
