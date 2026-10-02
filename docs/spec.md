@@ -200,7 +200,7 @@ Une seule application responsive. Routes :
 
 ### 6.2 Création (`/new`)
 
-Étapes dans une feuille glissante, la carte reste visible derrière avec le pin déplaçable. Elle porte les mêmes contrôles flottants que la carte principale (§6.1) — bascule de couche, zoom, « Ma position » — le bouton « Ma position » y recentre la vue **et** déplace le pin (le pin reste ensuite déplaçable normalement) :
+Étapes dans une feuille glissante, la carte reste visible derrière. Tant que la position n'est pas validée (étapes position/doublons, et l'écran de reprise de brouillon), le pin reste déplaçable et la carte porte les mêmes contrôles flottants que la carte principale (§6.1) — bascule de couche, zoom, « Ma position » — avec une différence : le bouton « Ma position » y recentre la vue **et** déplace le pin (le pin reste ensuite déplaçable normalement). Une fois l'étape formulaire atteinte, la position est figée : le pin n'est plus déplaçable et ces contrôles disparaissent (ils n'ont plus d'objet, et resteraient sinon à flotter inutilement par-dessus la feuille) :
 
 1. **Position** : pin déplaçable, adresse approximative affichée (reverse geocoding Nominatim, facultatif, avec cache). Précision GPS affichée si < 50 m sinon avertissement « affinez la position ».
 2. **Doublons** : appel `klashes_nearby(50 m)`. S'il y a des résultats : liste avec « C'est le même problème → je confirme » (crée une `confirmation` et termine) ou « Non, c'est un autre problème → continuer ».

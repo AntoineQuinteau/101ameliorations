@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
@@ -158,9 +158,16 @@ export function NewKlashPage() {
   const [mapLayer, setMapLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
   const [userPosition, setUserPosition] = useState<GeolocationResult | null>(null)
-  // Lifted out of MapZoomLocateControls — see its own docblock on why
-  // `isLocating` is a controlled prop, not local state.
-  const [isLocating, setIsLocating] = useState(false)
+  // See MapPage's identical comment: a stable tuple so react-leaflet doesn't
+  // redraw UserPositionMarker's circles on every re-render this component
+  // has for unrelated reasons (every keystroke on the form step, since
+  // formDraft lives here) — deliberately not memoized on `[userPosition]`
+  // itself (disabled below), same reason as MapPage's.
+  const userPositionLatLng = useMemo<[number, number] | null>(
+    () => (userPosition ? [userPosition.lat, userPosition.lng] : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userPosition?.lat, userPosition?.lng],
+  )
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same
@@ -196,6 +203,16 @@ export function NewKlashPage() {
   // comment below for why the layer/zoom/locate column is tied to this
   // instead of always showing.
   const isAdjustingPosition = step === 'resume' || step === 'position' || step === 'duplicates'
+  // handleLocate reads this instead of closing over `step` directly — a fix
+  // can take up to 10s (requestCurrentPosition's own timeout), so by the
+  // time it resolves the user may already be on a different step than the
+  // one open when they tapped "Me localiser". A plain closure would decide
+  // whether to move the pin based on the *stale* step; the ref always holds
+  // the current one.
+  const stepRef = useRef(step)
+  useEffect(() => {
+    stepRef.current = step
+  }, [step])
 
   // Rebuilds PendingPhoto[] from IndexedDB for a draft being applied — either
   // automatically on mount (shouldAutoRestoreDraft) or via "Reprendre ma
@@ -311,12 +328,19 @@ export function NewKlashPage() {
   // back through 'duplicates' for exactly this reason when a photo's GPS
   // moves the pin after that check. A locate during 'form'/'submit'/'done'
   // has no equivalent re-check to route through, so rather than silently
-  // invalidate an already-passed check, it leaves the pin alone.
+  // invalidate an already-passed check, it leaves the pin alone. Reads
+  // `stepRef` rather than `step` directly — see its own comment — so this
+  // decides based on the step the fix actually arrives on, not the one open
+  // when the button was tapped.
   function handleLocate(result: GeolocationResult) {
     setUserPosition(result)
-    setLatestAccuracyM(result.accuracyM)
-    if (step === 'position') {
+    if (stepRef.current === 'position') {
       setPosition([result.lat, result.lng])
+      // Only set alongside the pin move: on 'resume' or 'duplicates' the
+      // pin doesn't move, so an accuracy update here would describe a fix
+      // the pin isn't actually on, contradicting what this value means to
+      // PositionStep below.
+      setLatestAccuracyM(result.accuracyM)
     }
   }
 
@@ -417,12 +441,16 @@ export function NewKlashPage() {
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
-        <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
+        <DraggablePin
+          position={position}
+          onMove={(lat, lng) => setPosition([lat, lng])}
+          draggable={isAdjustingPosition}
+        />
         <MapRecenter position={recenterTarget} />
-        {userPosition && (
+        {userPositionLatLng && (
           <UserPositionMarker
-            position={[userPosition.lat, userPosition.lng]}
-            accuracyM={userPosition.accuracyM}
+            position={userPositionLatLng}
+            accuracyM={userPosition?.accuracyM ?? null}
           />
         )}
       </MapContainer>
@@ -434,24 +462,23 @@ export function NewKlashPage() {
           and has nothing to do with the map), so the layer/zoom/locate
           controls that exist to help position it have no more purpose and
           would otherwise float uselessly over the creation sheet. */}
-      {isAdjustingPosition && (
-        <>
-          <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />
-          {/* Anchored near the top rather than vertically centred (MapPage's
-              default): BottomSheet can grow to max-h-[70vh] and shares this
-              same z-[1000], painting over a centred column on tall steps.
-              The top ~140px (below the layer toggle) is the one band
-              BottomSheet's 70vh ceiling never reaches, on any phone. */}
-          <MapZoomLocateControls
-            map={map}
-            serviceArea={serviceArea}
-            isLocating={isLocating}
-            onLocatingChange={setIsLocating}
-            className="absolute top-20 right-3 z-[1000] flex flex-col gap-2"
-            onLocate={handleLocate}
-          />
-        </>
-      )}
+      {isAdjustingPosition && <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />}
+      {/* top uses a dvh-based floor, not a fixed pixel value: `BottomSheet`
+          (`scrollable`) can grow to max-h-[70vh], so its card's top edge is
+          `30dvh − 12px` (p-3's bottom padding) up from the bottom of the
+          viewport — a fixed `top-20` cleared that on a tall phone but was
+          overlapped by the sheet on a shorter one (664px, e.g. Playwright's
+          iPhone 13 profile). `calc(30dvh - 9.5rem)` keeps the column's
+          ~133px height entirely above that edge on any height; `max(…,
+          0.75rem)` is the floor that stops it climbing above the layer
+          toggle on a very short viewport instead of going negative. */}
+      <MapZoomLocateControls
+        map={map}
+        serviceArea={serviceArea}
+        onLocate={handleLocate}
+        visible={isAdjustingPosition}
+        className="absolute top-[max(calc(30dvh-9.5rem),0.75rem)] right-3 z-[1000] flex flex-col gap-2"
+      />
 
       <BottomSheet scrollable>
         {step === 'resume' && restorableDraft && (

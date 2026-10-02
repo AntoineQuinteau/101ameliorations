@@ -39,15 +39,25 @@ test('map floating controls are present and interactive', async ({ page }) => {
 
   // Zoom buttons actually drive the Leaflet map, not just render: the
   // initial zoom is 10 (INITIAL_MAP_ZOOM) and the configured minimum is 8
-  // (MIN_MAP_ZOOM, src/config/serviceArea.ts) — two zoom-outs reach it and
-  // the button disables itself there, same as the "+" button at the max.
-  // Leaflet's zoomOut() animates (~250ms) and a second call while that
-  // animation is still running is a no-op rather than queued, so each click
-  // waits for Leaflet's zoomend before the next one is sent — otherwise two
-  // clicks fired back to back only move the map one level, not two.
+  // (MIN_MAP_ZOOM, src/config/serviceArea.ts) — enough zoom-outs reach it
+  // and the button disables itself there, same as the "+" button at the max.
+  // Leaflet's zoomOut() animates (~250ms, longer under CI load) and a
+  // second call while that animation is still running is a no-op rather
+  // than queued, so clicking in a tight loop with no wait can swallow
+  // clicks and get stuck short of the minimum. expect.poll retries the
+  // click itself (not just the assertion) until the button actually reaches
+  // `disabled`, which tolerates however many of those clicks land — a short
+  // per-click timeout (rather than Playwright's default) keeps a click that
+  // lands just as the button disables from hanging until the button becomes
+  // enabled again, which it never will.
   await expect(zoomOutButton).toBeEnabled()
-  await zoomOutButton.click()
-  await page.waitForTimeout(400)
-  await zoomOutButton.click()
-  await expect(zoomOutButton).toBeDisabled()
+  await expect
+    .poll(
+      async () => {
+        await zoomOutButton.click({ timeout: 1_000 }).catch(() => {})
+        return zoomOutButton.isDisabled()
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
 })
