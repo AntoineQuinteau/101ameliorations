@@ -1,12 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
-
-const PIN_ICON = L.divIcon({
-  className: '',
-  html: '<div class="h-8 w-8 -translate-x-1/2 -translate-y-full text-4xl leading-none drop-shadow-md">📍</div>',
-  iconSize: [0, 0],
-})
+import { PIN_ICON } from '../map/pinIcon'
 
 /** A single draggable marker used to pick the klash's position (spec §6.2
  * step 1). Kept as an imperative Leaflet marker (same rationale as
