@@ -22,7 +22,7 @@ export function PinConfirmCard({
           aria-label={fr.common.close}
           className="shrink-0 text-neutral-400 hover:text-neutral-600"
         >
-          <X aria-hidden className="size-5" />
+          <X className="size-5" />
         </button>
         <button
           type="button"

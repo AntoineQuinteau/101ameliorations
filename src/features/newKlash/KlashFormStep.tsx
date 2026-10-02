@@ -183,7 +183,7 @@ export function KlashFormStep({
                   aria-label={fr.newKlash.form.removePhoto}
                   className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-neutral-900/80 text-white hover:bg-neutral-900"
                 >
-                  <X aria-hidden className="size-3.5" />
+                  <X className="size-3.5" />
                 </button>
               </div>
             ))}

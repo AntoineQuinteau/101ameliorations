@@ -28,7 +28,8 @@ import { useKlashAuthorContact } from './useKlashAuthorContact'
 import { useMyConfirmation } from './useMyConfirmation'
 import { useShareKlash } from './useShareKlash'
 import { useUpdateKlash } from './useUpdateKlash'
-import { ArrowLeft, Check } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** Maps an updateKlash failure to a French message: RLS turns a forbidden
  * edit (e.g. the klash left `new` mid-edit) into a distinguishable 'klash
@@ -121,13 +122,7 @@ export function KlashDetailPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
       <div className="flex items-center justify-between">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
-        >
-          <ArrowLeft aria-hidden className="size-4" />
-          {fr.common.backToMap}
-        </Link>
+        <BackToMapLink />
         <Link
           to={user ? '/me' : '/login'}
           className="text-sm font-medium text-teal-700 hover:underline"
@@ -252,11 +247,11 @@ export function KlashDetailPage() {
                 disabled={!user || isAuthor || confirmMutation.isPending}
                 aria-busy={confirmMutation.isPending}
                 onClick={() => confirmMutation.mutate()}
-                className="inline-flex items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-1 rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
               >
                 {hasConfirmed ? (
                   <>
-                    <Check aria-hidden className="mr-1 size-4" />
+                    <Check className="size-4" />
                     {fr.detail.confirmed}
                   </>
                 ) : (

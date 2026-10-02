@@ -174,7 +174,7 @@ export function MapPage() {
           pressed={isFiltersOpen}
           className="absolute top-16 left-3 z-[1000]"
         >
-          <Funnel aria-hidden className="size-5" />
+          <Funnel className="size-5" />
           {filtersActive && (
             <span
               aria-hidden

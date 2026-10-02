@@ -64,7 +64,7 @@ export function InstallPrompt() {
             aria-label={fr.common.close}
             className="text-neutral-300"
           >
-            <X aria-hidden className="size-5" />
+            <X className="size-5" />
           </button>
         </div>
       </div>
@@ -81,7 +81,7 @@ export function InstallPrompt() {
           aria-label={fr.common.close}
           className="shrink-0 text-neutral-300"
         >
-          <X aria-hidden className="size-5" />
+          <X className="size-5" />
         </button>
       </div>
     )

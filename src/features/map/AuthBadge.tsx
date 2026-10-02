@@ -31,7 +31,7 @@ export function AuthBadge() {
         className: 'absolute top-3 right-3 z-[1000]',
       })}
     >
-      <User aria-hidden className="size-5" />
+      <User className="size-5" />
     </Link>
   )
 }

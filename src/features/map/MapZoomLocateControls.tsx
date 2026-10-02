@@ -215,7 +215,7 @@ export function MapZoomLocateControls({
           disabled={!map || atMaxZoom}
           shape="pill-top"
         >
-          <Plus aria-hidden className="size-5" />
+          <Plus className="size-5" />
         </MapControlButton>
         <div className="h-px bg-neutral-200" />
         <MapControlButton
@@ -224,7 +224,7 @@ export function MapZoomLocateControls({
           disabled={!map || atMinZoom}
           shape="pill-bottom"
         >
-          <Minus aria-hidden className="size-5" />
+          <Minus className="size-5" />
         </MapControlButton>
       </div>
 
@@ -234,7 +234,7 @@ export function MapZoomLocateControls({
           onClick={handleLocate}
           disabled={isLocating}
         >
-          <Locate aria-hidden className={`size-5 ${isLocating ? 'animate-pulse' : ''}`} />
+          <Locate className={`size-5 ${isLocating ? 'animate-pulse' : ''}`} />
         </MapControlButton>
 
         {locateError && (

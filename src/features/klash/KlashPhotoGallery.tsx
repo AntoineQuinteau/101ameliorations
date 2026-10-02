@@ -102,7 +102,7 @@ function PhotoLightbox({
         aria-label={fr.detail.closePhoto}
         className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
       >
-        <X aria-hidden className="size-5" />
+        <X className="size-5" />
       </button>
 
       {photos.length > 1 && (
@@ -116,7 +116,7 @@ function PhotoLightbox({
             aria-label={fr.detail.previousPhoto}
             className="absolute left-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
-            <ChevronLeft aria-hidden className="size-6" />
+            <ChevronLeft className="size-6" />
           </button>
           <button
             type="button"
@@ -127,7 +127,7 @@ function PhotoLightbox({
             aria-label={fr.detail.nextPhoto}
             className="absolute right-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
           >
-            <ChevronRight aria-hidden className="size-6" />
+            <ChevronRight className="size-6" />
           </button>
         </>
       )}

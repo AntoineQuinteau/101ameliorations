@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
@@ -9,6 +9,7 @@ import { useUpdateDisplayName } from '../auth/useUpdateDisplayName'
 import { DisplayNameForm } from './DisplayNameForm'
 import { MyKlashList } from './MyKlashList'
 import { useDeleteMyAccount } from './useDeleteMyAccount'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** Spec §6.5: my klashs, my pseudo, sign-out, and — since step 9 — RGPD
  * account deletion. "My confirmations" is deferred to a later step (see
@@ -51,9 +52,7 @@ export function MePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <BackToMapLink />
 
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.me.title}</h1>
 

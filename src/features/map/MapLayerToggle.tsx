@@ -34,7 +34,7 @@ export function MapLayerToggle({
       pressed={isSatellite}
       className={className}
     >
-      <Layers aria-hidden className="size-5" />
+      <Layers className="size-5" />
     </MapControlButton>
   )
 }
