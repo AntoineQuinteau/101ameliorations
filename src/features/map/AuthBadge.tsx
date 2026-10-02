@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { UserIcon } from '../../components/icons'
+import { User } from 'lucide-react'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import { mapControlButtonClassName } from './mapControlButtonStyle'
@@ -31,7 +31,7 @@ export function AuthBadge() {
         className: 'absolute top-3 right-3 z-[1000]',
       })}
     >
-      <UserIcon className="h-5 w-5" />
+      <User aria-hidden className="size-5" />
     </Link>
   )
 }

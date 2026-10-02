@@ -1,4 +1,4 @@
-import { LayersIcon } from '../../components/icons'
+import { Layers } from 'lucide-react'
 import { fr } from '../../i18n/fr'
 import { MapControlButton } from './MapControlButton'
 import type { MapLayer } from './MapTiles'
@@ -34,7 +34,7 @@ export function MapLayerToggle({
       pressed={isSatellite}
       className={className}
     >
-      <LayersIcon className="h-5 w-5" />
+      <Layers aria-hidden className="size-5" />
     </MapControlButton>
   )
 }
