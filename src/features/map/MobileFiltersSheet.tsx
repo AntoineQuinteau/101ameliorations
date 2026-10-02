@@ -7,6 +7,7 @@ import {
   defaultFilters,
   type KlashFilters,
 } from './klashFilters'
+import { X } from 'lucide-react'
 
 const PERIOD_PRESETS: { label: string; days: number | null }[] = [
   { label: fr.map.filters.periodAny, days: null },
@@ -56,9 +57,9 @@ export function MobileFiltersSheet({
           type="button"
           onClick={onClose}
           aria-label={fr.map.filters.close}
-          className="shrink-0 text-lg leading-none text-neutral-400 hover:text-neutral-600"
+          className="shrink-0 text-neutral-400 hover:text-neutral-600"
         >
-          ×
+          <X className="size-5" />
         </button>
       </div>
 

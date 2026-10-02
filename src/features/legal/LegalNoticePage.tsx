@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** Mentions légales (spec §9 step 9): required for a public French site.
  * Identity fields (association name, SIRET, address, publication director)
@@ -9,9 +9,7 @@ export function LegalNoticePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <BackToMapLink />
 
       <h1 className="mt-4 text-xl font-semibold text-neutral-900">{t.title}</h1>
 

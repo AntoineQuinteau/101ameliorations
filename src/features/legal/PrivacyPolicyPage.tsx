@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** Politique de confidentialité (spec §9 step 9). Documents what §2 requires
  * be disclosed here specifically: the get_klash_author_contact lookup and
@@ -9,9 +9,7 @@ export function PrivacyPolicyPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <BackToMapLink />
 
       <h1 className="mt-4 text-xl font-semibold text-neutral-900">{t.title}</h1>
       <p className="mt-2 text-sm text-neutral-700">{t.intro}</p>

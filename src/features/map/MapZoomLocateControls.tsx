@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type L from 'leaflet'
-import { LocateIcon, MinusIcon, PlusIcon } from '../../components/icons'
+import { Locate, Minus, Plus } from 'lucide-react'
 import type { Bbox } from '../../utils/bbox'
 import { isPointInBbox } from '../../utils/bbox'
 import { requestCurrentPosition, type GeolocationResult } from '../../utils/geolocation'
@@ -215,7 +215,7 @@ export function MapZoomLocateControls({
           disabled={!map || atMaxZoom}
           shape="pill-top"
         >
-          <PlusIcon className="h-5 w-5" />
+          <Plus className="size-5" />
         </MapControlButton>
         <div className="h-px bg-neutral-200" />
         <MapControlButton
@@ -224,7 +224,7 @@ export function MapZoomLocateControls({
           disabled={!map || atMinZoom}
           shape="pill-bottom"
         >
-          <MinusIcon className="h-5 w-5" />
+          <Minus className="size-5" />
         </MapControlButton>
       </div>
 
@@ -234,7 +234,7 @@ export function MapZoomLocateControls({
           onClick={handleLocate}
           disabled={isLocating}
         >
-          <LocateIcon className={`h-5 w-5 ${isLocating ? 'animate-pulse' : ''}`} />
+          <Locate className={`size-5 ${isLocating ? 'animate-pulse' : ''}`} />
         </MapControlButton>
 
         {locateError && (

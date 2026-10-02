@@ -252,7 +252,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 
 ## 8. Stack et outillage
 
-- **Front** : React 19, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
+- **Front** : React 19, Vite, TypeScript strict, Tailwind, react-router, react-leaflet + leaflet.markercluster, `lucide-react` (icônes), `@supabase/supabase-js`, TanStack Query, zod (validation des formulaires), `browser-image-compression`, `exifr`.
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
 - **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
