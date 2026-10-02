@@ -6,14 +6,15 @@ import { mapControlButtonClassName } from './mapControlButtonStyle'
  * floating control on the map, e.g. the old filters pill): keeps taps
  * outside Leaflet's control-click suppression, so they don't interfere with
  * `MapClickToReport`. See `mapControlButtonClassName` for the profile
- * button's link variant. Positioning is left to the caller (each control
- * sits in a different spot). */
+ * button's link variant and for what `shape` does. Positioning is left to
+ * the caller (each control sits in a different spot). */
 export function MapControlButton({
   label,
   onClick,
   pressed,
   disabled,
   variant = 'solid',
+  shape = 'circle',
   className = '',
   children,
 }: {
@@ -22,6 +23,7 @@ export function MapControlButton({
   pressed?: boolean
   disabled?: boolean
   variant?: 'solid' | 'active'
+  shape?: 'circle' | 'pill-top' | 'pill-bottom'
   className?: string
   children: React.ReactNode
 }) {
@@ -33,7 +35,7 @@ export function MapControlButton({
       aria-pressed={pressed}
       aria-label={label}
       title={label}
-      className={mapControlButtonClassName({ variant, className })}
+      className={mapControlButtonClassName({ variant, shape, className })}
     >
       {children}
     </button>

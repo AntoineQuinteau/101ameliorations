@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { Circle, CircleMarker } from 'react-leaflet'
 import type { PathOptions } from 'leaflet'
+import type { GeolocationResult } from '../../utils/geolocation'
 
 // Hoisted rather than written inline on the elements below: react-leaflet
 // v4 calls setStyle whenever a `pathOptions` prop is a *new* object, even
@@ -28,23 +30,24 @@ const DOT_PATH_OPTIONS: PathOptions = {
  * both: it's a status indicator, not something to click or that should steal
  * a tap from `MapClickToReport`.
  *
- * `position` itself is still a fresh `[lat, lng]` tuple from the caller on
- * every render — memoize it there (e.g. with `useMemo` keyed on the
- * underlying `userPosition` state) if the same churn shows up for it; this
- * component only owns the `pathOptions` half of the problem. */
-export function UserPositionMarker({
-  position,
-  accuracyM,
-}: {
-  position: [number, number]
-  accuracyM: number | null
-}) {
+ * Takes the whole `GeolocationResult` (not a pre-built `[lat, lng]` tuple)
+ * specifically so the fix for the churn above lives in one place: both
+ * `MapPage` and `NewKlashPage` used to each build their own memoized tuple
+ * from their own `userPosition` state, with the same `eslint-disable`
+ * duplicated into both for the same reason. Doing it here once means a
+ * caller can pass `userPosition` straight through. */
+export function UserPositionMarker({ userPosition }: { userPosition: GeolocationResult }) {
+  const position = useMemo<[number, number]>(
+    () => [userPosition.lat, userPosition.lng],
+    [userPosition.lat, userPosition.lng],
+  )
+
   return (
     <>
-      {accuracyM !== null && accuracyM > 0 && (
+      {userPosition.accuracyM > 0 && (
         <Circle
           center={position}
-          radius={accuracyM}
+          radius={userPosition.accuracyM}
           interactive={false}
           pathOptions={ACCURACY_PATH_OPTIONS}
         />

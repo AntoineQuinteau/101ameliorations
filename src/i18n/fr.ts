@@ -81,6 +81,10 @@ export const fr = {
           : `${count} signalements affichés`,
     filters: {
       open: 'Filtres',
+      // The button's accessible name once at least one filter differs from
+      // the default — CLAUDE.md: user-facing text lives only here, never
+      // built by joining strings inside a component.
+      openActive: 'Filtres (actifs)',
       title: 'Filtres',
       close: 'Fermer',
       categoryLabel: 'Catégorie',
@@ -110,7 +114,6 @@ export const fr = {
       locating: 'Localisation…',
       locateError: 'Position indisponible',
       locateOutOfArea: 'Hors de la zone de service',
-      filtersActive: 'Filtres actifs',
     },
   },
   detail: {

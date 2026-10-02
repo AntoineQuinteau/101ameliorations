@@ -68,17 +68,15 @@ function useMapZoom(map: L.Map | null) {
  * Stays mounted even when `visible` is false (hidden with CSS, not
  * conditional rendering) so a tap on "Me localiser" survives whatever
  * caused it to hide — the mobile filters sheet opening on `MapPage`, or the
- * form step starting on `NewKlashPage`. An earlier version unmounted
- * instead (and, to survive *that*, lifted `isLocating` into both parent
- * pages, neither of which otherwise had any use for it); that meant every
- * in-flight request needed its own guard against running after unmount,
- * and those guards were themselves a source of bugs (an `isMountedRef`
- * that's permanently `false` under `<StrictMode>`'s dev-only
- * mount→cleanup→mount, a `.catch` that silently swallowed exceptions
- * thrown from inside the `.then`) — unmounting never actually served a
- * purpose here, since the component renders nothing when hidden either
- * way. `isLocating` is local state again now that nothing needs to
- * preserve it across an unmount that no longer happens. */
+ * form step starting on `NewKlashPage`. It still needs an `isMountedRef`
+ * (below) for the case the *page* this component lives on unmounts
+ * entirely (a real navigation, not a `visible` flip) while a request is in
+ * flight — `map.flyTo` on a map whose `MapContainer` has by then called
+ * `map.remove()` throws. `visible` going `false` is handled separately
+ * (see `handleLocate`): the request still completes and updates
+ * `onLocate`/the blue dot, but skips `flyTo` — a tap that lands before the
+ * step changes shouldn't go on to reposition a view the user can no longer
+ * see or correct via this column once hidden. */
 export function MapZoomLocateControls({
   map,
   serviceArea,
@@ -104,21 +102,27 @@ export function MapZoomLocateControls({
   const { zoom, minZoom, maxZoom } = useMapZoom(map)
   const [locateError, setLocateError] = useState<'unavailable' | 'outOfArea' | null>(null)
   const [isLocating, setIsLocating] = useState(false)
-  // Guards `map.flyTo` (an imperative Leaflet call, not a React setState —
-  // calling it on a map whose MapContainer has already unmounted and called
-  // `map.remove()` throws) against the page this component lives on
-  // unmounting while a locate request is still in flight. Set back to
-  // `true` in the effect body, not only registered as a cleanup: under
-  // `<StrictMode>`'s dev-only mount → cleanup → mount, a cleanup-only
-  // assignment leaves this permanently `false` after the very first mount,
-  // since nothing ever flips it back to `true` again — every locate in dev
-  // (and in Playwright, which drives the dev server) would otherwise be
-  // silently discarded here.
   const isMountedRef = useRef(false)
+  // `visible` read inside the async .then below, where a stale closure
+  // would otherwise see whatever it was when the button was tapped — same
+  // class of bug `NewKlashPage`'s `stepRef` exists to avoid.
+  const visibleRef = useRef(visible)
+  // The active request's own cleanup (clears its stuck-fallback timer and
+  // marks it settled) — set by handleLocate, read by the unmount effect so
+  // a request still in flight when the page unmounts doesn't leave its
+  // timer running for up to LOCATE_STUCK_FALLBACK_MS after there's nothing
+  // left to update.
+  const cancelPendingLocateRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    visibleRef.current = visible
+  }, [visible])
+
   useEffect(() => {
     isMountedRef.current = true
     return () => {
       isMountedRef.current = false
+      cancelPendingLocateRef.current?.()
     }
   }, [])
 
@@ -147,6 +151,11 @@ export function MapZoomLocateControls({
       setLocateError('unavailable')
     }, LOCATE_STUCK_FALLBACK_MS)
 
+    cancelPendingLocateRef.current = () => {
+      settled = true
+      clearTimeout(stuckFallback)
+    }
+
     function finish(outcome: 'ok' | 'unavailable' | 'outOfArea') {
       if (settled) return
       settled = true
@@ -174,10 +183,16 @@ export function MapZoomLocateControls({
           finish('outOfArea')
           return
         }
+        // Still updates the blue dot (onLocate) even if the column has
+        // since gone invisible, but skips flyTo there: the view is the one
+        // thing only this column's own buttons let the user correct, and
+        // it's exactly what just went away.
+        if (visibleRef.current) {
+          map.flyTo([result.lat, result.lng], Math.max(map.getZoom(), MIN_MAP_ZOOM_ON_LOCATE))
+        }
         // flyTo/onLocate run before finish() clears `settled`: a throw from
         // either (e.g. flyTo on a map mid-teardown) must still reach the
         // catch below, not be swallowed by settled already being true.
-        map.flyTo([result.lat, result.lng], Math.max(map.getZoom(), MIN_MAP_ZOOM_ON_LOCATE))
         onLocate?.(result)
         finish('ok')
       })
@@ -198,7 +213,7 @@ export function MapZoomLocateControls({
           label={fr.map.controls.zoomIn}
           onClick={() => map?.zoomIn()}
           disabled={!map || atMaxZoom}
-          className="rounded-none rounded-t-full shadow-none"
+          shape="pill-top"
         >
           <PlusIcon className="h-5 w-5" />
         </MapControlButton>
@@ -207,7 +222,7 @@ export function MapZoomLocateControls({
           label={fr.map.controls.zoomOut}
           onClick={() => map?.zoomOut()}
           disabled={!map || atMinZoom}
-          className="rounded-none rounded-b-full shadow-none"
+          shape="pill-bottom"
         >
           <MinusIcon className="h-5 w-5" />
         </MapControlButton>

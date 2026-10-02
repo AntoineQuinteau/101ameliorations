@@ -52,18 +52,6 @@ export function MapPage() {
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
   const [userPosition, setUserPosition] = useState<GeolocationResult | null>(null)
-  // A [lat, lng] tuple is what UserPositionMarker/react-leaflet actually
-  // want, but a fresh array literal on every render would make react-leaflet
-  // re-run setLatLng on markers whose position hasn't changed — memoized on
-  // the lat/lng values themselves, deliberately not on the `userPosition`
-  // object itself (disabled below): that would re-memoize, and so still
-  // cause the churn this exists to avoid, whenever a new GeolocationResult
-  // object happens to carry the same lat/lng, which `accuracyM` alone can.
-  const userPositionLatLng = useMemo<[number, number] | null>(
-    () => (userPosition ? [userPosition.lat, userPosition.lng] : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userPosition?.lat, userPosition?.lng],
-  )
   // Read in an effect, not a useState initializer: hasStoredDraft can purge
   // a stale draft as a side effect (see its docblock), which isn't safe
   // during render. This route remounts on every return from /new (a real
@@ -164,12 +152,7 @@ export function MapPage() {
         />
         <MapClickToReport onPick={(lat, lng) => setPendingPin({ lat, lng })} />
         {pendingPin && <PendingPinMarker position={[pendingPin.lat, pendingPin.lng]} />}
-        {userPositionLatLng && (
-          <UserPositionMarker
-            position={userPositionLatLng}
-            accuracyM={userPosition?.accuracyM ?? null}
-          />
-        )}
+        {userPosition && <UserPositionMarker userPosition={userPosition} />}
       </MapContainer>
 
       <AuthBadge />
@@ -186,11 +169,7 @@ export function MapPage() {
           would never reach screen readers. */}
       {showFloatingControls && (
         <MapControlButton
-          label={
-            filtersActive
-              ? `${fr.map.filters.open} – ${fr.map.controls.filtersActive}`
-              : fr.map.filters.open
-          }
+          label={filtersActive ? fr.map.filters.openActive : fr.map.filters.open}
           onClick={() => setIsFiltersOpen((open) => !open)}
           pressed={isFiltersOpen}
           className="absolute top-16 left-3 z-[1000]"
@@ -237,16 +216,18 @@ export function MapPage() {
         </div>
       )}
 
-      {/* pointer-events-none on the full-width wrapper, re-enabled only on
-          the card itself: the layer toggle and filters button now live in
-          this same top band (moved here from bottom-right in the maps.me
-          redesign), and this wrapper — later in the DOM, same z-[1000] —
-          would otherwise intercept taps across the whole strip even where
-          there's no visible card (mx-auto leaves empty space on either
-          side of it on anything wider than max-w-md). */}
+      {/* top-28 (112px), not top-0: the layer toggle (top-3, ends ~56px)
+          and filters button (top-16, ends ~108px) now live in this same
+          left-hand band (moved here from bottom-right in the maps.me
+          redesign). A pointer-events-none wrapper with the card itself
+          re-enabled only helped on viewports wide enough for max-w-md to
+          leave empty space either side of the card — on a phone narrower
+          than that the card spans the full width anyway and, at top-0,
+          still covered and intercepted taps on both buttons regardless.
+          Dropping below the whole control row avoids that at any width. */}
       {isError && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1000] p-3">
-          <div className="pointer-events-auto mx-auto max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5">
+        <div className="absolute inset-x-0 top-28 z-[1000] p-3">
+          <div className="mx-auto max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5">
             <ErrorMessage message={fr.map.loadError} onRetry={() => refetch()} />
           </div>
         </div>
