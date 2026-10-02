@@ -34,7 +34,7 @@ function toggleButtonClass(active: boolean): string {
 }
 
 /** Filters card for the map on desktop (spec §6.1): a compact, semi-
- * transparent floating card in the top-left corner — same family as the
+ * transparent floating card next to the filters button — same family as the
  * other floating cards (KlashPreviewCard, PinConfirmCard), not a full-height
  * docked panel, so it never takes more room than its own content and the map
  * stays visible around and beneath it. Filters apply live, same as mobile —
@@ -59,7 +59,13 @@ export function DesktopFiltersCard({
   return (
     <div
       aria-hidden={!isOpen}
-      className={`absolute top-14 left-3 z-[1000] w-72 max-w-[85vw] origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${
+      // max-w accounts for the left-16 (64px) offset plus a 12px right-hand
+      // margin: w-72 (288px) alone pushes the card's right edge past the
+      // viewport on anything narrower than ~427px (64 + 288 + 12 = 364, but
+      // a fine-pointer/hover viewport can be as narrow as an iPad in Slide
+      // Over at 320px) — a fixed percentage of the viewport (85vw) doesn't
+      // account for that fixed left offset at all, so it still overflowed.
+      className={`absolute top-16 left-16 z-[1000] w-72 max-w-[calc(100vw-5rem)] origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${
         isOpen
           ? 'translate-y-0 scale-100 opacity-100'
           : 'pointer-events-none -translate-y-1 scale-95 opacity-0'

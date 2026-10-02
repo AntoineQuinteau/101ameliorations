@@ -81,6 +81,10 @@ export const fr = {
           : `${count} signalements affichés`,
     filters: {
       open: 'Filtres',
+      // The button's accessible name once at least one filter differs from
+      // the default — CLAUDE.md: user-facing text lives only here, never
+      // built by joining strings inside a component.
+      openActive: 'Filtres (actifs)',
       title: 'Filtres',
       close: 'Fermer',
       categoryLabel: 'Catégorie',
@@ -95,10 +99,21 @@ export const fr = {
       viewOnMap: 'Voir sur la carte',
     },
     layer: {
-      plan: 'Plan',
-      satellite: 'Satellite',
-      switchToPlan: 'Afficher le plan',
-      switchToSatellite: 'Afficher la vue satellite',
+      // A stable name, not an action label that flips with the state
+      // ("Afficher le plan"/"Afficher la vue satellite"): paired with
+      // aria-pressed on the toggle button, a label that also changes would
+      // have a screen reader announce e.g. "Afficher le plan, pressed" while
+      // satellite is showing — ARIA guidance is that a toggle's name
+      // shouldn't change with its own pressed state.
+      satelliteView: 'Vue satellite',
+    },
+    controls: {
+      zoomIn: 'Zoomer',
+      zoomOut: 'Dézoomer',
+      locate: 'Me localiser',
+      locating: 'Localisation…',
+      locateError: 'Position indisponible',
+      locateOutOfArea: 'Hors de la zone de service',
     },
   },
   detail: {

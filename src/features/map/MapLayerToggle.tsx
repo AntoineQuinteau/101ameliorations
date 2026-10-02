@@ -1,30 +1,40 @@
-import type { MapLayer } from './MapTiles'
+import { LayersIcon } from '../../components/icons'
 import { fr } from '../../i18n/fr'
+import { MapControlButton } from './MapControlButton'
+import type { MapLayer } from './MapTiles'
 
 /** Floating plan/satellite switch — a sibling of `MapContainer` (`absolute … z-[1000]`),
  * not a Leaflet `L.Control`: the pattern every other floating control on `MapPage`
- * already follows (e.g. the filters button). Sits just above `ZoomControl`
- * (`bottomright`) rather than overlapping it. */
+ * already follows. Top-left, the maps.me/Google Maps convention for this control;
+ * `MapZoomLocateControls` and (on `MapPage`) the filters button are positioned
+ * around it. A direct plan ↔ satellite toggle rather than a picker modal — with
+ * only two layers, one tap beats a modal for a binary choice; this can grow into a
+ * picker the day a third layer is added, without moving the button.
+ *
+ * The label is the stable "Vue satellite" ("satellite view"), not an action
+ * that flips between "Afficher le plan"/"Afficher la vue satellite" — see
+ * `fr.map.layer.satelliteView`'s own comment for why, now that the button is
+ * icon-only and that label is its whole accessible name. `aria-pressed`
+ * alone communicates which state is active. */
 export function MapLayerToggle({
   layer,
   onChange,
+  className = 'absolute top-3 left-3 z-[1000]',
 }: {
   layer: MapLayer
   onChange: (layer: MapLayer) => void
+  className?: string
 }) {
   const isSatellite = layer === 'satellite'
-  const label = isSatellite ? fr.map.layer.switchToPlan : fr.map.layer.switchToSatellite
 
   return (
-    <button
-      type="button"
+    <MapControlButton
+      label={fr.map.layer.satelliteView}
       onClick={() => onChange(isSatellite ? 'plan' : 'satellite')}
-      aria-pressed={isSatellite}
-      aria-label={label}
-      title={label}
-      className="absolute bottom-24 right-3 z-[1000] rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow hover:bg-white"
+      pressed={isSatellite}
+      className={className}
     >
-      {isSatellite ? fr.map.layer.plan : fr.map.layer.satellite}
-    </button>
+      <LayersIcon className="h-5 w-5" />
+    </MapControlButton>
   )
 }
