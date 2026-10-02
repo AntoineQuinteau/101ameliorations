@@ -47,16 +47,21 @@ dépendent pas de React.
 
 ## Ajustements de code requis
 
-Contrairement à l'évaluation initiale (« aucun changement de code »), deux
-points ont dû être corrigés pour compiler avec `@types/react@19` :
+Contrairement à l'évaluation initiale (« aucun changement de code »), un
+point faisait échouer `tsc` avec `@types/react@19`, dans deux fichiers (le
+second — `AdminKlashTable.tsx` — n'avait pas été repéré lors de l'état des
+lieux initial, qui ne listait que la surface react-leaflet) :
 
-- `src/features/map/BboxWatcher.tsx` : `useRef<ReturnType<typeof setTimeout>>()`
-  (sans argument) est une erreur de type en React 19 — `useRef` exige
-  désormais un argument explicite. Corrigé en
-  `useRef<ReturnType<typeof setTimeout>>(undefined)`.
-- `MutableRefObject` (type toujours exporté mais déprécié en 19, au profit de
-  `RefObject`) était utilisé dans `src/features/auth/{EmailStep,CodeStep,TurnstileSlot}.tsx`
-  pour typer la ref de conteneur Turnstile — remplacé par `RefObject`.
+- `src/features/map/BboxWatcher.tsx` et `src/features/admin/AdminKlashTable.tsx` :
+  `useRef<ReturnType<typeof setTimeout>>()` (sans argument) est une erreur de
+  type en React 19 — `useRef` exige désormais un argument explicite. Corrigé
+  en `useRef<ReturnType<typeof setTimeout>>(undefined)` dans les deux
+  fichiers.
+
+En plus, un nettoyage sans impact sur la compilation : `MutableRefObject`
+(type toujours exporté mais déprécié en 19, au profit de `RefObject`) était
+utilisé dans `src/features/auth/{EmailStep,CodeStep,TurnstileSlot}.tsx` pour
+typer la ref de conteneur Turnstile — remplacé par `RefObject`.
 
 Scan du reste de `src/` (2 758 lignes au 2026-09-11) : toujours aucun usage
 des API supprimées par React 19 — pas de `propTypes`, pas de `defaultProps`

@@ -1,4 +1,4 @@
-import type { MutableRefObject } from 'react'
+import type { RefObject } from 'react'
 import { fr } from '../../i18n/fr'
 
 /**
@@ -15,7 +15,7 @@ export function TurnstileSlot({
   containerRef,
   isInteractive,
 }: {
-  containerRef: MutableRefObject<HTMLDivElement | null>
+  containerRef: RefObject<HTMLDivElement | null>
   isInteractive: boolean
 }) {
   return (

@@ -1,4 +1,4 @@
-import { useState, type MutableRefObject } from 'react'
+import { useState, type RefObject } from 'react'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { otpCodeSchema, sanitizeOtpInput } from './authSchemas'
@@ -19,7 +19,7 @@ export function CodeStep({
   isSubmitting: boolean
   errorMessage: string | null
   resendSecondsLeft: number
-  turnstileContainerRef: MutableRefObject<HTMLDivElement | null>
+  turnstileContainerRef: RefObject<HTMLDivElement | null>
   isTurnstileInteractive: boolean
   onSubmit: (code: string) => void
   onResend: () => void
