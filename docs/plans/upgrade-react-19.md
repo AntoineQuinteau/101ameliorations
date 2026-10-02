@@ -1,46 +1,22 @@
-# Note de migration — React 18 → 19
+# Migration React 18 → 19
 
-> Hors périmètre du plan de construction (spec §9). Ce document n'engage rien :
-> il consigne l'état des lieux relevé le 2026-09-11 pour que la décision, quand
-> elle sera prise, n'ait pas à être réinstruite.
->
-> **Préalable si cette migration est retenue** : `docs/spec.md` §8 « Stack et
-> outillage » (ligne 247) et `README.md` (ligne 8) disent « React 18 ». Le spec
-> fait autorité (cf. CLAUDE.md), il doit donc être amendé _avant_ de toucher au
-> code.
+> Migration réalisée le 2026-10-02, après l'étape 9 du plan de construction
+> (spec §9), comme recommandé par la version précédente de ce document
+> (relevé du 2026-09-11, conservé ci-dessous en historique). Code, dépendances
+> et CI validés ; la vérification sur téléphone réel ci-dessous reste à faire
+> avant merge.
 
-## Pourquoi ce n'est pas déjà fait
+## Résumé
 
-Aucun arbitrage n'a jamais été posé : le spec a été écrit avec « React 18 » et
-tout a suivi. Ce n'est pas une contrainte technique, c'est un défaut hérité.
+`react`, `react-dom` et `react-leaflet` passent en 19.x / 5.x. `docs/spec.md`
+§8, `README.md` et `CLAUDE.md` ont été amendés en premier (le spec fait
+autorité, cf. CLAUDE.md).
 
-## Ce qui est prêt
+## Surface react-leaflet réelle au moment de la migration
 
-Le code applicatif ne bloque pas. Scan des 2 758 lignes de `src/` :
-
-- `src/main.tsx` utilise déjà `createRoot` (pas `ReactDOM.render`).
-- **Aucun** usage des API supprimées par React 19 : pas de `propTypes`, pas de
-  `defaultProps` sur des composants fonction, pas de refs string, pas de
-  `forwardRef` legacy, pas de `createFactory`, pas de `ReactDOM.render`/`hydrate`.
-- Aucun test de composant (`@testing-library/react` n'est pas installé ; les 53
-  tests portent sur des utilitaires purs). Rien à réécrire côté tests.
-
-Les dépendances de l'écosystème acceptent déjà React 19 :
-
-| Paquet                       | Peer dependency                   | Verdict            |
-| ---------------------------- | --------------------------------- | ------------------ |
-| `@tanstack/react-query` 5.x  | `^18 \|\| ^19`                    | OK sans changement |
-| `react-router-dom` 7.x       | `>=18`                            | OK sans changement |
-| `@vitejs/plugin-react` 4.7.0 | `vite ^4 \|\| ^5 \|\| ^6 \|\| ^7` | OK sans changement |
-
-## Le seul vrai blocage : react-leaflet
-
-`react-leaflet` v4.2.1 déclare une peer dependency **stricte** `react: ^18.0.0`.
-Passer à React 19 impose donc `react-leaflet` v5.0.0 (peer `react: ^19.0.0`),
-qui embarque `@react-leaflet/core` 3.x au lieu de 2.x.
-
-C'est un changement de major sur la brique centrale de l'app. La surface reste
-néanmoins petite — 5 fichiers, 5 symboles :
+La note du 2026-09-11 listait 5 fichiers ; les refontes carte/création
+intervenues depuis (contrôles carte, création en 4 étapes) en ont ajouté
+d'autres. Surface complète vérifiée (13 fichiers) :
 
 | Fichier                                      | Symboles importés        |
 | -------------------------------------------- | ------------------------ |
@@ -48,50 +24,121 @@ néanmoins petite — 5 fichiers, 5 symboles :
 | `src/features/map/MapTiles.tsx`              | `TileLayer`              |
 | `src/features/map/BboxWatcher.tsx`           | `useMap`, `useMapEvents` |
 | `src/features/map/ClusteredKlashMarkers.tsx` | `useMap`                 |
+| `src/features/map/PendingPinMarker.tsx`      | `useMap`                 |
+| `src/features/map/MapClickToReport.tsx`      | `useMapEvents`           |
+| `src/features/map/ServiceAreaBounds.tsx`     | `useMap`                 |
+| `src/features/map/UserPositionMarker.tsx`    | `Circle`, `CircleMarker` |
+| `src/features/map/MapLayerZoom.tsx`          | `useMap`                 |
+| `src/features/newKlash/NewKlashPage.tsx`     | `MapContainer`           |
+| `src/features/newKlash/DraggablePin.tsx`     | `useMap`                 |
+| `src/features/newKlash/MapRecenter.tsx`      | `useMap`                 |
 | `src/features/klash/KlashMiniMap.tsx`        | `MapContainer`, `Marker` |
 
-Circonstance favorable : `ClusteredKlashMarkers.tsx` contourne déjà react-leaflet
-pour le clustering (le `MarkerClusterGroup` est piloté à la main via `useMap()`,
-faute de binding v4 — voir le commentaire en tête du fichier). Cette partie,
-la plus délicate, ne dépend donc pas de l'API react-leaflet.
+L'API publique de ces symboles est identique entre react-leaflet 4.2.1 et
+5.0.0 (vérifié dans les `.d.ts` du paquet 5.0.0). `MapContainer` reste un
+`forwardRef` exposant l'instance Leaflet (`React.ForwardRefExoticComponent<MapContainerProps & React.RefAttributes<LeafletMap>>`),
+donc les `ref={setMap}` de `MapPage.tsx` et `NewKlashPage.tsx` continuent de
+fonctionner sans changement.
 
-`leaflet` (1.9.4) et `leaflet.markercluster` (1.5.3) ne bougent pas : ils ne
+`ClusteredKlashMarkers.tsx` contourne déjà react-leaflet pour le clustering
+(le `MarkerClusterGroup` est piloté à la main via `useMap()`, faute de
+binding v4) — cette partie, la plus délicate, ne dépend donc que de `useMap`.
+
+`leaflet` (1.9.4) et `leaflet.markercluster` (1.5.3) n'ont pas bougé : ils ne
 dépendent pas de React.
 
-## Piège à ne pas déclencher
+## Ajustements de code requis
 
-**Ne pas faire `npm install @vitejs/plugin-react@latest`** au passage.
-La 6.1.1 exige `vite ^8.0.0` ; le projet est en Vite 6. Les 4.7.0 et 5.0.4
-couvrent Vite 6. Cette migration ne doit pas embarquer une montée de Vite.
+Contrairement à l'évaluation initiale (« aucun changement de code »), un
+point faisait échouer `tsc` avec `@types/react@19`, dans deux fichiers (le
+second — `AdminKlashTable.tsx` — n'avait pas été repéré lors de l'état des
+lieux initial, qui ne listait que la surface react-leaflet) :
 
-## Procédure indicative
+- `src/features/map/BboxWatcher.tsx` et `src/features/admin/AdminKlashTable.tsx` :
+  `useRef<ReturnType<typeof setTimeout>>()` (sans argument) est une erreur de
+  type en React 19 — `useRef` exige désormais un argument explicite. Corrigé
+  en `useRef<ReturnType<typeof setTimeout>>(undefined)` dans les deux
+  fichiers.
+
+En plus, un nettoyage sans impact sur la compilation : `MutableRefObject`
+(type toujours exporté mais déprécié en 19, au profit de `RefObject`) était
+utilisé dans `src/features/auth/{EmailStep,CodeStep,TurnstileSlot}.tsx` pour
+typer la ref de conteneur Turnstile — remplacé par `RefObject`.
+
+Scan du reste de `src/` (2 758 lignes au 2026-09-11) : toujours aucun usage
+des API supprimées par React 19 — pas de `propTypes`, pas de `defaultProps`
+sur composant fonction, pas de refs string, pas de `forwardRef` legacy côté
+app (seul react-leaflet l'utilise en interne), pas de `createFactory`, pas de
+`ReactDOM.render`/`hydrate`. `src/main.tsx` utilise déjà `createRoot`.
+Aucun test de composant (`@testing-library/react` n'est pas installé ; les
+tests Vitest portent sur des utilitaires purs) — rien à réécrire côté tests
+unitaires ; le filet de sécurité pour le rendu carte est le harnais
+Playwright (`e2e/`, voir `docs/handoff.md`).
+
+## Dépendances de l'écosystème
+
+| Paquet                          | Peer dependency                        | Verdict                       |
+| ------------------------------- | -------------------------------------- | ----------------------------- |
+| `@tanstack/react-query` 5.x     | `^18 \|\| ^19`                         | OK sans changement            |
+| `react-router-dom` 7.x          | `>=18`                                 | OK sans changement            |
+| `@sentry/react` 10.x            | `^16.14 \|\| 17.x \|\| 18.x \|\| 19.x` | OK sans changement            |
+| `@vitejs/plugin-react` 4.7.0    | `vite ^4 \|\| ^5 \|\| ^6 \|\| ^7`      | OK — **ne pas** monter en 6.x |
+| `eslint-plugin-react-hooks` 5.2 | peer sur `eslint` uniquement           | OK — **ne pas** monter en 7.x |
+
+## Pièges évités
+
+- **`@vitejs/plugin-react@latest` (6.1.1) exige `vite ^8.0.0`** ; le projet
+  est en Vite 6. Resté en 4.7.0 (couvre Vite 6). Cette migration n'a pas
+  embarqué de montée de Vite.
+- **`eslint-plugin-react-hooks@latest` (7.x)** ajoute les règles liées à React
+  Compiler — hors périmètre de cette migration. Resté en 5.2.0.
+
+## Procédure appliquée
 
 ```bash
-npm i react@19 react-dom@19 react-leaflet@5
-npm i -D @types/react@19 @types/react-dom@19
-npm run lint && npm run typecheck && npm test
-npm run build
+npm i react@^19.3.0 react-dom@^19.3.0 react-leaflet@^5.0.0
+npm i -D @types/react@^19.3.0 @types/react-dom@^19.3.0
+npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-Puis vérifier **sur téléphone réel** : rendu de la carte, clustering, popups,
-géolocalisation, `useMapEvents` sur le déplacement de la carte (chargement bbox).
-Le risque résiduel est un comportement d'unmount en `StrictMode`, plus strict en
-React 19 — typiquement une carte Leaflet initialisée deux fois. C'est exactement
-ce que `MapContainer` et le cluster manuel touchent.
+## Vérification sur téléphone réel
 
-## Recommandation de calendrier
+**À faire avant merge** (carte et création sont la surface à risque — double
+montage plus strict en `StrictMode` React 19, typiquement une carte Leaflet
+initialisée deux fois) :
 
-Pas pendant l'étape 4. Le projet est au step 4 sur 9, et les étapes 5 à 8
-(photos, filtres, PWA) n'aggravent pas cette migration : elles n'ajoutent pas de
-surface react-leaflet. La faire **après l'étape 8**, en un seul lot avec
-react-leaflet v5, coûte moins cher que de l'insérer dans une étape en cours et
-de devoir re-tester la carte sur mobile deux fois.
+- [ ] Carte `/` : rendu, clustering, survol/sélection marqueur
+- [ ] Chargement par bbox au déplacement de la carte (`BboxWatcher`,
+      `useMapEvents`)
+- [ ] Géolocalisation / bouton localiser (`MapZoomLocateControls`)
+- [ ] `/new` : pin déplaçable, recentrage, clic long pour replacer le pin
+- [ ] Création complète d'un klash (pin → photos → envoi)
+- [ ] Mini-carte en page détail (`KlashMiniMap`)
+- [ ] Navigation arrière entre pages carte sans carte grise/blanche ni erreur
+      console « Map container is already initialized »
 
-Gain différé, et assumé comme tel : React 19 n'apporte rien dont l'étape 4 ait
-besoin.
+## Historique — état des lieux du 2026-09-11
 
-## Sources de l'état des lieux
+<details>
+<summary>Version précédente de ce document, avant exécution</summary>
 
-Relevé le 2026-09-11 : `react@19.3.0` et `@types/react@19.3.0` publiés,
-`react-leaflet@5.0.0` en `latest`, `@vitejs/plugin-react@6.1.1` en `latest`.
-Vérifier ces versions avant d'appliquer la procédure.
+> Hors périmètre du plan de construction (spec §9) à l'époque. Consignait
+> l'état des lieux pour que la décision, une fois prise, n'ait pas à être
+> réinstruite.
+
+Aucun arbitrage n'avait été posé : le spec avait été écrit avec « React 18 »
+et tout avait suivi — pas une contrainte technique, un défaut hérité.
+
+Le seul vrai blocage identifié était `react-leaflet` v4.2.1, qui déclare une
+peer dependency stricte `react: ^18.0.0` — d'où la nécessité de
+`react-leaflet` v5.0.0 (peer `react: ^19.0.0`, `@react-leaflet/core` 3.x).
+
+Recommandation de calendrier : pas pendant l'étape 4 (le projet était alors au
+step 4/9) ; les étapes 5 à 8 (photos, filtres, PWA) n'ajoutant pas de surface
+react-leaflet, faire la migration après l'étape 8, en un seul lot, coûtait
+moins cher que de l'insérer dans une étape en cours.
+
+Versions relevées le 2026-09-11 : `react@19.3.0`, `@types/react@19.3.0`,
+`react-leaflet@5.0.0`, `@vitejs/plugin-react@6.1.1` — toutes en `latest`.
+
+</details>

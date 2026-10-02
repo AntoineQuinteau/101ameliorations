@@ -4,7 +4,8 @@ import type { PathOptions } from 'leaflet'
 import type { GeolocationResult } from '../../utils/geolocation'
 
 // Hoisted rather than written inline on the elements below: react-leaflet
-// v4 calls setStyle whenever a `pathOptions` prop is a *new* object, even
+// (via @react-leaflet/core's usePathOptions, still true in v5/3.0.0) calls
+// setStyle whenever a `pathOptions` prop is a *new* object, even
 // with identical values — an inline object literal is new on every render
 // of the parent (MapPage/NewKlashPage), so every keystroke on NewKlashPage's
 // form step (formDraft lives there) was triggering a redraw of both circles
