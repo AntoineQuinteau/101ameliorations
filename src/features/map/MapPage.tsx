@@ -26,7 +26,7 @@ import { useKlashesInBbox } from './useKlashesInBbox'
 import { useMapLayer } from './useMapLayer'
 import { AppFooterLinks } from '../../components/AppFooterLinks'
 import { ErrorMessage } from '../../components/ErrorMessage'
-import { FilterIcon } from '../../components/icons'
+import { Funnel } from 'lucide-react'
 import {
   INITIAL_MAP_CENTER,
   INITIAL_MAP_ZOOM,
@@ -174,7 +174,7 @@ export function MapPage() {
           pressed={isFiltersOpen}
           className="absolute top-16 left-3 z-[1000]"
         >
-          <FilterIcon className="h-5 w-5" />
+          <Funnel className="size-5" />
           {filtersActive && (
             <span
               aria-hidden

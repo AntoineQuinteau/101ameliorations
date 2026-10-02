@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { useKlashExport } from './useKlashExport'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** Public data export (spec §6.7): CSV and GeoJSON of every klash, with no
  * personal data (see `fetchAllKlashesForExport`). No auth guard — the route
@@ -11,9 +11,7 @@ export function ExportPage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <BackToMapLink />
 
       <h1 className="mt-4 text-xl font-semibold text-neutral-900">{fr.export.title}</h1>
       <p className="mt-2 text-sm text-neutral-600">{fr.export.body}</p>

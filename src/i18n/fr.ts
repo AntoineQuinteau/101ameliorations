@@ -11,7 +11,7 @@ export const fr = {
     error: 'Une erreur est survenue.',
     retry: 'Réessayer',
     anonymousAuthor: 'Usager',
-    backToMap: '← Retour à la carte',
+    backToMap: 'Retour à la carte',
     close: 'Fermer',
   },
   category: {
@@ -127,7 +127,7 @@ export const fr = {
     confirmations: 'Confirmations',
     duplicateOfNotice: "Ce signalement est marqué comme doublon d'un autre klash.",
     confirm: 'Je confirme',
-    confirmed: 'Confirmé ✓',
+    confirmed: 'Confirmé',
     confirmError: "Impossible d'enregistrer votre confirmation.",
     photosLoadError: 'Impossible de charger les photos.',
     photoAlt: (index: number) => `Photo ${index} du signalement`,

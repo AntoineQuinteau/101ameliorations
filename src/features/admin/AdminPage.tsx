@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import {
   adminTabFromSearchParams,
   adminTabToSearchParams,
@@ -10,6 +10,7 @@ import { useRole } from '../auth/useRole'
 import { AdminKlashTable } from './AdminKlashTable'
 import { RoleManagement } from './RoleManagement'
 import { TriageQueue } from './TriageQueue'
+import { BackToMapLink } from '../../components/BackToMapLink'
 
 /** `/admin` (spec §6.6, rôles ≥ moderator). Scoped for this step to a
  * paginated/filtered klash table, the "à trier" queue, and role management
@@ -44,9 +45,7 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4">
-      <Link to="/" className="text-sm font-medium text-teal-700 hover:underline">
-        {fr.common.backToMap}
-      </Link>
+      <BackToMapLink />
 
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.admin.title}</h1>
 
