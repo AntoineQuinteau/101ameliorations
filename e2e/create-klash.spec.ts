@@ -28,6 +28,16 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   // Step 1: position. Bayonne is inside the service area, so "Continuer" is
   // available immediately.
   await expect(page.getByRole('heading', { name: 'Position du problème' })).toBeVisible()
+
+  // Spec §6.1 follow-up: /new carries the same floating map controls as the
+  // main map (layer toggle, zoom, locate) — previously it only had
+  // Leaflet's default zoom control and no layer switch.
+  await expect(page.getByRole('button', { name: 'Vue satellite' })).toBeVisible()
+  // exact: true — "Zoomer" would otherwise substring-match "Dézoomer" too.
+  await expect(page.getByRole('button', { name: 'Zoomer', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Dézoomer' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Me localiser' })).toBeVisible()
+
   await page.getByRole('button', { name: 'Continuer' }).click()
 
   // Step 2: duplicates. Nothing seeded at the exact Bayonne centre
@@ -46,6 +56,12 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
     await differentProblemButton.click()
   }
   await expect(page.getByRole('heading', { name: 'Décrire le problème' })).toBeVisible()
+
+  // The pin is fixed from here on (placing it was step 1) — the layer/zoom/
+  // locate controls that exist to help position it have no purpose on the
+  // form step and would otherwise float uselessly over the creation sheet.
+  await expect(page.getByRole('button', { name: 'Vue satellite' })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Me localiser' })).toBeHidden()
 
   // Step 3: form. Category (not category_7), importance, title, description;
   // photos step is optional and skipped entirely by not adding any.

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
+import type L from 'leaflet'
 import { CancelDraftSheet } from './CancelDraftSheet'
 import { DraggablePin } from './DraggablePin'
 import { clearDraftPhotos, loadDraftPhotos } from './draftPhotoStore'
@@ -28,10 +29,14 @@ import { klashKeys } from '../../api/queryKeys'
 import { BottomSheet } from '../../components/BottomSheet'
 import { BboxWatcher } from '../map/BboxWatcher'
 import { ClusteredKlashMarkers } from '../map/ClusteredKlashMarkers'
+import { MapLayerToggle } from '../map/MapLayerToggle'
+import { MapLayerZoom } from '../map/MapLayerZoom'
 import { MapTiles } from '../map/MapTiles'
+import { MapZoomLocateControls } from '../map/MapZoomLocateControls'
 import { ServiceAreaBounds } from '../map/ServiceAreaBounds'
+import { UserPositionMarker } from '../map/UserPositionMarker'
 import { useKlashesInBbox } from '../map/useKlashesInBbox'
-import { readStoredMapLayer } from '../map/useMapLayer'
+import { useMapLayer } from '../map/useMapLayer'
 import {
   INITIAL_MAP_CENTER,
   MAX_MAP_ZOOM,
@@ -43,6 +48,7 @@ import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import type { Klash } from '../../types/klash'
 import { isPointInBbox, type Bbox } from '../../utils/bbox'
+import type { GeolocationResult } from '../../utils/geolocation'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 
 const NEW_KLASH_MAP_ZOOM = MAX_MAP_ZOOM - 2
@@ -95,9 +101,9 @@ export function NewKlashPage() {
   // rather than further down alongside the other map-data hooks: an
   // unconditional, side-effect-free hook call, safe to reorder. A draft
   // whose saved position has fallen outside the service area (the area can
-  // shrink between save and restore, and the pin stays draggable at the
-  // 'form' step, so a draft can be saved already out of area) must not skip
-  // spec §6.2's out-of-area gate on restore.
+  // shrink between save and restore, and the pin is draggable through
+  // 'position'/'duplicates', so a draft saved mid-adjustment can already be
+  // out of area) must not skip spec §6.2's out-of-area gate on restore.
   const serviceArea = useServiceArea()
 
   // Read once, at mount: a later save by useDraftAutosave must not make this
@@ -144,11 +150,14 @@ export function NewKlashPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [failedPhotoCount, setFailedPhotoCount] = useState(0)
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
-  // Same layer (plan/satellite) as the main map the user just came from, so
-  // placing the pin doesn't silently switch the imagery under them. Read once,
-  // at mount: this page has no layer toggle, so the value can't change here,
-  // which also lets maxZoom below be a plain static prop (no MapLayerZoom).
-  const [mapLayer] = useState(readStoredMapLayer)
+  // Same layer (plan/satellite) as the main map the user just came from,
+  // initially — but now switchable here too (spec §6.1 follow-up: the layer
+  // toggle is one of the controls every map screen carries), so `maxZoom`
+  // below is a static prop covering both ceilings and `MapLayerZoom` narrows
+  // it at runtime, same as MapPage.
+  const [mapLayer, setMapLayer] = useMapLayer()
+  const [map, setMap] = useState<L.Map | null>(null)
+  const [userPosition, setUserPosition] = useState<GeolocationResult | null>(null)
   const [isCancelSheetOpen, setIsCancelSheetOpen] = useState(false)
 
   // Guards runPendingAction against firing more than once for the same
@@ -159,6 +168,12 @@ export function NewKlashPage() {
 
   const geolocation = useGeolocation()
   const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox, serviceArea)
+  // The accuracy PositionStep shows (spec §6.2 step 1: "< 50 m" vs "affinez
+  // la position") for whichever fix the pin is actually on right now — the
+  // mount-time geolocation() fix initially, then whatever "Me localiser"
+  // last reported. Kept separate from `geolocation.result.accuracyM` itself,
+  // which never updates after mount, so it wouldn't describe a later locate.
+  const [latestAccuracyM, setLatestAccuracyM] = useState<number | null>(null)
 
   // hasExplicitPosition is computed above, alongside the draft-restore logic
   // that also depends on it — also skipped when a draft was auto-restored,
@@ -169,10 +184,32 @@ export function NewKlashPage() {
   useEffect(() => {
     if (hasExplicitPosition || shouldAutoRestoreDraft || !geolocation.result) return
     setPosition([geolocation.result.lat, geolocation.result.lng])
+    setLatestAccuracyM(geolocation.result.accuracyM)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geolocation.result])
 
   const isOutOfArea = !isPointInBbox(position[0], position[1], serviceArea)
+  // Whether the pin can still move at this step — see the controls' own
+  // comment below for why the layer/zoom/locate column (and the pin's own
+  // draggability) are tied to this instead of always being on. Excludes
+  // 'resume': picking "Reprendre ma déclaration" there
+  // (handleResumeDraft) unconditionally overwrites `position` with the
+  // draft's saved one, discarding whatever a drag or locate on this screen
+  // would have set — offering controls whose result the very next action
+  // can silently throw away is worse than not offering them. "Commencer
+  // ici" (handleStartNewHere) moves straight to 'position', where they
+  // work normally.
+  const isAdjustingPosition = step === 'position' || step === 'duplicates'
+  // handleLocate reads this instead of closing over `step` directly — a fix
+  // can take up to 10s (requestCurrentPosition's own timeout), so by the
+  // time it resolves the user may already be on a different step than the
+  // one open when they tapped "Me localiser". A plain closure would decide
+  // whether to move the pin based on the *stale* step; the ref always holds
+  // the current one.
+  const stepRef = useRef(step)
+  useEffect(() => {
+    stepRef.current = step
+  }, [step])
 
   // Rebuilds PendingPhoto[] from IndexedDB for a draft being applied — either
   // automatically on mount (shouldAutoRestoreDraft) or via "Reprendre ma
@@ -281,6 +318,33 @@ export function NewKlashPage() {
     setStep('duplicates')
   }
 
+  // "Me localiser" always updates the blue dot, and moves the pin on
+  // 'position' and 'duplicates' — the same range `isAdjustingPosition`
+  // already offers the drag handle on. Moving it is safe on 'duplicates'
+  // too, not just 'position': DuplicatesStep's own klashes_nearby query is
+  // keyed on `lat`/`lng` and re-runs whenever they change, the same
+  // guarantee handleUsePhotoPosition relies on when a photo's GPS moves the
+  // pin after landing there. A locate during 'form'/'submit'/'done' (not in
+  // `isAdjustingPosition`, so the button is hidden there anyway) has no
+  // such re-check to fall back on, so it leaves the pin alone. Reads
+  // `stepRef` rather than `step` directly — see its own comment — so this
+  // decides based on the step the fix actually arrives on, not the one
+  // open when the button was tapped.
+  function handleLocate(result: GeolocationResult) {
+    setUserPosition(result)
+    if (stepRef.current === 'position' || stepRef.current === 'duplicates') {
+      setPosition([result.lat, result.lng])
+    }
+    // Only set on 'position': PositionStep is the only reader, and setting
+    // it on 'duplicates' too would describe a fix the pin no longer matches
+    // once the user goes back to 'position' (DuplicatesStep has no back
+    // action today, but "Annuler" re-entering at 'position' does happen via
+    // a fresh visit).
+    if (stepRef.current === 'position') {
+      setLatestAccuracyM(result.accuracyM)
+    }
+  }
+
   async function runPendingAction(action: PendingAction) {
     // Both SubmitStep's onReady effect and startAction's own call below can
     // reach here for the same tap; only the first is let through. Released
@@ -360,21 +424,69 @@ export function NewKlashPage() {
   return (
     <div className="relative h-dvh w-full">
       <MapContainer
+        ref={setMap}
         center={position}
         zoom={NEW_KLASH_MAP_ZOOM}
         minZoom={MIN_MAP_ZOOM}
-        maxZoom={mapLayer === 'satellite' ? MAX_SATELLITE_MAP_ZOOM : MAX_MAP_ZOOM}
+        // The higher of the two layers' ceilings, as a static prop (see
+        // MapPage's identical comment) — MapLayerZoom narrows it at runtime
+        // now that the layer can change after mount.
+        maxZoom={MAX_SATELLITE_MAP_ZOOM}
         bounceAtZoomLimits={false}
         maxBoundsViscosity={1}
+        zoomControl={false}
         className="h-full w-full"
       >
         <MapTiles layer={mapLayer} />
+        <MapLayerZoom layer={mapLayer} />
         <ServiceAreaBounds bbox={serviceArea} />
         <BboxWatcher onChange={setViewportBbox} />
         <ClusteredKlashMarkers klashes={nearbyKlashes} onSelect={noop} />
-        <DraggablePin position={position} onMove={(lat, lng) => setPosition([lat, lng])} />
+        <DraggablePin
+          position={position}
+          onMove={(lat, lng) => setPosition([lat, lng])}
+          draggable={isAdjustingPosition}
+        />
         <MapRecenter position={recenterTarget} />
+        {userPosition && <UserPositionMarker userPosition={userPosition} />}
       </MapContainer>
+
+      {/* The pin's position is only still adjustable through 'position' and
+          'duplicates' — on 'duplicates' it's draggable/locatable too (not
+          because the user can navigate back to 'position'; DuplicatesStep
+          has no such action, only same-problem/different-problem/Annuler)
+          because its own klashes_nearby query is keyed on lat/lng and
+          re-runs live as the pin moves, same as handleUsePhotoPosition's
+          re-check relies on. From 'form' onward the position is fixed (spec
+          §6.2: placing the pin is step 1, "Décrire le problème" is step 3
+          and has nothing to do with the map), so the layer/zoom/locate
+          controls that exist to help position it have no more purpose and
+          would otherwise float uselessly over the creation sheet. */}
+      {isAdjustingPosition && <MapLayerToggle layer={mapLayer} onChange={setMapLayer} />}
+      {/* Anchored from the bottom, not the top: `BottomSheet` (`scrollable`)
+          can grow to max-h-[70vh], so its card's top edge sits `0.7dvh + 12px`
+          (p-3's bottom padding) up from the bottom of the viewport, and
+          `bottom-[calc(70dvh+0.75rem)]` alone keeps the same small margin
+          above that edge at every height, scaling with the same 70dvh term.
+          On its own, though, that pushes the column's *top* off the top of
+          a short viewport instead: `bottom` positions this element's own
+          bottom edge, and the column is tall (~141px, zoom pair + gap +
+          locate), so a `bottom` close to a short H's full height leaves no
+          room above it (confirmed on a landscape phone, ~375px tall — the
+          whole "+" button went negative). `min(…, calc(100dvh - 9.5rem))`
+          caps it once the sheet-clearing value would do that, keeping the
+          column fully on screen at the cost of the gap above the sheet
+          shrinking on a very short viewport instead of guaranteeing zero
+          overlap down to any height — there is no `bottom` value that
+          guarantees both at once once the sheet's own 70vh ceiling and the
+          column's own height together exceed the viewport. */}
+      <MapZoomLocateControls
+        map={map}
+        serviceArea={serviceArea}
+        onLocate={handleLocate}
+        visible={isAdjustingPosition}
+        className="absolute right-3 bottom-[min(calc(70dvh+0.75rem),calc(100dvh-9.5rem))] z-[1000] flex flex-col gap-2"
+      />
 
       <BottomSheet scrollable>
         {step === 'resume' && restorableDraft && (
@@ -388,7 +500,7 @@ export function NewKlashPage() {
 
         {step === 'position' && (
           <PositionStep
-            accuracyM={geolocation.result?.accuracyM ?? null}
+            accuracyM={latestAccuracyM ?? geolocation.result?.accuracyM ?? null}
             isOutOfArea={isOutOfArea}
             onContinue={() => setStep('duplicates')}
             onCancel={handleCancel}
