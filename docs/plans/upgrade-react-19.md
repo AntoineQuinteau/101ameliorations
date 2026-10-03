@@ -25,7 +25,7 @@ d'autres. Surface complète vérifiée (13 fichiers) :
 | `src/features/map/BboxWatcher.tsx`           | `useMap`, `useMapEvents` |
 | `src/features/map/ClusteredKlashMarkers.tsx` | `useMap`                 |
 | `src/features/map/PendingPinMarker.tsx`      | `useMap`                 |
-| `src/features/map/MapClickToReport.tsx`      | `useMapEvents`           |
+| `src/features/map/MapClickToReport.tsx`      | `useMap`, `useMapEvents` |
 | `src/features/map/ServiceAreaBounds.tsx`     | `useMap`                 |
 | `src/features/map/UserPositionMarker.tsx`    | `Circle`, `CircleMarker` |
 | `src/features/map/MapLayerZoom.tsx`          | `useMap`                 |
@@ -33,6 +33,13 @@ d'autres. Surface complète vérifiée (13 fichiers) :
 | `src/features/newKlash/DraggablePin.tsx`     | `useMap`                 |
 | `src/features/newKlash/MapRecenter.tsx`      | `useMap`                 |
 | `src/features/klash/KlashMiniMap.tsx`        | `MapContainer`, `Marker` |
+
+`MapClickToReport.tsx` détecte l'appui long tactile avec des écouteurs DOM
+natifs `touchstart`/`touchmove`/`touchend` posés sur `map.getContainer()` dans
+un `useEffect` (les événements souris ne sont émis qu'après `touchend`, donc
+`useMapEvents` ne peut pas servir). Ils ne dépendent pas de react-leaflet, mais
+l'effet doit retirer ses écouteurs au démontage pour survivre au double montage
+`StrictMode`. Couvert par `e2e/map-long-press.spec.ts` (projet mobile).
 
 L'API publique de ces symboles est identique entre react-leaflet 4.2.1 et
 5.0.0 (vérifié dans les `.d.ts` du paquet 5.0.0). `MapContainer` reste un
@@ -111,6 +118,8 @@ initialisée deux fois) :
 - [ ] Chargement par bbox au déplacement de la carte (`BboxWatcher`,
       `useMapEvents`)
 - [ ] Géolocalisation / bouton localiser (`MapZoomLocateControls`)
+- [ ] Carte `/` : appui long pose le pin sous le doigt, tap court aussi,
+      déplacement/pincement n'en posent pas (`MapClickToReport`)
 - [ ] `/new` : pin déplaçable, recentrage, clic long pour replacer le pin
 - [ ] Création complète d'un klash (pin → photos → envoi)
 - [ ] Mini-carte en page détail (`KlashMiniMap`)
