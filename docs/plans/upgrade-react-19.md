@@ -40,15 +40,31 @@ Passer à React 19 impose donc `react-leaflet` v5.0.0 (peer `react: ^19.0.0`),
 qui embarque `@react-leaflet/core` 3.x au lieu de 2.x.
 
 C'est un changement de major sur la brique centrale de l'app. La surface reste
-néanmoins petite — 5 fichiers, 5 symboles :
+néanmoins petite — 13 fichiers, 8 symboles :
 
 | Fichier                                      | Symboles importés        |
 | -------------------------------------------- | ------------------------ |
 | `src/features/map/MapPage.tsx`               | `MapContainer`           |
 | `src/features/map/MapTiles.tsx`              | `TileLayer`              |
 | `src/features/map/BboxWatcher.tsx`           | `useMap`, `useMapEvents` |
+| `src/features/map/MapClickToReport.tsx`      | `useMap`, `useMapEvents` |
 | `src/features/map/ClusteredKlashMarkers.tsx` | `useMap`                 |
+| `src/features/map/ServiceAreaBounds.tsx`     | `useMap`                 |
+| `src/features/map/PendingPinMarker.tsx`      | `useMap`                 |
+| `src/features/map/MapLayerZoom.tsx`          | `useMap`                 |
+| `src/features/map/UserPositionMarker.tsx`    | `Circle`, `CircleMarker` |
+| `src/features/newKlash/NewKlashPage.tsx`     | `MapContainer`           |
+| `src/features/newKlash/DraggablePin.tsx`     | `useMap`                 |
+| `src/features/newKlash/MapRecenter.tsx`      | `useMap`                 |
 | `src/features/klash/KlashMiniMap.tsx`        | `MapContainer`, `Marker` |
+
+`MapClickToReport.tsx` mérite un test dédié après la migration : en plus de
+`useMapEvents` (clic souris, appui long souris), il pose des écouteurs DOM
+natifs `touchstart`/`touchmove`/`touchend` sur `map.getContainer()` pour
+l'appui long tactile (les événements souris ne sont émis qu'après `touchend`).
+Ces écouteurs ne dépendent pas de react-leaflet, mais ils s'attachent dans un
+`useEffect` lié à l'instance de carte : un double montage `StrictMode` doit les
+retirer proprement. Couvert par `e2e/map-long-press.spec.ts` (projet mobile).
 
 Circonstance favorable : `ClusteredKlashMarkers.tsx` contourne déjà react-leaflet
 pour le clustering (le `MarkerClusterGroup` est piloté à la main via `useMap()`,
