@@ -16,7 +16,7 @@ React 19 + Vite + TypeScript (strict) + Tailwind, react-router, TanStack Query, 
 ## Workflow
 
 - Follow the build plan in spec §9, one step per session. Do not start the next step before the current one meets its acceptance criterion and is deployed as a preview.
-- Every schema change is a new file in `supabase/migrations/`. Never edit an applied migration. Run `supabase db reset` locally after each migration, then `supabase gen types typescript --local > src/types/database.ts`.
+- Every schema change is a new file in `supabase/migrations/`. Never edit an applied migration. Run `npx supabase db reset` locally after each migration, then `npm run gen:types`. Always go through `npx supabase` (the pinned devDependency CI also installs), never a globally installed `supabase`.
 - RLS is enabled on every table from the first migration. Write the policy in the same migration as the table.
 - Secrets never go in the repo. Use `.env.local` (git-ignored) and `.env.example` (committed, empty values).
 - Small, focused commits with conventional messages (`feat:`, `fix:`, `chore:`, `db:`). Push to a feature branch; the human merges to `main`.
