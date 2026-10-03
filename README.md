@@ -12,7 +12,9 @@ Cloudflare Worker + assets statiques.
 ## Prérequis
 
 - Node 24 (LTS) — `nvm use` lit `.nvmrc`
-- [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase`
+- [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase` — version
+  figée dans `package.json` (devDependency), la même que celle installée par la CI ;
+  pour la monter : `npm install -D -E supabase@<version>`
 - Docker (pour `npx supabase start`)
 
 ## Démarrage

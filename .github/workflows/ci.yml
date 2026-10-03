@@ -47,11 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.119.0
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # No `version:` input, here and in every other setup-cli step: the
+      # action reads the Supabase CLI version from package-lock.json (the
+      # `supabase` devDependency), so CI and local `npx supabase` always run
+      # the same release. Bump it with `npm install -D -E supabase@<version>`.
+      - uses: supabase/setup-cli@v3
       - name: Start local Supabase
         run: supabase start
       - name: Replay every migration from scratch
@@ -84,11 +84,7 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.119.0
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: supabase/setup-cli@v3
       - name: Start local Supabase
         # Self-contained, like the `database` job: this runner's Supabase
         # instance is independent of (and outlives) `database`'s, which is
@@ -165,11 +161,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.119.0
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: supabase/setup-cli@v3
       - name: supabase db push (STAGING)
         env:
           # Session pooler connection string (IPv4), not the direct
@@ -298,11 +290,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.119.0
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: supabase/setup-cli@v3
       - name: supabase db push (production)
         env:
           # Session pooler connection string — see migrate-staging.
