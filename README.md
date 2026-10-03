@@ -5,7 +5,7 @@ Landes (CAPB + sud Landes). Spécification complète : [`docs/spec.md`](docs/spe
 
 ## Stack
 
-React 18 + Vite + TypeScript (strict) + Tailwind v4, react-router, TanStack Query, zod.
+React 19 + Vite + TypeScript (strict) + Tailwind v4, react-router, TanStack Query, zod.
 Backend : Supabase (Postgres + PostGIS, Auth email OTP, Storage, RLS). Hébergement :
 Cloudflare Worker + assets statiques.
 
