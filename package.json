@@ -15,10 +15,10 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "gen:types": "npx supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts",
+    "gen:types": "supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts",
     "gen:icons": "pwa-assets-generator",
     "gen:og-image": "node scripts/generate-og-image.mjs",
-    "db:test": "npx supabase test db",
+    "db:test": "supabase test db",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui"
   },

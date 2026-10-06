@@ -47,22 +47,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      # No `version:` input, here and in every other setup-cli step: the
-      # action reads the Supabase CLI version from package-lock.json (the
-      # `supabase` devDependency), so CI and local `npx supabase` always run
-      # the same release. Bump it with `npm install -D -E supabase@<version>`.
-      - uses: supabase/setup-cli@v3
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The Supabase CLI is the `supabase` devDependency `npm ci` just
+      # installed, here and in every other job that calls it: package-lock.json
+      # is the only place its version lives, so CI and local `npx supabase`
+      # always run the same release. Bump it with
+      # `npm install -D -E supabase@<version>`. node_modules/.bin goes on PATH
+      # (rather than calling `npx supabase`) so that a missing devDependency
+      # fails with "command not found" instead of npx downloading `latest`.
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Start local Supabase
         run: supabase start
       - name: Replay every migration from scratch
         run: supabase db reset --no-seed
       - name: RLS tests (pgTAP)
         run: supabase test db
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
       - name: Generated types are up to date
         run: |
           # Written inside the repo (not /tmp) so prettier finds
@@ -84,7 +88,13 @@ jobs:
     needs: quality
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v3
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Start local Supabase
         # Self-contained, like the `database` job: this runner's Supabase
         # instance is independent of (and outlives) `database`'s, which is
@@ -95,11 +105,6 @@ jobs:
         # `supabase/seed.sql` provides, not just the schema.
         run: supabase start
       - run: supabase db reset
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
       - name: Install managed Chromium
         # Real network access here, unlike the local sandbox this suite was
         # developed in — see playwright.config.ts's comment on
@@ -161,7 +166,13 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v3
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: supabase db push (STAGING)
         env:
           # Session pooler connection string (IPv4), not the direct
@@ -290,7 +301,13 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v5
-      - uses: supabase/setup-cli@v3
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: supabase db push (production)
         env:
           # Session pooler connection string — see migrate-staging.
@@ -300,11 +317,6 @@ jobs:
         # is why migrations must stay backward compatible with the currently
         # deployed bundle (add first, drop in a later release).
         run: supabase db push --db-url "$SUPABASE_DB_URL" --yes
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
       - run: npm run build
         env:
           # Not secrets — see the preview job above for why.
