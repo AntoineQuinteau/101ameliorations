@@ -12,7 +12,10 @@ Cloudflare Worker + assets statiques.
 ## Prérequis
 
 - Node 24 (LTS) — `nvm use` lit `.nvmrc`
-- [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase`
+- [Supabase CLI](https://supabase.com/docs/guides/cli) via `npx supabase` — version
+  figée par la devDependency `supabase` (`package.json` + `package-lock.json`), celle
+  que la CI installe avec `npm ci` ; pour la monter :
+  `npm install -D -E supabase@<version>`
 - Docker (pour `npx supabase start`)
 
 ## Démarrage
@@ -65,17 +68,17 @@ continuer comme avant (tuiles MapTiler directes, nécessite
 
 ## Scripts
 
-| Commande               | Effet                                                                      |
-| ---------------------- | -------------------------------------------------------------------------- |
-| `npm run dev`          | Serveur de développement Vite                                              |
-| `npm run build`        | `tsc -b` puis build de production dans `dist/`                             |
-| `npm run lint`         | ESLint                                                                     |
-| `npm run typecheck`    | `tsc -b --noEmit`                                                          |
-| `npm test`             | Vitest (une fois)                                                          |
-| `npm run e2e`          | Playwright (`e2e/`) — nécessite `supabase start` + `db reset` au préalable |
-| `npm run gen:types`    | Régénère `src/types/database.ts` depuis la base locale                     |
-| `npm run gen:icons`    | Régénère les icônes PWA depuis `public/icon-source.svg`                    |
-| `npm run gen:og-image` | Régénère `public/og-image.png` depuis l'icône 512×512                      |
+| Commande               | Effet                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| `npm run dev`          | Serveur de développement Vite                                                  |
+| `npm run build`        | `tsc -b` puis build de production dans `dist/`                                 |
+| `npm run lint`         | ESLint                                                                         |
+| `npm run typecheck`    | `tsc -b --noEmit`                                                              |
+| `npm test`             | Vitest (une fois)                                                              |
+| `npm run e2e`          | Playwright (`e2e/`) — nécessite `npx supabase start` + `db reset` au préalable |
+| `npm run gen:types`    | Régénère `src/types/database.ts` depuis la base locale                         |
+| `npm run gen:icons`    | Régénère les icônes PWA depuis `public/icon-source.svg`                        |
+| `npm run gen:og-image` | Régénère `public/og-image.png` depuis l'icône 512×512                          |
 
 ## Tests de bout en bout (Playwright)
 
