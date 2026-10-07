@@ -11,8 +11,10 @@ import { useMap } from 'react-leaflet'
  * state directly: that also updates on every ordinary drag
  * (`DraggablePin`), and recentring on every drag would yank the view out
  * from under the user mid-gesture. `NewKlashPage` only sets this for the
- * one programmatic jump that actually needs it — resuming a draft saved
- * far from the incoming `?lat=&lng=`. */
+ * programmatic jumps that move the pin somewhere the view may not be
+ * showing: the mount-time GPS fix (the map was built around the default
+ * centre), a photo's position, and resuming a draft saved far from the
+ * incoming `?lat=&lng=`. */
 export function MapRecenter({ position }: { position: [number, number] | null }) {
   const map = useMap()
 
