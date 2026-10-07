@@ -145,8 +145,9 @@ export function NewKlashPage() {
   // claim it has no photos while IndexedDB still holds them. Starts true
   // exactly when the auto-restore effect below will run.
   const [isRestoringPhotos, setIsRestoringPhotos] = useState(shouldAutoRestoreDraft)
-  // Set only by handleResumeDraft, to recentre the map on a draft's saved
-  // position — see MapRecenter's docblock for why this isn't just `position`.
+  // Set on the pin's programmatic jumps only — the mount-time GPS fix, a
+  // photo's position, a resumed draft — so the map follows the pin there.
+  // See MapRecenter's docblock for why this isn't just `position`.
   const [recenterTarget, setRecenterTarget] = useState<[number, number] | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [createdKlash, setCreatedKlash] = useState<Klash | null>(null)
@@ -184,16 +185,34 @@ export function NewKlashPage() {
     hasExplicitPosition ? parseAccuracy(searchParams.get('acc')) : null,
   )
 
-  // hasExplicitPosition is computed above, alongside the draft-restore logic
-  // that also depends on it — also skipped when a draft was auto-restored,
-  // whose saved position must win over the device's current location just
-  // like it wins over the default map center. Runs once the geolocation
-  // result arrives; the position can still be moved freely afterwards via
-  // the draggable pin.
+  // Whether anything has placed the pin since the page opened: a drag, "Me
+  // localiser", a photo's position, a resumed draft. Read by the mount-time
+  // fix below, never rendered — a ref, so setting it costs no re-render.
+  const hasPlacedPinRef = useRef(false)
+
+  // Moves the pin onto the device's position once the mount-time fix
+  // arrives, and the map with it: <MapContainer center> only applied at
+  // construction, when the pin still sat on the default centre, so without
+  // a recentre the pin would land off screen. hasExplicitPosition is
+  // computed above, alongside the draft-restore logic that also depends on
+  // it — also skipped when a draft was auto-restored, whose saved position
+  // must win over the device's current location just like it wins over the
+  // default map center. And skipped when the fix lands late (a permission
+  // prompt, a cold GPS): once the user has placed the pin themselves or
+  // moved past 'position', jumping the pin and the view would undo what
+  // they did — or, past 'duplicates', move the pin after the duplicate
+  // check. An out-of-area fix is ignored, as "Me localiser" ignores one: the
+  // pin would land where the map's max bounds can't reach, out of the
+  // user's own reach to drag back.
   useEffect(() => {
-    if (hasExplicitPosition || shouldAutoRestoreDraft || !geolocation.result) return
-    setPosition([geolocation.result.lat, geolocation.result.lng])
-    setPinAccuracyM(geolocation.result.accuracyM)
+    const fix = geolocation.result
+    if (hasExplicitPosition || shouldAutoRestoreDraft || !fix) return
+    if (hasPlacedPinRef.current || step !== 'position') return
+    if (!isPointInBbox(fix.lat, fix.lng, serviceArea)) return
+    const fixPosition: [number, number] = [fix.lat, fix.lng]
+    setPosition(fixPosition)
+    setPinAccuracyM(fix.accuracyM)
+    setRecenterTarget(fixPosition)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geolocation.result])
 
@@ -271,6 +290,7 @@ export function NewKlashPage() {
   function handleResumeDraft() {
     if (!restorableDraft) return
     const resumedPosition: [number, number] = [restorableDraft.lat, restorableDraft.lng]
+    hasPlacedPinRef.current = true
     setPosition(resumedPosition)
     setPinAccuracyM(null)
     setRecenterTarget(resumedPosition)
@@ -320,9 +340,19 @@ export function NewKlashPage() {
   // stale answer from the old position) — the form draft and photos survive
   // since they live in this component, not in the unmounted form step.
   function handlePinMovedByHand(lat: number, lng: number, nextStepInArea: Step) {
+    hasPlacedPinRef.current = true
     setPosition([lat, lng])
     setPinAccuracyM(null)
     setStep(isPointInBbox(lat, lng, serviceArea) ? nextStepInArea : 'position')
+  }
+
+  // Unlike a drag, which happens where the user is already looking, a
+  // photo's position can be anywhere the map isn't showing — so the view
+  // follows the pin there. KlashFormStep only offers positions inside the
+  // service area, so this always lands somewhere the map can show.
+  function handleUsePhotoPosition(lat: number, lng: number) {
+    handlePinMovedByHand(lat, lng, 'duplicates')
+    setRecenterTarget([lat, lng])
   }
 
   // "Me localiser" (its column is only shown on 'position'/'duplicates', and
@@ -333,6 +363,7 @@ export function NewKlashPage() {
   // lat/lng change. The fix is already known to be in the service area —
   // MapZoomLocateControls rejects it otherwise.
   function handleLocate(result: GeolocationResult) {
+    hasPlacedPinRef.current = true
     setUserPosition(result)
     setPosition([result.lat, result.lng])
     setPinAccuracyM(result.accuracyM)
@@ -517,7 +548,8 @@ export function NewKlashPage() {
             onPhotosChange={setPhotos}
             pinLat={position[0]}
             pinLng={position[1]}
-            onUsePhotoPosition={(lat, lng) => handlePinMovedByHand(lat, lng, 'duplicates')}
+            serviceArea={serviceArea}
+            onUsePhotoPosition={handleUsePhotoPosition}
             onSubmit={(form) => startAction({ type: 'create', form })}
             onCancel={handleCancel}
           />

@@ -6,6 +6,7 @@ import { ErrorMessage } from '../../components/ErrorMessage'
 import { MAX_PHOTOS_PER_KLASH } from '../../config/photos'
 import { fr } from '../../i18n/fr'
 import { useHasHover } from '../map/useHasHover'
+import { isPointInBbox, type Bbox } from '../../utils/bbox'
 import { distanceMeters } from '../../utils/distance'
 import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 import { compressPhoto, readPhotoGps, type CompressedPhoto } from '../../utils/photoCompression'
@@ -42,6 +43,7 @@ export function KlashFormStep({
   onPhotosChange,
   pinLat,
   pinLng,
+  serviceArea,
   onUsePhotoPosition,
   onSubmit,
   onCancel,
@@ -52,6 +54,11 @@ export function KlashFormStep({
   onPhotosChange: (photos: PendingPhoto[]) => void
   pinLat: number
   pinLng: number
+  /** A photo taken outside it isn't offered as the klash's position: it
+   * couldn't be submitted (spec §6.2 blocks out-of-area points), and the
+   * pin would land beyond the map's max bounds, where it can't be dragged
+   * back from. */
+  serviceArea: Bbox
   onUsePhotoPosition: (lat: number, lng: number) => void
   onSubmit: (form: NewKlashForm) => void
   onCancel: () => void
@@ -96,6 +103,7 @@ export function KlashFormStep({
   const gpsPrompt = photos
     .map((photo) => {
       if (!photo.gps) return null
+      if (!isPointInBbox(photo.gps.lat, photo.gps.lng, serviceArea)) return null
       const distance = distanceMeters(pinLat, pinLng, photo.gps.lat, photo.gps.lng)
       return distance > EXIF_GPS_PROMPT_THRESHOLD_M ? { photo, distance } : null
     })
