@@ -32,6 +32,7 @@ export type Database = {
           looked_up_by: string
           looked_up_role: Database['public']['Enums']['user_role']
         }
+        ComputedFields: never
         Insert: {
           author_id: string
           created_at?: string
@@ -89,6 +90,7 @@ export type Database = {
           klash_id: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           author_id: string
           body: string
@@ -137,6 +139,7 @@ export type Database = {
           klash_id: string
           user_id: string
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           klash_id: string
@@ -181,6 +184,7 @@ export type Database = {
           storage_path: string
           width: number | null
         }
+        ComputedFields: never
         Insert: {
           author_id: string
           created_at?: string
@@ -242,6 +246,7 @@ export type Database = {
           title: string
           updated_at: string
         }
+        ComputedFields: never
         Insert: {
           author_id: string
           category: Database['public']['Enums']['klash_category']
@@ -310,6 +315,7 @@ export type Database = {
           organization: string | null
           role: Database['public']['Enums']['user_role']
         }
+        ComputedFields: never
         Insert: {
           created_at?: string
           display_name?: string | null
@@ -332,6 +338,7 @@ export type Database = {
           updated_at: string
           value: NonNullable<Json>
         }
+        ComputedFields: never
         Insert: {
           key: string
           updated_at?: string
@@ -354,6 +361,7 @@ export type Database = {
           note: string | null
           to_status: Database['public']['Enums']['klash_status']
         }
+        ComputedFields: never
         Insert: {
           changed_by: string
           created_at?: string
@@ -421,6 +429,7 @@ export type Database = {
           title: string | null
           updated_at: string | null
         }
+        ComputedFields: never
         Relationships: [
           {
             foreignKeyName: 'klashes_author_id_fkey'
