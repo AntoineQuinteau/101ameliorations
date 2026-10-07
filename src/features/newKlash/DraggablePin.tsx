@@ -10,12 +10,14 @@ import { PIN_ICON } from '../map/pinIcon'
  * report plain lat/lng without re-deriving them from a Leaflet event shape
  * in the parent.
  *
- * `draggable` defaults to `true` (the position step) but `NewKlashPage`
- * passes `false` from the form step onward: the pin's spot has by then gone
- * through duplicate detection (klashes_nearby, spec §6.2 step 2), and an
- * accidental or deliberate drag there would silently move the klash's
- * eventual location past that check, same hazard the zoom/locate column is
- * hidden for over the same range of steps. */
+ * `draggable` defaults to `true`, but `NewKlashPage` only enables it on the
+ * position and duplicates steps: from the form step onward the pin's spot
+ * has gone through duplicate detection (klashes_nearby, spec §6.2 step 2),
+ * and a drag there would silently move the klash's eventual location past
+ * that check, same hazard the zoom/locate column is hidden for over the
+ * same range of steps. On the draft-resume screen, "Reprendre ma
+ * déclaration" replaces the position with the draft's, so a drag there
+ * would just be thrown away. */
 export function DraggablePin({
   position,
   onMove,
@@ -34,7 +36,7 @@ export function DraggablePin({
   }, [onMove])
 
   useEffect(() => {
-    const marker = L.marker(position, { icon: PIN_ICON, draggable: true }).addTo(map)
+    const marker = L.marker(position, { icon: PIN_ICON, draggable }).addTo(map)
     marker.on('dragend', () => {
       const { lat, lng } = marker.getLatLng()
       onMoveRef.current(lat, lng)
@@ -48,7 +50,9 @@ export function DraggablePin({
     // Only recreated if the map instance changes — position updates below
     // move the existing marker instead of tearing it down (avoids losing
     // drag momentum / re-adding on every parent re-render). `draggable` is
-    // applied by its own effect below for the same reason.
+    // applied by its own effect below for the same reason, and read here
+    // only so a marker recreated for a new map starts in the right state —
+    // that effect doesn't re-run unless `draggable` itself changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map])
 
