@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type L from 'leaflet'
 import { Locate, Minus, Plus } from 'lucide-react'
 import type { Bbox } from '../../utils/bbox'
@@ -66,22 +66,19 @@ function useMapZoom(map: L.Map | null) {
  * `MapContainer` as a plain positioned sibling, not inside it.
  *
  * Stays mounted even when `visible` is false (hidden with CSS, not
- * conditional rendering) so a tap on "Me localiser" survives whatever
- * caused it to hide — the mobile filters sheet opening on `MapPage`, or the
- * form step starting on `NewKlashPage`. It still needs an `isMountedRef`
- * (below) for the case the *page* this component lives on unmounts
- * entirely (a real navigation, not a `visible` flip) while a request is in
- * flight — `map.flyTo` on a map whose `MapContainer` has by then called
- * `map.remove()` throws. `visible` going `false` is handled separately
- * (see `handleLocate`): the request still completes and updates
- * `onLocate`/the blue dot, but skips `flyTo` — a tap that lands before the
- * step changes shouldn't go on to reposition a view the user can no longer
- * see or correct via this column once hidden. */
+ * conditional rendering), so by default a tap on "Me localiser" survives
+ * whatever hid the column — on `MapPage`, the mobile filters sheet opening
+ * mid-request still ends with the view on the user once they close it. A
+ * page where a late fix would do harm once the column is hidden opts out
+ * with `cancelLocateOnHide` (see that prop). Either way, a request still in
+ * flight when the page itself unmounts is cancelled, since `flyTo` on a map
+ * whose `MapContainer` has by then called `map.remove()` throws. */
 export function MapZoomLocateControls({
   map,
   serviceArea,
   onLocate,
   visible = true,
+  cancelLocateOnHide = false,
   className = 'absolute right-3 top-1/2 z-[1000] flex -translate-y-1/2 flex-col gap-2',
 }: {
   map: L.Map | null
@@ -97,34 +94,45 @@ export function MapZoomLocateControls({
    * unclickable while hidden, matching `DesktopFiltersCard`'s own pattern
    * for the same kind of "present but not currently relevant" panel. */
   visible?: boolean
+  /** Drops a request still in flight as soon as `visible` goes false: no
+   * `flyTo`, no `onLocate`, the button re-enabled. For `NewKlashPage`, which
+   * hides the column once the pin's position is fixed — a fix tapped for
+   * before that point must not move the pin after it, nor later (if a
+   * photo's position sends the user back to 'duplicates') overwrite a
+   * position they chose since. With this set, `onLocate` only ever runs
+   * while the column is visible. */
+  cancelLocateOnHide?: boolean
   className?: string
 }) {
   const { zoom, minZoom, maxZoom } = useMapZoom(map)
   const [locateError, setLocateError] = useState<'unavailable' | 'outOfArea' | null>(null)
   const [isLocating, setIsLocating] = useState(false)
-  const isMountedRef = useRef(false)
-  // `visible` read inside the async .then below, where a stale closure
-  // would otherwise see whatever it was when the button was tapped — same
-  // class of bug `NewKlashPage`'s `stepRef` exists to avoid.
-  const visibleRef = useRef(visible)
-  // The active request's own cleanup (clears its stuck-fallback timer and
-  // marks it settled) — set by handleLocate, read by the unmount effect so
-  // a request still in flight when the page unmounts doesn't leave its
-  // timer running for up to LOCATE_STUCK_FALLBACK_MS after there's nothing
-  // left to update.
+  // Read by handleLocate's async .then instead of its own closure, which
+  // would still hold the props from the render the button was tapped in: a
+  // fix can take seconds, long enough for useServiceArea's query to replace
+  // its compile-time fallback bbox, or for the parent to pass a new
+  // onLocate. Synced in a layout effect (not a passive one) so no callback
+  // that runs after a commit can still see the previous render's values.
+  const latestPropsRef = useRef({ serviceArea, onLocate })
+  useLayoutEffect(() => {
+    latestPropsRef.current = { serviceArea, onLocate }
+  })
+  // Settles the request in flight, if any, without applying its result —
+  // set by handleLocate, called on unmount and by `cancelLocateOnHide`.
   const cancelPendingLocateRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    visibleRef.current = visible
-  }, [visible])
-
-  useEffect(() => {
-    isMountedRef.current = true
-    return () => {
-      isMountedRef.current = false
-      cancelPendingLocateRef.current?.()
-    }
+    // Also runs (cleanup then setup) on a Fast Refresh that keeps the
+    // component mounted — cancelling resets isLocating, so the button isn't
+    // left stuck on "Localisation…" by a request whose result is now ignored.
+    return () => cancelPendingLocateRef.current?.()
   }, [])
+
+  // A layout effect for the same reason as latestPropsRef: once the commit
+  // that hides the column has happened, no fix may still get through.
+  useLayoutEffect(() => {
+    if (!visible && cancelLocateOnHide) cancelPendingLocateRef.current?.()
+  }, [visible, cancelLocateOnHide])
 
   useEffect(() => {
     if (!locateError) return
@@ -140,60 +148,36 @@ export function MapZoomLocateControls({
     setIsLocating(true)
     setLocateError(null)
 
-    // request* below is scoped to this call so a second tap (once the
-    // button is re-enabled, e.g. by the stuck fallback) starts a fully
-    // independent attempt rather than racing shared mutable state.
+    // Scoped to this call so a second tap (once the button is re-enabled,
+    // e.g. by the stuck fallback) starts a fully independent attempt rather
+    // than racing shared mutable state.
     let settled = false
-    const stuckFallback = setTimeout(() => {
-      if (settled) return
-      settled = true
-      setIsLocating(false)
-      setLocateError('unavailable')
-    }, LOCATE_STUCK_FALLBACK_MS)
+    const stuckFallback = setTimeout(() => finish('unavailable'), LOCATE_STUCK_FALLBACK_MS)
 
-    cancelPendingLocateRef.current = () => {
-      settled = true
-      clearTimeout(stuckFallback)
-    }
-
-    function finish(outcome: 'ok' | 'unavailable' | 'outOfArea') {
+    function finish(outcome: 'ok' | 'cancelled' | 'unavailable' | 'outOfArea') {
       if (settled) return
       settled = true
       clearTimeout(stuckFallback)
       setIsLocating(false)
-      if (outcome !== 'ok') setLocateError(outcome)
+      if (outcome === 'unavailable' || outcome === 'outOfArea') setLocateError(outcome)
     }
+
+    cancelPendingLocateRef.current = () => finish('cancelled')
 
     requestCurrentPosition()
       .then((result) => {
         if (settled) return
-        // The page this component lives on can unmount while the fix is in
-        // flight (navigated away via the profile button, a marker, Annuler…)
-        // — MapContainer has then already called map.remove(), and flyTo on
-        // a removed map throws. Nothing left to update once that's
-        // happened, so this returns without calling finish() at all (a
-        // setState on an unmounted tree is a silent no-op (still true in
-        // React 19), but there's no reason to even try).
-        if (!isMountedRef.current) {
-          settled = true
-          clearTimeout(stuckFallback)
-          return
-        }
-        if (!isPointInBbox(result.lat, result.lng, serviceArea)) {
+        const { serviceArea: currentServiceArea, onLocate: currentOnLocate } =
+          latestPropsRef.current
+        if (!isPointInBbox(result.lat, result.lng, currentServiceArea)) {
           finish('outOfArea')
           return
         }
-        // Still updates the blue dot (onLocate) even if the column has
-        // since gone invisible, but skips flyTo there: the view is the one
-        // thing only this column's own buttons let the user correct, and
-        // it's exactly what just went away.
-        if (visibleRef.current) {
-          map.flyTo([result.lat, result.lng], Math.max(map.getZoom(), MIN_MAP_ZOOM_ON_LOCATE))
-        }
-        // flyTo/onLocate run before finish() clears `settled`: a throw from
-        // either (e.g. flyTo on a map mid-teardown) must still reach the
-        // catch below, not be swallowed by settled already being true.
-        onLocate?.(result)
+        // flyTo/onLocate run before finish() sets `settled`: a throw from
+        // either must still reach the catch below, not be swallowed by
+        // settled already being true.
+        map.flyTo([result.lat, result.lng], Math.max(map.getZoom(), MIN_MAP_ZOOM_ON_LOCATE))
+        currentOnLocate?.(result)
         finish('ok')
       })
       .catch(() => finish('unavailable'))

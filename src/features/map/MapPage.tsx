@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
@@ -92,8 +92,12 @@ export function MapPage() {
     }
   }
 
-  function goToNewKlash(lat: number, lng: number) {
-    navigate(`/new?lat=${lat}&lng=${lng}`)
+  // `accuracyM` only when the point is a GPS fix: /new shows it on the
+  // position step (spec §6.2 step 1), and has no other way to know how a
+  // point it's handed was obtained — a long-pressed point has no accuracy.
+  function goToNewKlash(lat: number, lng: number, accuracyM?: number) {
+    const accuracyParam = accuracyM === undefined ? '' : `&acc=${Math.round(accuracyM)}`
+    navigate(`/new?lat=${lat}&lng=${lng}${accuracyParam}`)
   }
 
   function viewportCenter(): { lat: number; lng: number } {
@@ -105,10 +109,25 @@ export function MapPage() {
       : { lat: INITIAL_MAP_CENTER[0], lng: INITIAL_MAP_CENTER[1] }
   }
 
+  // "Signaler ici" waits up to 5s for a fix, long enough for the user to
+  // have left the map meanwhile (a klash's detail page, the profile button):
+  // navigating to /new once it lands would pull them off wherever they went.
+  const isMountedRef = useRef(false)
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   function handleReportHereButton() {
     requestCurrentPosition({ enableHighAccuracy: true, timeout: 5_000 }).then(
-      (result) => goToNewKlash(result.lat, result.lng),
+      (result) => {
+        if (!isMountedRef.current) return
+        goToNewKlash(result.lat, result.lng, result.accuracyM)
+      },
       () => {
+        if (!isMountedRef.current) return
         // No geolocation API, permission denied, or timed out — all fall
         // back the same way, to the centre of what's currently on screen.
         const center = viewportCenter()
@@ -216,18 +235,17 @@ export function MapPage() {
         </div>
       )}
 
-      {/* top-28 (112px), not top-0: the layer toggle (top-3, ends ~56px)
-          and filters button (top-16, ends ~108px) now live in this same
-          left-hand band (moved here from bottom-right in the maps.me
-          redesign). A pointer-events-none wrapper with the card itself
-          re-enabled only helped on viewports wide enough for max-w-md to
-          leave empty space either side of the card — on a phone narrower
-          than that the card spans the full width anyway and, at top-0,
-          still covered and intercepted taps on both buttons regardless.
-          Dropping below the whole control row avoids that at any width. */}
+      {/* Kept clear of every floating control, at any viewport size:
+          top-28 (112px) puts it below the left-hand layer/filters column
+          (ends ~108px), and px-16 (64px) keeps the card out of the right
+          edge's zoom/locate column (right-3 + 44px = 56px), which is
+          vertically centred and so reaches this band on short screens. The
+          wrapper itself spans the full width, so it's pointer-events-none
+          with only the card re-enabled — otherwise its empty sides would
+          still swallow taps and map drags across the whole band. */}
       {isError && (
-        <div className="absolute inset-x-0 top-28 z-[1000] p-3">
-          <div className="mx-auto max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5">
+        <div className="pointer-events-none absolute inset-x-0 top-28 z-[1000] px-16 py-3">
+          <div className="pointer-events-auto mx-auto max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5">
             <ErrorMessage message={fr.map.loadError} onRetry={() => refetch()} />
           </div>
         </div>

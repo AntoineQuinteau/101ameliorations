@@ -2,7 +2,12 @@
  * of the screen, sibling of `MapContainer` rather than a Leaflet popup (see
  * KlashPreviewCard's docblock for why). `KlashPreviewCard`, `PinConfirmCard`
  * and `NewKlashPage`'s creation sheet each hand-rolled this same shell before
- * this was extracted (step 6, alongside the filters panel — a fourth copy). */
+ * this was extracted (step 6, alongside the filters panel — a fourth copy).
+ *
+ * `scrollable`'s cap is in dvh, not vh: on mobile, vh is the *large*
+ * viewport (browser toolbar hidden), so a 70vh sheet is taller than 70% of
+ * what's actually on screen while the toolbar shows — and `NewKlashPage`
+ * anchors its zoom/locate column just above this cap, in dvh too. */
 export function BottomSheet({
   children,
   scrollable = false,
@@ -14,7 +19,7 @@ export function BottomSheet({
     <div className="absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4">
       <div
         className={`rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5 ${
-          scrollable ? 'max-h-[70vh] overflow-y-auto' : ''
+          scrollable ? 'max-h-[70dvh] overflow-y-auto' : ''
         }`}
       >
         {children}
