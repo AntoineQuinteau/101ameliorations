@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { INITIAL_MAP_CENTER } from '../src/config/serviceArea'
 import { dismissInstallBanner } from './support/dismissInstallBanner'
 
 // Spec §6.1: on mobile, a long-press on the map drops the "signaler ici" pin.
@@ -7,6 +8,32 @@ import { dismissInstallBanner } from './support/dismissInstallBanner'
 // Input.dispatchTouchEvent) — `page.mouse` would pass even with the bug.
 
 const LONG_PRESS_WAIT_MS = 800
+
+/** One `klashes_in_bbox` row, enough for `klashFromRow` to render a marker. */
+function stubKlashRow(lat: number, lng: number) {
+  return {
+    id: '00000000-0000-4000-8000-000000000001',
+    author_id: '00000000-0000-4000-8000-000000000002',
+    lat,
+    lng,
+    category: 'category_1',
+    category_other: null,
+    importance: 'high',
+    status: 'new',
+    title: 'Klash de test',
+    description: null,
+    proposed_solution: null,
+    duplicate_of: null,
+    confirmations_count: 0,
+    comments_count: 0,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    resolved_at: null,
+    author_display_name: null,
+    author_organization: null,
+    author_role: 'user',
+  }
+}
 
 type Point = { x: number; y: number }
 
@@ -155,6 +182,45 @@ test.describe('map long-press (touch)', () => {
 
     expect(await fireContextMenu()).toBe(false)
   })
+
+  // Once Chrome on Android has fired that `contextmenu`, no click follows the
+  // release: a hold between its timeout and ours must still pick, from the
+  // `contextmenu` itself. Synthetic touch events, because a CDP tap would add
+  // a click of its own and pick either way.
+  test("the platform's own long-press picks the point before our delay", async ({ page }) => {
+    const prevented = await page.evaluate(
+      ({ x, y }) => {
+        const target = document.elementFromPoint(x, y)
+        if (!target) throw new Error('nothing under the finger')
+        const touch = new Touch({ identifier: 1, target, clientX: x, clientY: y })
+        const fireTouch = (type: string, active: Touch[]) =>
+          target.dispatchEvent(
+            new TouchEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              touches: active,
+              targetTouches: active,
+              changedTouches: [touch],
+            }),
+          )
+        fireTouch('touchstart', [touch])
+        const notPrevented = target.dispatchEvent(
+          new MouseEvent('contextmenu', {
+            bubbles: true,
+            cancelable: true,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+        fireTouch('touchend', [])
+        return !notPrevented
+      },
+      await mapPickPoint(page),
+    )
+
+    expect(prevented).toBe(true)
+    await expect(page.getByRole('button', { name: 'Signaler ici' })).toBeVisible()
+  })
 })
 
 // Same gesture with a mouse. The mouse path is timed from Leaflet's own
@@ -282,6 +348,30 @@ test.describe('map long-press (mouse)', () => {
     )
 
     expect(prevented).toBe(false)
+  })
+
+  // Klash markers only listen for click and hover, so Leaflet hands a press on
+  // one to the map: it must not start the timer, or a pin would drop under the
+  // marker. Checked while the button is held, before the marker's own click.
+  // The klash list is stubbed so a marker sits at a known spot whatever the
+  // seed data holds.
+  test('holding the button on a klash marker does not pick a point', async ({ page }) => {
+    const [lat, lng] = INITIAL_MAP_CENTER
+    await page.route('**/rest/v1/rpc/klashes_in_bbox*', (route) =>
+      route.fulfill({ json: [stubKlashRow(lat, lng)] }),
+    )
+    await page.goto('/')
+
+    const marker = page.locator('.leaflet-marker-icon.leaflet-interactive').first()
+    await expect(marker).toBeVisible()
+    const box = await marker.boundingBox()
+    if (!box) throw new Error('klash marker not found')
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(LONG_PRESS_WAIT_MS)
+    await expect(reportButton(page)).toBeHidden()
+    await page.mouse.up()
   })
 
   // A right or middle press opens the native context menu / autoscroll, which

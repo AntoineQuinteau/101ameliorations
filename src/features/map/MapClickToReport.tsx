@@ -8,7 +8,23 @@ const LONG_PRESS_MS = 500
 const LONG_PRESS_TOLERANCE_PX = 15
 
 type Source = 'mouse' | 'touch'
-type Press = { source: Source; timer: ReturnType<typeof setTimeout>; fired: boolean }
+type Press = {
+  source: Source
+  latlng: L.LatLng
+  // Where the press started, in client pixels. Only the touch path measures
+  // drift against it; the mouse path relies on Leaflet's `dragstart`.
+  startX: number
+  startY: number
+  timer: ReturnType<typeof setTimeout>
+  fired: boolean
+}
+
+// A press on a marker / cluster or a control is aimed at it, not at the map.
+function isOnMarkerOrControl(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element && target.closest('.leaflet-interactive, .leaflet-control') !== null
+  )
+}
 
 /**
  * Reports a candidate point for "signaler ici" (spec §6.1): click, or
@@ -20,7 +36,9 @@ type Press = { source: Source; timer: ReturnType<typeof setTimeout>; fired: bool
  * that share one press state but differ in how they start and cancel it:
  * - Mouse: Leaflet `mousedown` → `mouseup`, left button only (right/middle open
  *   native menus that swallow `mouseup`; shift+drag is box zoom, which never
- *   emits `dragstart`). A map drag cancels it.
+ *   emits `dragstart`). A map drag cancels it. Markers only listen for click
+ *   and hover, so Leaflet hands a press on one to the map: it is skipped here,
+ *   as on the touch path.
  * - Touch: native `touchstart` → `touchend` on the map container. Leaflet's
  *   `mousedown` can't be used: browsers only emit the compatibility mouse
  *   events (mousedown → mouseup → click) *after* `touchend`, so the timer
@@ -28,16 +46,21 @@ type Press = { source: Source; timer: ReturnType<typeof setTimeout>; fired: bool
  *   Leaflet's map `dragstart` must NOT cancel it: the map starts dragging after
  *   ~3px of movement, well inside the 15px a finger drifts during a hold, so
  *   only `LONG_PRESS_TOLERANCE_PX` of movement (or a second finger) cancels.
- *   While a touch press is in progress the native `contextmenu` is prevented:
- *   Android fires it at its own long-press timeout (400ms on Android 12+, before
- *   ours) and the browser menu would take over the gesture.
+ *   While a touch press is in progress the native `contextmenu` is prevented,
+ *   and taken as the long-press itself: Android fires it at its own long-press
+ *   timeout (400ms on Android 12+, before ours), the browser menu would take
+ *   over the gesture, and once it has fired no click follows the release — a
+ *   hold between that timeout and ours would otherwise pick nothing.
  *
  * After a long-press fires, the `click` that may follow its release is ignored
  * so the point isn't reported twice. That suppression is armed per source on
  * release, cleared by the next gesture of the same source (which always starts
- * before its own click), and only swallows a click of that same source: some
- * browsers send no click at all after a long-press, and a stale flag must not
- * eat the next real click, nor one from another input device.
+ * before its own click), and only lets through a click that clearly comes from
+ * the other source: some browsers send no click at all after a long-press, and
+ * a stale flag must not eat the next real click from another input device. A
+ * pen's click (`pointerType` 'pen') counts as either source, since pen input
+ * takes the mouse path on some platforms (Windows) and the touch one on others
+ * (iPadOS).
  *
  * Everything lives in one `[map]` effect, so the listeners are bound once and
  * the pending timer is cleared on unmount.
@@ -57,8 +80,6 @@ export function MapClickToReport({ onPick }: { onPick: (lat: number, lng: number
     const container = map.getContainer()
     let press: Press | null = null
     let suppressClick: Source | null = null
-    let touchStartX = 0
-    let touchStartY = 0
 
     function clearPress() {
       if (press) {
@@ -67,17 +88,24 @@ export function MapClickToReport({ onPick }: { onPick: (lat: number, lng: number
       }
     }
 
-    function startPress(source: Source, latlng: L.LatLng) {
+    function startPress(source: Source, latlng: L.LatLng, startX: number, startY: number) {
       clearPress()
       const current: Press = {
         source,
+        latlng,
+        startX,
+        startY,
         fired: false,
-        timer: setTimeout(() => {
-          current.fired = true
-          onPickRef.current(latlng.lat, latlng.lng)
-        }, LONG_PRESS_MS),
+        timer: setTimeout(() => firePress(current), LONG_PRESS_MS),
       }
       press = current
+    }
+
+    function firePress(current: Press) {
+      if (current.fired) return
+      clearTimeout(current.timer)
+      current.fired = true
+      onPickRef.current(current.latlng.lat, current.latlng.lng)
     }
 
     // Abandons a press of `source` that hasn't fired yet.
@@ -100,44 +128,51 @@ export function MapClickToReport({ onPick }: { onPick: (lat: number, lng: number
         // `pointerType` says what produced this click; it is absent on older
         // browsers, where any armed suppression applies.
         const type = (event.originalEvent as PointerEvent).pointerType
-        if (!type || (type === 'mouse') === (suppressed === 'mouse')) return
+        const otherSource: Source = suppressed === 'mouse' ? 'touch' : 'mouse'
+        if (type !== otherSource) return
       }
       onPickRef.current(event.latlng.lat, event.latlng.lng)
     }
 
     function onMouseDown(event: L.LeafletMouseEvent) {
-      const { button, shiftKey, ctrlKey } = event.originalEvent
+      const { button, shiftKey, ctrlKey, target, clientX, clientY } = event.originalEvent
       // ctrl+click is a right click on macOS.
       if (button !== 0 || shiftKey || ctrlKey) return
       if (suppressClick === 'mouse') suppressClick = null
-      startPress('mouse', event.latlng)
+      if (isOnMarkerOrControl(target)) return
+      startPress('mouse', event.latlng, clientX, clientY)
     }
 
     function onTouchStart(event: TouchEvent) {
       if (suppressClick === 'touch') suppressClick = null
       clearPress()
       // Pinch, or a touch on a marker / control: not a "pick here" gesture.
-      if (event.touches.length !== 1) return
-      if ((event.target as Element).closest('.leaflet-interactive, .leaflet-control')) return
+      if (event.touches.length !== 1 || isOnMarkerOrControl(event.target)) return
 
       const touch = event.touches[0]
-      touchStartX = touch.clientX
-      touchStartY = touch.clientY
       // Resolved now, not when the timer fires: if the map drags along with a
       // drifting finger, the point under the finger is still this one.
       // `mouseEventToLatLng` only reads clientX/clientY, which a Touch has too
       // — hence the cast.
-      startPress('touch', map.mouseEventToLatLng(touch as unknown as MouseEvent))
+      startPress(
+        'touch',
+        map.mouseEventToLatLng(touch as unknown as MouseEvent),
+        touch.clientX,
+        touch.clientY,
+      )
     }
 
     function onTouchMove(event: TouchEvent) {
+      // Runs on every frame of a pan or pinch: bail out unless a touch press
+      // is still pending.
+      if (press?.source !== 'touch' || press.fired) return
       const touch = event.touches[0]
       if (
         event.touches.length !== 1 ||
-        Math.hypot(touch.clientX - touchStartX, touch.clientY - touchStartY) >
+        Math.hypot(touch.clientX - press.startX, touch.clientY - press.startY) >
           LONG_PRESS_TOLERANCE_PX
       ) {
-        cancelPress('touch')
+        clearPress()
       }
     }
 
@@ -150,7 +185,11 @@ export function MapClickToReport({ onPick }: { onPick: (lat: number, lng: number
     }
 
     function onContextMenu(event: Event) {
-      if (press?.source === 'touch') event.preventDefault()
+      if (press?.source !== 'touch') return
+      event.preventDefault()
+      // The platform has recognised a long-press: pick now rather than wait
+      // for our timer, since no click will follow the release.
+      firePress(press)
     }
 
     const mapHandlers: L.LeafletEventHandlerFnMap = {
