@@ -79,7 +79,7 @@ export function MapZoomLocateControls({
   onLocate,
   visible = true,
   cancelLocateOnHide = false,
-  className = 'absolute right-3 top-1/2 z-[1000] flex -translate-y-1/2 flex-col gap-2',
+  className = 'absolute right-3 top-1/2 z-[1000] flex -translate-y-1/2 flex-col gap-6',
 }: {
   map: L.Map | null
   /** Clamps the locate result to the service area (same check `NewKlashPage`
