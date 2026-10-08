@@ -63,3 +63,5 @@ Thumbs.db
 /data.sql
 /roles.sql
 /schema.sql
+
+supabase/snippets/
