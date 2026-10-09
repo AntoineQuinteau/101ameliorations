@@ -1,5 +1,5 @@
 import { fr } from '../../i18n/fr'
-import { BackToMapLink } from '../../components/BackToMapLink'
+import { BackLink } from '../../components/BackLink'
 
 /** Mentions légales (spec §9 step 9): required for a public French site.
  * Identity fields (association name, SIRET, address, publication director)
@@ -9,7 +9,7 @@ export function LegalNoticePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <BackToMapLink />
+      <BackLink />
 
       <h1 className="mt-4 text-xl font-semibold text-neutral-900">{t.title}</h1>
 

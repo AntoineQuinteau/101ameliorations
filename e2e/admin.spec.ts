@@ -76,7 +76,7 @@ test.describe('admin', () => {
         await page.getByRole('link', { name: 'Mon espace' }).click()
         await expect(page.getByText('Rôle', { exact: true })).toBeVisible()
         await expect(meLink).toHaveCount(0)
-        await page.getByRole('link', { name: 'Retour à la carte' }).click()
+        await page.getByRole('link', { name: 'Retour', exact: true }).click()
         await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
         await expect(shortcut).toHaveCount(0)
         return

@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fr } from '../../i18n/fr'
 import { authErrorMessageKey } from './authErrors'
 import { captchaFailureRef, reportCaptchaFailure } from './captchaDiagnostics'
+import { clearLoginEmailDraft } from './loginEmailDraft'
 import { pseudoPromptStorageKey, shouldPromptForPseudo } from './nicknamePrompt'
 import { useAuth } from './useAuth'
 import { useResendCooldown } from './useResendCooldown'
@@ -32,6 +33,11 @@ export function useOtpLogin() {
   const updateDisplayName = useUpdateDisplayName()
   const resendCooldown = useResendCooldown()
   const turnstile = useTurnstile()
+
+  // The typed email is only worth keeping until the user is signed in.
+  useEffect(() => {
+    if (user) clearLoginEmailDraft()
+  }, [user])
 
   const [step, setStep] = useState<OtpLoginStep>('email')
   const [email, setEmail] = useState('')
