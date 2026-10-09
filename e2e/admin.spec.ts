@@ -88,12 +88,19 @@ test.describe('admin', () => {
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       )
 
-    for (const tab of ['À trier', 'Rôles', 'Signalements']) {
+    // Each tab is measured once its content is there, not while its spinner
+    // (role="status") is: an empty panel can't overflow.
+    for (const tab of ['À trier', 'Rôles']) {
       await page.getByRole('button', { name: tab, exact: true }).click()
+      await expect(page.getByRole('status')).toHaveCount(0)
       expect(await hasHorizontalScroll()).toBe(false)
     }
 
+    await page.getByRole('button', { name: 'Signalements', exact: true }).click()
     const firstKlash = page.locator('a[href^="/k/"]:visible').first()
+    await expect(firstKlash).toBeVisible()
+    expect(await hasHorizontalScroll()).toBe(false)
+
     await firstKlash.click()
     await expect(page).toHaveURL(/\/k\//)
   })
