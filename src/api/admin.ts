@@ -91,6 +91,11 @@ export async function fetchAdminKlashes(
   return { klashes: data.map(klashFromRow), totalCount: count ?? 0, page }
 }
 
+/** Age after which a `new` klash lands in the triage queue (spec §6.6).
+ * The one definition shared by `fetchTriageQueue` and `fetchTriageCount`; the
+ * "7 jours" in `fr.admin.triage` is user-facing copy to update with it. */
+const TRIAGE_AGE_DAYS = 7
+
 /** Klashs stuck in `new` for more than 7 days (spec §6.6 "file à trier").
  * Public read (same RLS as the rest of klashes_public); this app only
  * surfaces it to staff. */
@@ -99,21 +104,21 @@ export async function fetchTriageQueue(): Promise<Klash[]> {
     .from('klashes_public')
     .select('*')
     .eq('status', 'new')
-    .lt('created_at', daysAgoIso(7))
+    .lt('created_at', daysAgoIso(TRIAGE_AGE_DAYS))
     .order('created_at', { ascending: true })
   if (error) throw error
   return data.map(klashFromRow)
 }
 
 /** Size of the same queue as `fetchTriageQueue`, without fetching its rows:
- * a head-only count, for the map's staff shortcut badge. Keep the two filters
- * in step. */
+ * a head-only count, for the map's staff shortcut badge. The status filter has
+ * to match `fetchTriageQueue`'s; the age is shared via `TRIAGE_AGE_DAYS`. */
 export async function fetchTriageCount(): Promise<number> {
   const { count, error } = await supabase
     .from('klashes_public')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'new')
-    .lt('created_at', daysAgoIso(7))
+    .lt('created_at', daysAgoIso(TRIAGE_AGE_DAYS))
   if (error) throw error
   return count ?? 0
 }

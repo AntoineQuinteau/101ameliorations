@@ -62,8 +62,12 @@ export function EmailStep({
       >
         {isSubmitting ? fr.login.emailStep.submitting : fr.login.emailStep.submit}
       </button>
+      {/* New tab: a same-tab link would drop the typed email, and on the
+          inline login of /new, the report being written. */}
       <Link
         to="/confidentialite"
+        target="_blank"
+        rel="noopener noreferrer"
         className="text-center text-xs text-neutral-500 hover:text-neutral-700 hover:underline"
       >
         {fr.login.emailStep.privacyLink}

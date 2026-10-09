@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
+import { useDesktopLayout } from '../../hooks/useDesktopLayout'
 import { useAuth } from '../auth/useAuth'
 import { useRole } from '../auth/useRole'
 import { useProfile } from '../auth/useProfile'
@@ -19,6 +20,7 @@ export function MePage() {
   const { user, signOut } = useAuth()
   const { data: profile } = useProfile()
   const { canAccessAdmin } = useRole()
+  const isDesktopLayout = useDesktopLayout()
   const updateDisplayName = useUpdateDisplayName()
   const deleteAccountMutation = useDeleteMyAccount()
   const navigate = useNavigate()
@@ -73,12 +75,12 @@ export function MePage() {
                 <span className="text-sm text-neutral-600">{profile.organization}</span>
               </div>
             )}
-            {/* Desktop only for now: /admin isn't laid out for small screens
+            {/* Desktop only for now: /admin isn't laid out for touch devices
                 yet. Cosmetic — the route guard and RLS are what gate it. */}
-            {canAccessAdmin && (
+            {canAccessAdmin && isDesktopLayout && (
               <Link
                 to="/admin"
-                className="hidden w-fit items-center rounded-md border border-teal-700 px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50 md:inline-flex"
+                className="inline-flex w-fit items-center rounded-md border border-teal-700 px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
               >
                 {fr.me.adminLink}
               </Link>

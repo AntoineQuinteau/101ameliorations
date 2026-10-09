@@ -103,5 +103,8 @@ test('staff admin shortcut is not offered to a signed-out visitor', async ({ pag
   await page.goto('/')
   await dismissInstallBanner(page)
 
+  // AdminShortcut renders nothing until auth has resolved, so a count of 0 right
+  // after goto proves nothing: wait for something that only appears afterwards.
+  await expect(page.getByRole('link', { name: 'Se connecter' })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Administration/ })).toHaveCount(0)
 })

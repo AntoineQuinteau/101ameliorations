@@ -23,7 +23,7 @@ import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
 import { ServiceAreaBounds } from './ServiceAreaBounds'
 import { UserPositionMarker } from './UserPositionMarker'
-import { useHasHover } from './useHasHover'
+import { useHasHover } from '../../hooks/useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
 import { useMapLayer } from './useMapLayer'
 import { ErrorMessage } from '../../components/ErrorMessage'
@@ -90,17 +90,23 @@ export function MapPage() {
     setIsFiltersOpen((open) => !open)
   }
 
-  // Stable, so AboutSheet's Escape listener isn't torn down and re-added on
-  // every pan or zoom re-render of this page.
-  const closeAbout = useCallback(() => setIsAboutOpen(false), [])
+  // Also clears the preview, on both open and close: on a fine-pointer device
+  // hovering a marker sets `selectedKlash` even while the sheet hides it, which
+  // would otherwise pop a card the user didn't ask for when the sheet closes.
+  const closeAbout = useCallback(() => {
+    setIsAboutOpen(false)
+    setSelectedKlash(null)
+  }, [])
 
   function toggleAbout() {
-    if (!isAboutOpen) {
-      setIsFiltersOpen(false)
-      setSelectedKlash(null)
-      setPendingPin(null)
+    if (isAboutOpen) {
+      closeAbout()
+      return
     }
-    setIsAboutOpen((open) => !open)
+    setIsFiltersOpen(false)
+    setSelectedKlash(null)
+    setPendingPin(null)
+    setIsAboutOpen(true)
   }
 
   function handleMarkerSelect(klash: Klash) {

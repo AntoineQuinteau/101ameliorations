@@ -55,9 +55,9 @@ test.describe('admin', () => {
     await expect(page.getByRole('button', { name: 'Rôles' })).toHaveCount(0)
   })
 
-  // Entry points are desktop-only for now (below `md`): /admin isn't laid
-  // out for small screens yet. The route itself stays reachable by URL, which
-  // the tests above cover on both projects.
+  // Entry points are desktop-only for now (wide viewport + mouse, see
+  // useDesktopLayout): /admin isn't laid out for touch devices yet. The route
+  // itself stays reachable by URL, which the tests above cover on both projects.
   for (const [label, email] of [
     ['admin', ADMIN_EMAIL],
     ['moderator', MODERATOR_EMAIL],
@@ -75,22 +75,14 @@ test.describe('admin', () => {
       const meLink = page.getByRole('link', { name: "Accéder à l'administration" })
 
       if (isMobile) {
-        // Navigate client-side (not page.goto) so the profile query's cache
-        // survives, and wait for something that only renders once the role
-        // has resolved before asserting anything is hidden: both entry points
-        // render nothing while it loads, which would make "hidden" pass for
-        // the wrong reason. The /me link is rendered (count 1) but hidden by
-        // CSS; the map shortcut is not rendered at all below `md`.
+        // Touch devices get neither entry point (see useDesktopLayout). Navigate
+        // client-side (not page.goto) so the profile query's cache survives, and
+        // wait for something that only renders once the role has resolved
+        // before asserting anything is absent: both entry points render nothing
+        // while it loads, which would make "absent" pass for the wrong reason.
         await page.getByRole('link', { name: 'Mon espace' }).click()
         await expect(page.getByText('Rôle', { exact: true })).toBeVisible()
-        // includeHidden: getByRole skips display:none elements by default,
-        // which would make the count 0 for the very state being asserted.
-        const hiddenMeLink = page.getByRole('link', {
-          name: "Accéder à l'administration",
-          includeHidden: true,
-        })
-        await expect(hiddenMeLink).toHaveCount(1)
-        await expect(hiddenMeLink).toBeHidden()
+        await expect(meLink).toHaveCount(0)
         await page.getByRole('link', { name: 'Retour à la carte' }).click()
         await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
         await expect(shortcut).toHaveCount(0)
