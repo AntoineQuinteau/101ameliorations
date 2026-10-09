@@ -251,7 +251,7 @@ Points d'entrée (rôles ≥ moderator uniquement, jamais affichés aux autres) 
 
 ### 6.8 Liens de campagne (`/r/:slug`)
 
-Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Création, QR codes et statistiques : onglet « Campagnes » de `/admin`, réservé à `can_manage_campaigns`. Convention de nommage et données stockées : `docs/campaign-tracking.md`. (Étapes suivantes : redirection, capture côté client, attribution à l'inscription, installations, onglet d'administration.)
+Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Création, QR codes et statistiques : onglet « Campagnes » de `/admin`, réservé à `can_manage_campaigns`. Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
 
 ### 6.7 Export
 
@@ -262,6 +262,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
 - Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
+- `start_url` = `/?launch=pwa` (le paramètre `launch` ne modifie jamais l'attribution). Les routes `/r/*` ne passent jamais par le cache du service worker, dont la correspondance ignore les paramètres d'URL. Une installation est comptée via `appinstalled`, et sur iOS au premier lancement en mode standalone. Sur iOS, le stockage de l'app installée étant séparé de celui de Safari, le Worker sert `/ios-manifest.webmanifest` dont le `start_url` embarque l'attribution (valeurs validées), restaurée seulement dans un stockage vide.
 - Hors v1 : file d'attente hors-ligne des signalements (Background Sync).
 
 ## 8. Stack et outillage
@@ -270,6 +271,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
 - **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
+- **Mesure d'audience** : Umami Cloud, sans cookie, chargé seulement si `VITE_UMAMI_WEBSITE_ID` est défini (build de production). Facultatif : l'attribution des campagnes n'en dépend pas.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.

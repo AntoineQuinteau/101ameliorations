@@ -597,6 +597,9 @@ export const fr = {
           'Position géographique, catégorie, description et éventuelles photos des signalements que vous créez. Les données de localisation (GPS) éventuellement présentes dans les photos sont supprimées avant l’envoi ; seule une éventuelle position GPS de la photo peut vous être proposée pour préremplir la position du signalement, avec votre accord explicite.',
           'Commentaires publiés sur les signalements.',
           'Adresse IP et informations techniques transmises à Cloudflare Turnstile lors de la connexion, à seule fin de limiter les abus automatisés.',
+          'Canal d’arrivée : si vous arrivez par un lien ou un QR code de campagne (association, presse, CPAM…), le site retient dans votre navigateur le canal (émetteur, type de support, campagne) et, pour un site de provenance, son seul nom de domaine. Ces informations sont enregistrées une seule fois, sans modification possible, à la création de votre compte ; elles ne servent qu’à mesurer l’efficacité des campagnes de diffusion, jamais à vous identifier ou à vous suivre.',
+          'Compteurs anonymes des campagnes : chaque passage par un lien de campagne (adresse du lien et horodatage seulement, ni adresse IP ni identifiant) et chaque installation de l’application sont comptés. Ces compteurs ne sont rattachés à aucun compte ni appareil.',
+          'Mesure d’audience : Umami, outil sans cookie, comptabilise les pages vues de façon agrégée, sans suivi inter-sites ni profil individuel, et respecte le réglage « Ne pas me suivre » de votre navigateur.',
         ],
       },
       whoSeesWhat: {
@@ -611,6 +614,7 @@ export const fr = {
         body: [
           'Les signalements, y compris résolus, sont conservés indéfiniment : ils constituent une donnée collective d’intérêt général pour le suivi des infrastructures cyclables.',
           'Le journal des consultations d’email (voir ci-dessus) est conservé 12 mois, puis supprimé.',
+          'Le canal d’arrivée rattaché à votre compte est supprimé avec lui. Les compteurs anonymes de campagnes (passages, installations) sont conservés tant que la campagne est analysée.',
         ],
       },
       rights: {
@@ -624,6 +628,7 @@ export const fr = {
           'Cloudflare, Inc. (hébergement du site, vérification anti-robot Turnstile).',
           'MapTiler (fond de carte).',
           'Sentry (suivi des erreurs techniques, aucune donnée personnelle transmise).',
+          'Umami Software, Inc. (mesure d’audience sans cookie).',
         ],
       },
     },

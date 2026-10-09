@@ -5,9 +5,14 @@ import { syncIosManifest } from './iosManifest'
 // Imported first by src/main.tsx on purpose: this runs as a side effect of the
 // import, before router.tsx (and so createBrowserRouter) reads the address
 // bar, so the router only ever sees the cleaned URL.
+/** `location.search` as the visitor arrived, before the cleanup below: the
+ * first analytics pageview needs the utm_* that the address bar no longer has. */
+export let landingSearch = ''
+
 export function captureAttribution(): void {
   const { search, pathname, hostname, hash } = window.location
   const now = new Date()
+  landingSearch = search
 
   // An installed iOS app starts with empty storage (separate from Safari's):
   // restore what the manifest's start_url carried, but only into that empty
