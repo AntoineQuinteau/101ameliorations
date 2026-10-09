@@ -62,13 +62,12 @@ export function EmailStep({
       >
         {isSubmitting ? fr.login.emailStep.submitting : fr.login.emailStep.submit}
       </button>
-      {/* New tab: a same-tab link would drop the typed email, and on the
-          inline login of /new, the report being written. */}
+      {/* Same tab, like every other in-app link: a new tab leaves the
+          installed PWA. Only the typed email is lost; a report being written
+          on /new is autosaved as a draft. */}
       <Link
         to="/confidentialite"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-center text-xs text-neutral-500 hover:text-neutral-700 hover:underline"
+        className="text-center text-xs text-neutral-500 underline hover:text-neutral-700"
       >
         {fr.login.emailStep.privacyLink}
       </Link>
