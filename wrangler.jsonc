@@ -7,9 +7,9 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    // Only /k/:id (Open Graph tags) and /r/:slug (campaign redirect) need the
-    // Worker, see workers/app/src/index.ts; every other route keeps going
+    // Only /k/:id (Open Graph tags), /r/:slug (campaign redirect) and the iOS
+    // manifest need the Worker, see workers/app/src/index.ts; every other route keeps going
     // straight to the asset pipeline exactly as before.
-    "run_worker_first": ["/k/*", "/r/*"],
+    "run_worker_first": ["/k/*", "/r/*", "/ios-manifest.webmanifest"],
   },
 }

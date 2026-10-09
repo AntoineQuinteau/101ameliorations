@@ -269,6 +269,49 @@ export type Database = {
           },
         ]
       }
+      install_events: {
+        Row: {
+          first_campaign: string | null
+          first_content: string | null
+          first_medium: Database['public']['Enums']['campaign_medium'] | null
+          first_source: string
+          id: number
+          installed_at: string
+          last_campaign: string | null
+          last_content: string | null
+          last_medium: Database['public']['Enums']['campaign_medium'] | null
+          last_source: string
+          platform: string
+        }
+        ComputedFields: never
+        Insert: {
+          first_campaign?: string | null
+          first_content?: string | null
+          first_medium?: Database['public']['Enums']['campaign_medium'] | null
+          first_source?: string
+          id?: never
+          installed_at?: string
+          last_campaign?: string | null
+          last_content?: string | null
+          last_medium?: Database['public']['Enums']['campaign_medium'] | null
+          last_source?: string
+          platform: string
+        }
+        Update: {
+          first_campaign?: string | null
+          first_content?: string | null
+          first_medium?: Database['public']['Enums']['campaign_medium'] | null
+          first_source?: string
+          id?: never
+          installed_at?: string
+          last_campaign?: string | null
+          last_content?: string | null
+          last_medium?: Database['public']['Enums']['campaign_medium'] | null
+          last_source?: string
+          platform?: string
+        }
+        Relationships: []
+      }
       klash_photos: {
         Row: {
           author_id: string
@@ -798,6 +841,10 @@ export type Database = {
       }
       normalize_campaign_token: { Args: { value: string }; Returns: string }
       purge_author_contact_lookups: { Args: Record<PropertyKey, never>; Returns: undefined }
+      record_install: {
+        Args: { p_first_touch?: Json; p_last_touch?: Json; p_platform: string }
+        Returns: undefined
+      }
       resolve_campaign_link: {
         Args: { p_count?: boolean; p_slug: string }
         Returns: {

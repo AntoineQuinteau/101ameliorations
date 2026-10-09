@@ -56,6 +56,8 @@ export interface Arrival {
 const UTM_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'] as const
 /** Removed from the address bar after capture. `launch` is the PWA marker. */
 const CLEANED_PARAMS = [...UTM_PARAMS, 'utm_term', 'launch'] as const
+/** Only meaningful (and only removed) together with launch=pwa. */
+const LAUNCH_ONLY_PARAMS = ['ft', 'lt', 'fs'] as const
 
 function optionalToken(value: string | null): string | null {
   return value !== null && isToken(value) ? value : null
@@ -139,7 +141,9 @@ export function applyArrival(previous: Attribution | null, arrival: Arrival): At
 export function cleanedSearch(search: string): string | null {
   const params = new URLSearchParams(search)
   let changed = false
-  for (const key of CLEANED_PARAMS) {
+  const keys =
+    params.get('launch') === 'pwa' ? [...CLEANED_PARAMS, ...LAUNCH_ONLY_PARAMS] : CLEANED_PARAMS
+  for (const key of keys) {
     if (params.has(key)) {
       params.delete(key)
       changed = true
@@ -165,5 +169,70 @@ export function attributionPayload(state: Attribution) {
     first_seen_at: state.firstSeenAt,
     first_touch: touch(state.firstTouch),
     last_touch: touch(state.lastTouch),
+  }
+}
+
+// ---------- iOS: carrying the attribution into the installed app ----------
+// An iOS home-screen app gets storage separate from Safari's, so an install
+// that precedes the sign-up would lose the attribution. The Worker serves a
+// manifest whose start_url embeds it (workers/app/src/manifest.ts); on the
+// first standalone launch it is restored here, only into EMPTY storage, so it
+// can never overwrite anything. Keys: ft / lt = first / last touch as
+// `source_medium_campaign_content_referrerHost` (empty parts allowed), fs =
+// firstSeenAt.
+
+const TOUCH_PARAMS = { firstTouch: 'ft', lastTouch: 'lt' } as const
+const FIRST_SEEN_PARAM = 'fs'
+const TOUCH_SEPARATOR = '_'
+
+function encodeTouch(touch: Touch): string {
+  return [touch.source, touch.medium, touch.campaign, touch.content, touch.referrerHost]
+    .map((part) => part ?? '')
+    .join(TOUCH_SEPARATOR)
+}
+
+function decodeTouch(raw: string | null, at: string): Touch | null {
+  if (!raw) return null
+  const [source, medium, campaign, content, referrerHost] = raw.split(TOUCH_SEPARATOR)
+  const parsed = touchSchema.safeParse({
+    source: source || null,
+    medium: medium || null,
+    campaign: campaign || null,
+    content: content || null,
+    referrerHost: referrerHost || null,
+    landingPath: '/',
+    at,
+  })
+  if (!parsed.success) return null
+  const touch = parsed.data
+  return touch.source || touch.referrerHost ? touch : null
+}
+
+/** The query parameters for the iOS manifest's start_url; empty when there is
+ * nothing worth carrying. */
+export function launchParams(state: Attribution | null): URLSearchParams {
+  const params = new URLSearchParams()
+  if (!state || (!state.firstTouch && !state.lastTouch)) return params
+  if (state.firstTouch) params.set(TOUCH_PARAMS.firstTouch, encodeTouch(state.firstTouch))
+  if (state.lastTouch) params.set(TOUCH_PARAMS.lastTouch, encodeTouch(state.lastTouch))
+  params.set(FIRST_SEEN_PARAM, state.firstSeenAt)
+  return params
+}
+
+/** Rebuilds an attribution from launch parameters (invalid parts dropped), or
+ * `null` when they carry no touch at all. */
+export function attributionFromLaunchParams(search: string, now: Date): Attribution | null {
+  const params = new URLSearchParams(search)
+  if (params.get('launch') !== 'pwa') return null
+  const rawSeen = params.get(FIRST_SEEN_PARAM)
+  const seen = rawSeen && !Number.isNaN(Date.parse(rawSeen)) ? rawSeen.slice(0, 40) : null
+  const at = seen ?? now.toISOString()
+  const firstTouch = decodeTouch(params.get(TOUCH_PARAMS.firstTouch), at)
+  const lastTouch = decodeTouch(params.get(TOUCH_PARAMS.lastTouch), at)
+  if (!firstTouch && !lastTouch) return null
+  return {
+    firstSeenAt: at,
+    firstTouch: firstTouch ?? lastTouch,
+    lastTouch: lastTouch ?? firstTouch,
   }
 }

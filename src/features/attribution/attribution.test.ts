@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { applyArrival, attributionPayload, cleanedSearch, type Arrival } from './attribution'
+import {
+  applyArrival,
+  attributionFromLaunchParams,
+  attributionPayload,
+  cleanedSearch,
+  launchParams,
+  type Arrival,
+} from './attribution'
 
 const T1 = new Date('2026-10-10T08:00:00Z')
 const T2 = new Date('2026-10-12T08:00:00Z')
@@ -149,5 +156,38 @@ describe('attributionPayload', () => {
       referrer_host: null,
     })
     expect(payload.first_seen_at).toBe(T1.toISOString())
+  })
+})
+
+describe('iOS launch parameters', () => {
+  it('round-trips an attribution through the manifest start_url', () => {
+    const original = applyArrival(null, arrival(CPAM, { referrer: 'https://www.facebook.com/' }))
+    const params = launchParams(original)
+    const restored = attributionFromLaunchParams(`?launch=pwa&${params.toString()}`, T2)
+    expect(restored?.firstTouch).toMatchObject({
+      source: 'cpam',
+      medium: 'print',
+      campaign: 'lancement-2026-10',
+      content: 'papillon-velo',
+      referrerHost: 'www.facebook.com',
+    })
+    expect(restored?.firstSeenAt).toBe(T1.toISOString())
+  })
+
+  it('restores nothing without launch=pwa or with tampered values', () => {
+    const params = launchParams(applyArrival(null, arrival(CPAM))).toString()
+    expect(attributionFromLaunchParams(`?${params}`, T2)).toBeNull()
+    expect(attributionFromLaunchParams('?launch=pwa&ft=NOPE_print___', T2)).toBeNull()
+    expect(attributionFromLaunchParams('?launch=pwa', T2)).toBeNull()
+  })
+
+  it('carries nothing when there is no touch', () => {
+    expect(launchParams(null).size).toBe(0)
+    expect(launchParams(applyArrival(null, arrival(''))).size).toBe(0)
+  })
+
+  it('cleans ft/lt/fs only together with launch=pwa', () => {
+    expect(cleanedSearch('?launch=pwa&ft=a_b___&lt=a_b___&fs=2026&x=1')).toBe('?x=1')
+    expect(cleanedSearch('?ft=1&lt=2')).toBeNull()
   })
 })
