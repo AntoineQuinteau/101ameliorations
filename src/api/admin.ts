@@ -105,6 +105,19 @@ export async function fetchTriageQueue(): Promise<Klash[]> {
   return data.map(klashFromRow)
 }
 
+/** Size of the same queue as `fetchTriageQueue`, without fetching its rows:
+ * a head-only count, for the map's staff shortcut badge. Keep the two filters
+ * in step. */
+export async function fetchTriageCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('klashes_public')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'new')
+    .lt('created_at', daysAgoIso(7))
+  if (error) throw error
+  return count ?? 0
+}
+
 /** Finds a profile by its account email, for `/admin`'s role management
  * (spec §6.6, admin only) via the `find_profile_by_email` RPC — the email
  * itself lives in `auth.users`, unreachable from the client directly.

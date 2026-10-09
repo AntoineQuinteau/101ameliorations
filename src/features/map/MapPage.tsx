@@ -201,7 +201,7 @@ export function MapPage() {
 
       <AuthBadge />
 
-      <AdminShortcut />
+      {showFloatingControls && <AdminShortcut />}
 
       {showFloatingControls && <MapLayerToggle layer={layer} onChange={setLayer} />}
 

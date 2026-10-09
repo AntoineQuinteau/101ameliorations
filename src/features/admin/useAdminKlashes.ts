@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchAdminKlashes, fetchTriageQueue, type AdminKlashFilters } from '../../api/admin'
+import {
+  fetchAdminKlashes,
+  fetchTriageCount,
+  fetchTriageQueue,
+  type AdminKlashFilters,
+} from '../../api/admin'
 import { adminKlashKeys } from '../../api/queryKeys'
 
 function filtersKey(filters: AdminKlashFilters): string {
@@ -14,14 +19,20 @@ export function useAdminKlashes(filters: AdminKlashFilters, page: number) {
   })
 }
 
-/** The "à trier" queue: klashs `new` for more than 7 days (spec §6.6).
- * `enabled` lets a caller outside `/admin` (the map's staff shortcut) keep
- * the query idle for visitors who may not open it; the cache entry is shared
- * with the "À trier" tab either way. */
-export function useTriageQueue({ enabled = true }: { enabled?: boolean } = {}) {
+/** The "à trier" queue: klashs `new` for more than 7 days (spec §6.6). */
+export function useTriageQueue() {
   return useQuery({
     queryKey: adminKlashKeys.triage(),
     queryFn: fetchTriageQueue,
+  })
+}
+
+/** How many klashs are in the "à trier" queue, without loading them. `enabled`
+ * lets the map's staff shortcut keep the query idle when it isn't shown. */
+export function useTriageCount({ enabled }: { enabled: boolean }) {
+  return useQuery({
+    queryKey: adminKlashKeys.triageCount(),
+    queryFn: fetchTriageCount,
     enabled,
   })
 }

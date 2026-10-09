@@ -37,6 +37,7 @@ export const adminKlashKeys = {
   list: (filtersKey: string, page: number) =>
     [...adminKlashKeys.all, 'list', filtersKey, page] as const,
   triage: () => [...adminKlashKeys.all, 'triage'] as const,
+  triageCount: () => [...adminKlashKeys.all, 'triageCount'] as const,
 }
 
 export const settingsKeys = {
