@@ -1,10 +1,13 @@
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   adminParamsFromSearchParams,
   adminParamsToSearchParams,
   defaultAdminTableParams,
+  nextSortOnHeaderClick,
   sinceForPeriod,
+  type AdminSortKey,
   type AdminTableParams,
   type Period,
 } from './adminFilterParams'
@@ -19,6 +22,40 @@ import { klashCategoryLabel, klashCategorySchema, klashStatusSchema } from '../.
 import { formatDate } from '../../utils/formatDate'
 import { AdminKlashCardList } from './AdminKlashCardList'
 import { useAdminKlashes } from './useAdminKlashes'
+
+/** A column header that sorts the table (spec §6.6). A real `<button>` inside
+ * the `<th>`, so it is reachable and activable from the keyboard; the sort
+ * state is announced through `aria-sort` on the `<th>`, and the icons are
+ * decorative. */
+function SortableHeader({
+  label,
+  sortKey,
+  params,
+  onSort,
+}: {
+  label: string
+  sortKey: AdminSortKey
+  params: AdminTableParams
+  onSort: (key: AdminSortKey) => void
+}) {
+  const active = params.sort === sortKey
+  const Icon = !active ? ArrowUpDown : params.direction === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <th
+      className="py-2 pr-3 font-medium"
+      aria-sort={active ? (params.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`-ml-1 inline-flex items-center gap-1 rounded px-1 py-1 font-medium hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:outline-none ${active ? 'text-neutral-900' : ''}`}
+      >
+        {label}
+        <Icon aria-hidden="true" size={14} className={active ? '' : 'opacity-50'} />
+      </button>
+    </th>
+  )
+}
 
 // Debounces the search text written to the URL/query key, so a moderator
 // typing doesn't fire a router navigation (and a Supabase query) on every
@@ -59,7 +96,11 @@ export function AdminKlashTable() {
     [params.status, params.category, since, params.searchText],
   )
 
-  const { data, isLoading, isError, refetch } = useAdminKlashes(filters, params.page)
+  const { data, isLoading, isError, isPlaceholderData, refetch } = useAdminKlashes(
+    filters,
+    { sort: params.sort, direction: params.direction },
+    params.page,
+  )
   const pageCount = data ? Math.max(1, Math.ceil(data.totalCount / ADMIN_PAGE_SIZE)) : 1
   // The page actually served can differ from the URL's page when the
   // requested one was out of range (see fetchAdminKlashes's PGRST103
@@ -88,11 +129,13 @@ export function AdminKlashTable() {
   // AdminPage, this can't be derived at render time: it depends on an
   // async response we don't have until the query settles.
   useEffect(() => {
-    if (data && data.page !== params.page) {
+    // Placeholder data belongs to the previous query: its page says nothing
+    // about the URL's current one.
+    if (data && !isPlaceholderData && data.page !== params.page) {
       updateParams({ page: data.page }, { resetPage: false })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data])
+  }, [data, isPlaceholderData])
 
   // A local, undebounced mirror of the search text so typing feels
   // instant, while the URL/query — and the Supabase request it triggers —
@@ -129,6 +172,15 @@ export function AdminKlashTable() {
 
   function handlePeriodChange(next: Period) {
     updateParams({ period: next })
+  }
+
+  function handleSortHeaderClick(key: AdminSortKey) {
+    updateParams(nextSortOnHeaderClick(params, key))
+  }
+
+  function handleSortSelectChange(value: string) {
+    const [sort, direction] = value.split(':') as [AdminSortKey, AdminTableParams['direction']]
+    updateParams({ sort, direction })
   }
 
   function handleReset() {
@@ -208,6 +260,21 @@ export function AdminKlashTable() {
           </select>
         </label>
 
+        <label className="flex flex-col gap-1 text-sm text-neutral-700 md:hidden">
+          {fr.admin.table.sortLabel}
+          <select
+            value={`${params.sort}:${params.direction}`}
+            onChange={(event) => handleSortSelectChange(event.target.value)}
+            className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
+          >
+            {Object.entries(fr.admin.table.sortOptions).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button
           type="button"
           onClick={handleReset}
@@ -224,48 +291,67 @@ export function AdminKlashTable() {
         <p className="text-sm text-neutral-500">{fr.admin.table.empty}</p>
       )}
 
-      {data && data.klashes.length > 0 && <AdminKlashCardList klashes={data.klashes} />}
-
       {data && data.klashes.length > 0 && (
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-neutral-200 text-xs text-neutral-500">
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnTitle}</th>
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnStatus}</th>
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnCategory}</th>
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnCreatedAt}</th>
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnConfirmations}</th>
-                <th className="py-2 pr-3 font-medium">{fr.admin.table.columnComments}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.klashes.map((klash) => (
-                <tr key={klash.id} className="border-b border-neutral-100">
-                  <td className="py-2 pr-3">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/k/${klash.id}`}
-                        className="inline-block font-medium text-teal-700 hover:underline pointer-coarse:py-3"
-                      >
-                        {klash.title}
-                      </Link>
-                      {klash.proposedSolution && (
-                        <Badge label={fr.admin.table.hasProposedSolution} tone="indigo" />
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-3">
-                    <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
-                  </td>
-                  <td className="py-2 pr-3 text-neutral-700">{klashCategoryLabel(klash)}</td>
-                  <td className="py-2 pr-3 text-neutral-500">{formatDate(klash.createdAt)}</td>
-                  <td className="py-2 pr-3 text-neutral-700">{klash.confirmationsCount}</td>
-                  <td className="py-2 pr-3 text-neutral-700">{klash.commentsCount}</td>
+        <div
+          aria-busy={isPlaceholderData}
+          className={`flex flex-col gap-3 ${isPlaceholderData ? 'opacity-60' : ''}`}
+        >
+          <AdminKlashCardList klashes={data.klashes} />
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-200 text-xs text-neutral-500">
+                  <th className="py-2 pr-3 font-medium">{fr.admin.table.columnTitle}</th>
+                  <th className="py-2 pr-3 font-medium">{fr.admin.table.columnStatus}</th>
+                  <th className="py-2 pr-3 font-medium">{fr.admin.table.columnCategory}</th>
+                  <SortableHeader
+                    label={fr.admin.table.columnCreatedAt}
+                    sortKey="created"
+                    params={params}
+                    onSort={handleSortHeaderClick}
+                  />
+                  <SortableHeader
+                    label={fr.admin.table.columnConfirmations}
+                    sortKey="confirmations"
+                    params={params}
+                    onSort={handleSortHeaderClick}
+                  />
+                  <SortableHeader
+                    label={fr.admin.table.columnComments}
+                    sortKey="comments"
+                    params={params}
+                    onSort={handleSortHeaderClick}
+                  />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data.klashes.map((klash) => (
+                  <tr key={klash.id} className="border-b border-neutral-100">
+                    <td className="py-2 pr-3">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/k/${klash.id}`}
+                          className="inline-block font-medium text-teal-700 hover:underline pointer-coarse:py-3"
+                        >
+                          {klash.title}
+                        </Link>
+                        {klash.proposedSolution && (
+                          <Badge label={fr.admin.table.hasProposedSolution} tone="indigo" />
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 pr-3">
+                      <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
+                    </td>
+                    <td className="py-2 pr-3 text-neutral-700">{klashCategoryLabel(klash)}</td>
+                    <td className="py-2 pr-3 text-neutral-500">{formatDate(klash.createdAt)}</td>
+                    <td className="py-2 pr-3 text-neutral-700">{klash.confirmationsCount}</td>
+                    <td className="py-2 pr-3 text-neutral-700">{klash.commentsCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
