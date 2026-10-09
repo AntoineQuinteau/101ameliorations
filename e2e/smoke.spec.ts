@@ -70,10 +70,14 @@ test('about sheet opens from the map and links to export, legal and privacy page
   await page.goto('/')
   await dismissInstallBanner(page)
 
+  // Wait for the map controls first: a count of 0 straight after goto would
+  // pass before anything has rendered.
+  const aboutButton = page.getByRole('button', { name: 'À propos' })
+  await expect(aboutButton).toBeVisible()
+
   // The old footer chips are gone; their targets now live in the sheet.
   await expect(page.getByRole('link', { name: 'Mentions légales' })).toHaveCount(0)
 
-  const aboutButton = page.getByRole('button', { name: 'À propos' })
   await aboutButton.click()
   await expect(aboutButton).toHaveAttribute('aria-pressed', 'true')
 

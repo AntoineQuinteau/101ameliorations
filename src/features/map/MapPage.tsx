@@ -82,9 +82,11 @@ export function MapPage() {
     setSearchParams(filtersToSearchParams(nextFilters), { replace: true })
   }
 
-  // The about sheet, the filters panel, the klash preview and the pin
-  // confirmation card all want the bottom of the screen (or, for filters,
-  // the whole of it on mobile), so opening one closes the others.
+  // The about sheet and the filters panel are mutually exclusive: opening
+  // either closes the other (`toggleAbout` also clears the klash preview and
+  // the pending pin, which the about sheet would otherwise sit on top of).
+  // Opening filters leaves those two alone, as it always has: on desktop the
+  // filters card is a small overlay that doesn't compete with them.
   function toggleFilters() {
     setIsAboutOpen(false)
     setIsFiltersOpen((open) => !open)
@@ -265,7 +267,7 @@ export function MapPage() {
         <button
           type="button"
           onClick={handleReportHereButton}
-          className="absolute bottom-4 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
+          className="absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
         >
           {fr.map.reportWhereIAm}
         </button>
