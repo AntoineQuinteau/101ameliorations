@@ -203,7 +203,13 @@ export function MapPage() {
         />
         <MapClickToReport
           onPick={(lat, lng) => {
-            setIsAboutOpen(false)
+            // Like clicking outside a popover: with the About sheet open, the
+            // click only dismisses it, instead of also dropping a pin the user
+            // didn't ask for.
+            if (isAboutOpen) {
+              closeAbout()
+              return
+            }
             setPendingPin({ lat, lng })
           }}
         />

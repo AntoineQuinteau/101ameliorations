@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { dismissInstallBanner } from './dismissInstallBanner'
+import { withEmailLock } from './emailLock'
 import { getLatestOtpCode } from './otp'
 
 /**
@@ -20,45 +21,57 @@ export async function loginAs(page: Page, email: string): Promise<void> {
   await dismissInstallBanner(page)
   await page.getByLabel('Adresse email').fill(email)
 
-  const sentAt = await requestOtpCode(page)
-  const code = await getLatestOtpCode(email, sentAt)
-  await page.getByLabel('Code de connexion').fill(code)
-  await page.getByRole('button', { name: 'Valider' }).click()
+  // One login per address at a time: see `withEmailLock`.
+  await withEmailLock(email, async () => {
+    const sentAt = await requestOtpCode(page)
+    const code = await getLatestOtpCode(email, sentAt)
+    await page.getByLabel('Code de connexion').fill(code)
+    await page.getByRole('button', { name: 'Valider' }).click()
 
-  await skipNicknameStepIfShown(page)
+    await skipNicknameStepIfShown(page)
+
+    // Keep the lock until the next holder's send can't be refused for coming
+    // too soon after this one.
+    const remainingMs = OTP_MIN_INTERVAL_MS - (Date.now() - sentAt)
+    if (remainingMs > 0) await page.waitForTimeout(remainingMs)
+  })
 }
 
 // Supabase refuses a second OTP email to the same address within
-// `auth.email.max_frequency` (5s, supabase/config.toml). The seeded staff
-// accounts are shared by specs running in parallel (both Playwright projects,
-// several workers), so two of them can ask for a code for the same address
-// within that window; the loser sees the app's "Trop de tentatives" message
-// instead of the code step. Retrying once the window has passed makes that
-// collision harmless instead of a flaky 30s timeout.
+// `auth.email.max_frequency` (5s, supabase/config.toml). `withEmailLock`
+// queues same-address logins so that rarely happens; the retry below covers
+// the leftovers (an address also requested outside `loginAs`, a slow send).
+const OTP_MIN_INTERVAL_MS = 5_500
 const OTP_SEND_ATTEMPTS = 3
 const OTP_RESEND_DELAY_MS = 6_000
+const OTP_REQUEST_TIMEOUT_MS = 15_000
 
 /**
  * Clicks "Recevoir le code" and waits for the code step, retrying when the
  * send was refused for being too soon after another one to the same address.
- * Returns when the request that produced the code started, for
- * `getLatestOtpCode`'s staleness guard.
+ * Any other error shown instead of the code step fails right away, with its
+ * text, rather than as an opaque timeout. Returns when the request that
+ * produced the code started, for `getLatestOtpCode`'s staleness guard.
  */
 async function requestOtpCode(page: Page): Promise<number> {
   const codeField = page.getByLabel('Code de connexion')
-  const tooSoon = page.getByRole('alert').filter({ hasText: 'Trop de tentatives' })
+  const errorAlert = page.getByRole('alert')
 
   for (let attempt = 1; ; attempt++) {
     const sentAt = Date.now()
     await page.getByRole('button', { name: 'Recevoir le code' }).click()
 
-    const outcome = await Promise.race([
-      codeField.waitFor({ state: 'visible' }).then(() => 'sent' as const),
-      tooSoon.waitFor({ state: 'visible' }).then(() => 'refused' as const),
-    ])
-    if (outcome === 'sent') return sentAt
+    // The app clears the previous error as soon as a new request starts, so
+    // an alert seen here belongs to this attempt.
+    await codeField.or(errorAlert).first().waitFor({ timeout: OTP_REQUEST_TIMEOUT_MS })
+    if (await codeField.isVisible()) return sentAt
+
+    const message = ((await errorAlert.first().textContent()) ?? '').trim()
+    if (!message.includes('Trop de tentatives')) {
+      throw new Error(`Requesting the login code failed: ${message}`)
+    }
     if (attempt === OTP_SEND_ATTEMPTS) {
-      throw new Error(`OTP email still refused after ${OTP_SEND_ATTEMPTS} attempts`)
+      throw new Error(`Login code still refused after ${OTP_SEND_ATTEMPTS} attempts: ${message}`)
     }
     await page.waitForTimeout(OTP_RESEND_DELAY_MS)
   }

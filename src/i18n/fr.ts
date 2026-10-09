@@ -413,9 +413,10 @@ export const fr = {
     },
     triage: {
       title: 'À trier',
-      body: 'Signalements « nouveau » depuis plus de 7 jours, sans suite pour le moment.',
+      body: (days: number) =>
+        `Signalements « nouveau » depuis plus de ${days} jours, sans suite pour le moment.`,
       loadError: 'Impossible de charger la file à trier.',
-      empty: 'Aucun signalement en attente de tri depuis plus de 7 jours.',
+      empty: (days: number) => `Aucun signalement en attente de tri depuis plus de ${days} jours.`,
       ageInDays: (days: number) => (days === 1 ? 'Depuis 1 jour' : `Depuis ${days} jours`),
     },
     roles: {

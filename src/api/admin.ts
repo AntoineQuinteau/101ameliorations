@@ -92,8 +92,9 @@ export async function fetchAdminKlashes(
 }
 
 /** Age after which a `new` klash lands in the triage queue (spec §6.6). The
- * "7 jours" in `fr.admin.triage` is user-facing copy to update with it. */
-const TRIAGE_AGE_DAYS = 7
+ * one definition: the queue, the map badge's count and the copy on `/admin`
+ * (`fr.admin.triage.body`/`empty`, which take it as an argument) all use it. */
+export const TRIAGE_AGE_DAYS = 7
 
 /** The triage queue's definition — `new` klashs older than `TRIAGE_AGE_DAYS`
  * (spec §6.6 "file à trier") — in one place, so the queue and the count shown
@@ -108,7 +109,7 @@ function triageQuery(columns: string, options?: { count: 'exact'; head: true }) 
     .lt('created_at', daysAgoIso(TRIAGE_AGE_DAYS))
 }
 
-/** Klashs stuck in `new` for more than 7 days, oldest first. */
+/** Klashs stuck in `new` for more than `TRIAGE_AGE_DAYS` days, oldest first. */
 export async function fetchTriageQueue(): Promise<Klash[]> {
   const { data, error } = await triageQuery('*').order('created_at', { ascending: true })
   if (error) throw error

@@ -112,3 +112,26 @@ test('staff admin shortcut is not offered to a signed-out visitor', async ({ pag
   await expect(page.getByRole('link', { name: 'Se connecter' })).toBeVisible()
   await expect(page.getByRole('link', { name: /^Administration/ })).toHaveCount(0)
 })
+
+// A click on the map while the About sheet is open only dismisses the sheet,
+// like clicking outside a popover; it must not also drop a report pin.
+test('clicking the map with the About sheet open only closes it', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a long press, not a click, picks a point on touch devices')
+
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  const aboutButton = page.getByRole('button', { name: 'À propos' })
+  await expect(aboutButton).toBeVisible()
+  await aboutButton.click()
+  await expect(page.getByRole('dialog', { name: 'À propos' })).toBeVisible()
+
+  const reportHere = page.getByRole('button', { name: 'Signaler ici', exact: true })
+  await page.mouse.click(640, 300)
+  await expect(page.getByRole('dialog', { name: 'À propos' })).toHaveCount(0)
+  await expect(reportHere).toHaveCount(0)
+
+  // The next click is a normal pick again.
+  await page.mouse.click(640, 300)
+  await expect(reportHere).toBeVisible()
+})
