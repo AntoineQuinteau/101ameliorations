@@ -60,7 +60,7 @@ export function AboutSheet({
           <button
             type="button"
             onClick={close}
-            aria-label={fr.about.close}
+            aria-label={fr.common.close}
             className="shrink-0 text-neutral-400 hover:text-neutral-600"
           >
             <X className="size-5" />

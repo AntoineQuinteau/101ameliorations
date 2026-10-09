@@ -374,7 +374,6 @@ export const fr = {
   admin: {
     title: 'Administration',
     shortcut: {
-      label: 'Administration',
       labelWithCount: (count: number) =>
         count === 1
           ? 'Administration (1 signalement à trier)'
@@ -448,7 +447,6 @@ export const fr = {
     title: 'À propos',
     description:
       "101améliorations recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes.",
-    close: 'Fermer',
     exportHint: 'CSV, GeoJSON',
   },
   export: {

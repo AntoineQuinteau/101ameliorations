@@ -21,7 +21,7 @@ export function AdminShortcut() {
   if (!isShown) return null
 
   const badge = triageBadgeText(count)
-  const label = count > 0 ? fr.admin.shortcut.labelWithCount(count) : fr.admin.shortcut.label
+  const label = count > 0 ? fr.admin.shortcut.labelWithCount(count) : fr.admin.title
 
   return (
     <Link

@@ -23,17 +23,20 @@ export async function loginAs(page: Page, email: string): Promise<void> {
 
   // One login per address at a time: see `withEmailLock`.
   await withEmailLock(email, async () => {
-    const sentAt = await requestOtpCode(page)
-    const code = await getLatestOtpCode(email, sentAt)
+    const { requestedAt, confirmedAt } = await requestOtpCode(page)
+    const code = await getLatestOtpCode(email, requestedAt)
     await page.getByLabel('Code de connexion').fill(code)
     await page.getByRole('button', { name: 'Valider' }).click()
 
     await skipNicknameStepIfShown(page)
 
     // Keep the lock until the next holder's send can't be refused for coming
-    // too soon after this one. A login already takes longer than this, so in
+    // too soon after this one. Measured from when the send was confirmed (the
+    // code step appeared), not from the click: Supabase's window starts when it
+    // processes the request, somewhere in between, so the confirmation is the
+    // later and safer bound. A login already takes longer than this, so in
     // practice there is nothing left to wait for.
-    const remainingMs = OTP_MIN_INTERVAL_MS - (Date.now() - sentAt)
+    const remainingMs = OTP_MIN_INTERVAL_MS - (Date.now() - confirmedAt)
     if (remainingMs > 0) await page.waitForTimeout(remainingMs)
   })
 }
@@ -54,20 +57,21 @@ const OTP_REQUEST_TIMEOUT_MS = 15_000
  * (`auth.email.max_frequency`).
  * Any other error shown instead of the code step fails right away, with its
  * text, rather than as an opaque timeout. Returns when the request that
- * produced the code started, for `getLatestOtpCode`'s staleness guard.
+ * produced the code was made (for `getLatestOtpCode`'s staleness guard) and
+ * when its code step appeared (the send is then known to be done).
  */
-async function requestOtpCode(page: Page): Promise<number> {
+async function requestOtpCode(page: Page): Promise<{ requestedAt: number; confirmedAt: number }> {
   const codeField = page.getByLabel('Code de connexion')
   const errorAlert = page.getByRole('alert')
 
   for (let attempt = 1; ; attempt++) {
-    const sentAt = Date.now()
+    const requestedAt = Date.now()
     await page.getByRole('button', { name: 'Recevoir le code' }).click()
 
     // The app clears the previous error as soon as a new request starts, so
     // an alert seen here belongs to this attempt.
     await codeField.or(errorAlert).first().waitFor({ timeout: OTP_REQUEST_TIMEOUT_MS })
-    if (await codeField.isVisible()) return sentAt
+    if (await codeField.isVisible()) return { requestedAt, confirmedAt: Date.now() }
 
     const message = ((await errorAlert.first().textContent()) ?? '').trim()
     if (!message.includes('Trop de tentatives')) {
