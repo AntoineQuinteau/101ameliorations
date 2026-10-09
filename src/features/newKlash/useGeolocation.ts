@@ -8,12 +8,17 @@ import { requestCurrentPosition, type GeolocationResult } from '../../utils/geol
  * nothing has ever read one (only `result`/`isLoading` are consumed), and a
  * failure already shows up as `isLoading` going `false` with `result` still
  * `null` — add it back if a caller actually needs to show a GeolocationPositionError's
- * detail. */
-export function useGeolocation() {
+ * detail.
+ *
+ * `enabled: false` skips the lookup entirely — and with it the browser's
+ * permission prompt — for a caller that already knows it would discard the
+ * fix (a pin placed by hand, a restored draft). */
+export function useGeolocation(enabled = true) {
   const [result, setResult] = useState<GeolocationResult | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
 
   useEffect(() => {
+    if (!enabled) return
     let cancelled = false
 
     requestCurrentPosition()
@@ -30,7 +35,7 @@ export function useGeolocation() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [enabled])
 
   return { result, isLoading }
 }
