@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, type RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, X } from 'lucide-react'
 import { BottomSheet } from '../../components/BottomSheet'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
 
+// Labelled with the titles of the pages they open, so a rename follows.
 const ROWS = [
-  { to: '/export', label: fr.about.export.label, hint: fr.about.export.hint },
-  { to: '/mentions-legales', label: fr.about.legalNotice.label, hint: null },
-  { to: '/confidentialite', label: fr.about.privacy.label, hint: null },
+  { to: '/export', label: fr.export.title, hint: fr.about.exportHint },
+  { to: '/mentions-legales', label: fr.legal.notice.title, hint: null },
+  { to: '/confidentialite', label: fr.legal.privacy.title, hint: null },
 ] as const
 
 /** "À propos" sheet (spec §6.1): the one place the map keeps its secondary
@@ -18,25 +19,29 @@ const ROWS = [
  *
  * Keyboard and screen-reader support: it is a (non-modal: the map stays
  * usable) dialog named by its title; focus moves to the title when it opens,
- * and Escape or the close button put focus back on whatever opened it. Focus is
- * deliberately not restored when something else closes the sheet (another map
- * control was pressed), which would steal it from that control. */
-export function AboutSheet({ onClose }: { onClose: () => void }) {
+ * and Escape or the close button put focus back on `returnFocusRef`, the
+ * control that opens it. That is passed in rather than read from
+ * `document.activeElement`: Safari doesn't focus a button on click, so the
+ * active element would be `<body>`. Focus is deliberately not restored when
+ * something else closes the sheet (another map control was pressed), which
+ * would steal it from that control. */
+export function AboutSheet({
+  onClose,
+  returnFocusRef,
+}: {
+  onClose: () => void
+  returnFocusRef: RefObject<HTMLElement | null>
+}) {
   const titleRef = useRef<HTMLHeadingElement>(null)
-  const openerRef = useRef<Element | null>(null)
 
   useEffect(() => {
-    // `??=`: StrictMode runs this effect twice in development, and the second
-    // run would otherwise record the title the first run just focused.
-    openerRef.current ??= document.activeElement
     titleRef.current?.focus()
   }, [])
 
   const close = useCallback(() => {
     onClose()
-    const opener = openerRef.current
-    if (opener instanceof HTMLElement && opener.isConnected) opener.focus()
-  }, [onClose])
+    returnFocusRef.current?.focus()
+  }, [onClose, returnFocusRef])
 
   useEscapeKey(close)
 

@@ -114,7 +114,7 @@ export function MePage() {
           to="/confidentialite"
           className="mt-1 block w-fit text-sm text-red-800 underline hover:text-red-900"
         >
-          {fr.me.deleteAccount.privacyLink}
+          {fr.legal.privacy.title}
         </Link>
 
         {isConfirmingDelete ? (

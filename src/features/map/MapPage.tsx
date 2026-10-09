@@ -50,6 +50,7 @@ export function MapPage() {
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const aboutButtonRef = useRef<HTMLButtonElement>(null)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
@@ -82,23 +83,24 @@ export function MapPage() {
     setSearchParams(filtersToSearchParams(nextFilters), { replace: true })
   }
 
-  // The about sheet and the filters panel are mutually exclusive: opening
-  // either closes the other (`toggleAbout` also clears the klash preview and
-  // the pending pin, which the about sheet would otherwise sit on top of).
-  // Opening filters leaves those two alone, as it always has: on desktop the
-  // filters card is a small overlay that doesn't compete with them.
-  function toggleFilters() {
-    setIsAboutOpen(false)
-    setIsFiltersOpen((open) => !open)
-  }
-
-  // Also clears the preview, on both open and close: on a fine-pointer device
-  // hovering a marker sets `selectedKlash` even while the sheet hides it, which
-  // would otherwise pop a card the user didn't ask for when the sheet closes.
+  // Every way of closing the about sheet goes through here. It also clears the
+  // preview: on a fine-pointer device hovering a marker sets `selectedKlash`
+  // even while the sheet hides it, which would otherwise pop a card the user
+  // didn't ask for once the sheet is gone.
   const closeAbout = useCallback(() => {
     setIsAboutOpen(false)
     setSelectedKlash(null)
   }, [])
+
+  // The about sheet and the filters panel are mutually exclusive: opening
+  // either closes the other (`toggleAbout` also clears the pending pin, which
+  // the about sheet would otherwise sit on top of). Opening filters leaves the
+  // pin alone, as it always has: on desktop the filters card is a small
+  // overlay that doesn't compete with it.
+  function toggleFilters() {
+    if (isAboutOpen) closeAbout()
+    setIsFiltersOpen((open) => !open)
+  }
 
   function toggleAbout() {
     if (isAboutOpen) {
@@ -112,7 +114,7 @@ export function MapPage() {
   }
 
   function handleMarkerSelect(klash: Klash) {
-    setIsAboutOpen(false)
+    if (isAboutOpen) closeAbout()
     // On a fine-pointer device, hover already previews the klash (see
     // onHover below) — a click there goes straight to the detail page,
     // skipping the extra "voir le détail" tap that only makes sense as a
@@ -249,7 +251,8 @@ export function MapPage() {
       {/* Third in the left-hand column, under the filters button. */}
       {showFloatingControls && (
         <MapControlButton
-          label={fr.about.open}
+          ref={aboutButtonRef}
+          label={fr.about.title}
           onClick={toggleAbout}
           pressed={isAboutOpen}
           className="absolute top-29 left-3 z-[1000]"
@@ -326,7 +329,7 @@ export function MapPage() {
         )
       )}
 
-      {isAboutOpen && <AboutSheet onClose={closeAbout} />}
+      {isAboutOpen && <AboutSheet onClose={closeAbout} returnFocusRef={aboutButtonRef} />}
 
       {!isFiltersOpen && !isAboutOpen && selectedKlash && (
         <KlashPreviewCard

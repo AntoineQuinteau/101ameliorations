@@ -273,7 +273,6 @@ export const fr = {
     signOut: 'Se déconnecter',
     deleteAccount: {
       title: 'Supprimer mon compte',
-      privacyLink: 'Politique de confidentialité',
       body: "Vos signalements, photos et commentaires ne seront pas supprimés : ils seront anonymisés (attribués à « Compte supprimé ») afin de préserver les données utiles à l'association et à la collectivité. Vos confirmations (+1) seront, elles, définitivement retirées. Cette action est irréversible.",
       confirmPrompt: 'Confirmez-vous la suppression définitive de votre compte ?',
       trigger: 'Supprimer mon compte…',
@@ -446,14 +445,11 @@ export const fr = {
       "Pour installer l'application : appuyez sur le bouton de partage, puis « Sur l'écran d'accueil ».",
   },
   about: {
-    open: 'À propos',
     title: 'À propos',
     description:
       "101améliorations recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes.",
     close: 'Fermer',
-    export: { label: 'Export des données', hint: 'CSV, GeoJSON' },
-    legalNotice: { label: 'Mentions légales' },
-    privacy: { label: 'Politique de confidentialité' },
+    exportHint: 'CSV, GeoJSON',
   },
   export: {
     title: 'Export des données',
