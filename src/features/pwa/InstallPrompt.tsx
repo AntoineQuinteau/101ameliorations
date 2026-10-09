@@ -23,8 +23,9 @@ function wasIosHintDismissed(): boolean {
 /** Discreet install banner (spec §7), mounted once in `src/App.tsx` so it
  * covers every route. Two independent paths, never shown together: the
  * native `beforeinstallprompt` flow (Android/desktop Chrome, Edge) takes
- * priority, and the iOS manual hint only appears when that one never fires. */
-export function InstallPrompt() {
+ * priority, and the iOS manual hint only appears when that one never fires.
+ * `suppressed` hides both without remembering a dismissal. */
+export function InstallPrompt({ suppressed = false }: { suppressed?: boolean }) {
   const { canInstall, promptInstall, dismiss } = useInstallPrompt()
   const [iosHintDismissed, setIosHintDismissed] = useState(wasIosHintDismissed)
 
@@ -45,6 +46,10 @@ export function InstallPrompt() {
       isRunningStandalone(),
       window.navigator.maxTouchPoints,
     )
+
+  // Held back, not dismissed: the banner comes back once whatever suppressed it
+  // (the map's welcome dialog) is gone.
+  if (suppressed) return null
 
   if (canInstall) {
     return (
