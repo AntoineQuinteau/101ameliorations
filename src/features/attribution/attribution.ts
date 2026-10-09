@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { campaignMediumSchema } from '../../types/campaign'
 
 // Campaign attribution (docs/campaign-tracking.md). Pure logic only: reading
 // the URL, storage and history live in captureOnLoad.ts / attributionStorage.ts
@@ -9,9 +10,6 @@ import { z } from 'zod'
  * everything; this only keeps junk out of the browser's storage. */
 export const CAMPAIGN_TOKEN_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const MAX_TOKEN_LENGTH = 64
-
-/** Closed list, mirrors the `campaign_medium` enum. */
-export const campaignMediumSchema = z.enum(['social', 'email', 'print', 'press'])
 
 function isToken(value: string): boolean {
   return value.length <= MAX_TOKEN_LENGTH && CAMPAIGN_TOKEN_PATTERN.test(value)

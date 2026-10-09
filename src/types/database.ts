@@ -651,6 +651,22 @@ export type Database = {
       }
     }
     Functions: {
+      campaign_stats: {
+        Args: { p_touch?: string }
+        Returns: {
+          campaign: string
+          content: string
+          created_at: string
+          destination: string
+          installs: number
+          is_active: boolean
+          medium: string
+          scans: number
+          signups: number
+          slug: string
+          source: string
+        }[]
+      }
       can_change_klash_status: {
         Args: {
           from_status: Database['public']['Enums']['klash_status']
@@ -769,6 +785,7 @@ export type Database = {
       find_profile_by_email: {
         Args: { email: string }
         Returns: {
+          can_manage_campaigns: boolean
           display_name: string
           id: string
           organization: string
