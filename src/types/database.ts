@@ -402,6 +402,60 @@ export type Database = {
           },
         ]
       }
+      profile_attributions: {
+        Row: {
+          first_campaign: string | null
+          first_content: string | null
+          first_medium: Database['public']['Enums']['campaign_medium'] | null
+          first_referrer_host: string | null
+          first_seen_at: string
+          first_source: string
+          last_campaign: string | null
+          last_content: string | null
+          last_medium: Database['public']['Enums']['campaign_medium'] | null
+          last_referrer_host: string | null
+          last_source: string
+          profile_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          first_campaign?: string | null
+          first_content?: string | null
+          first_medium?: Database['public']['Enums']['campaign_medium'] | null
+          first_referrer_host?: string | null
+          first_seen_at: string
+          first_source?: string
+          last_campaign?: string | null
+          last_content?: string | null
+          last_medium?: Database['public']['Enums']['campaign_medium'] | null
+          last_referrer_host?: string | null
+          last_source?: string
+          profile_id: string
+        }
+        Update: {
+          first_campaign?: string | null
+          first_content?: string | null
+          first_medium?: Database['public']['Enums']['campaign_medium'] | null
+          first_referrer_host?: string | null
+          first_seen_at?: string
+          first_source?: string
+          last_campaign?: string | null
+          last_content?: string | null
+          last_medium?: Database['public']['Enums']['campaign_medium'] | null
+          last_referrer_host?: string | null
+          last_source?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'profile_attributions_profile_id_fkey'
+            columns: ['profile_id']
+            isOneToOne: true
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           can_manage_campaigns: boolean
@@ -751,6 +805,17 @@ export type Database = {
           content: string
           destination: string
           medium: Database['public']['Enums']['campaign_medium']
+          source: string
+        }[]
+      }
+      sanitize_attribution_token: { Args: { value: Json }; Returns: string }
+      sanitize_attribution_touch: {
+        Args: { touch: Json }
+        Returns: {
+          campaign: string
+          content: string
+          medium: Database['public']['Enums']['campaign_medium']
+          referrer_host: string
           source: string
         }[]
       }
