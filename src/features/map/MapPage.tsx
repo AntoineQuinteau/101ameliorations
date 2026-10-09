@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
@@ -87,10 +87,10 @@ export function MapPage() {
   // preview: on a fine-pointer device hovering a marker sets `selectedKlash`
   // even while the sheet hides it, which would otherwise pop a card the user
   // didn't ask for once the sheet is gone.
-  const closeAbout = useCallback(() => {
+  function closeAbout() {
     setIsAboutOpen(false)
     setSelectedKlash(null)
-  }, [])
+  }
 
   // The about sheet and the filters panel are mutually exclusive: opening
   // either closes the other (`toggleAbout` also clears the pending pin, which

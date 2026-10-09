@@ -246,7 +246,15 @@ enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "5s"
+# Lowered from 5s to the CLI default: the Playwright E2E suite (e2e/) logs in
+# to the same three seeded staff addresses from several parallel workers, and
+# with a 5s window each login had to keep its address for 5s+ (see
+# e2e/support/emailLock.ts). Same reasoning as the raised rate limits above:
+# delivery here is Mailpit, so there is no real-world cost. This file is only
+# read by `supabase start` (local and CI); `supabase db push` never applies
+# it to staging or production. Restart the local stack to pick it up
+# (`npx supabase stop && npx supabase start`).
+max_frequency = "1s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).

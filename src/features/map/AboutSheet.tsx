@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, X } from 'lucide-react'
 import { BottomSheet } from '../../components/BottomSheet'
@@ -38,10 +38,10 @@ export function AboutSheet({
     titleRef.current?.focus()
   }, [])
 
-  const close = useCallback(() => {
+  function close() {
     onClose()
     returnFocusRef.current?.focus()
-  }, [onClose, returnFocusRef])
+  }
 
   useEscapeKey(close)
 

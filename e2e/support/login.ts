@@ -31,24 +31,27 @@ export async function loginAs(page: Page, email: string): Promise<void> {
     await skipNicknameStepIfShown(page)
 
     // Keep the lock until the next holder's send can't be refused for coming
-    // too soon after this one.
+    // too soon after this one. A login already takes longer than this, so in
+    // practice there is nothing left to wait for.
     const remainingMs = OTP_MIN_INTERVAL_MS - (Date.now() - sentAt)
     if (remainingMs > 0) await page.waitForTimeout(remainingMs)
   })
 }
 
 // Supabase refuses a second OTP email to the same address within
-// `auth.email.max_frequency` (5s, supabase/config.toml). `withEmailLock`
+// `auth.email.max_frequency` (1s, supabase/config.toml). `withEmailLock`
 // queues same-address logins so that rarely happens; the retry below covers
 // the leftovers (an address also requested outside `loginAs`, a slow send).
-const OTP_MIN_INTERVAL_MS = 5_500
+// Keep the interval just above that setting.
+const OTP_MIN_INTERVAL_MS = 1_100
 const OTP_SEND_ATTEMPTS = 3
-const OTP_RESEND_DELAY_MS = 6_000
+const OTP_RESEND_DELAY_MS = 1_500
 const OTP_REQUEST_TIMEOUT_MS = 15_000
 
 /**
  * Clicks "Recevoir le code" and waits for the code step, retrying when the
- * send was refused for being too soon after another one to the same address.
+ * send was refused for being too soon after another one to the same address
+ * (`auth.email.max_frequency`).
  * Any other error shown instead of the code step fails right away, with its
  * text, rather than as an opaque timeout. Returns when the request that
  * produced the code started, for `getLatestOtpCode`'s staleness guard.
