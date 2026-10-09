@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { emailSchema } from './authSchemas'
+import { readLoginEmailDraft, writeLoginEmailDraft } from './loginEmailDraft'
 import { TurnstileSlot } from './TurnstileSlot'
 
 export function EmailStep({
@@ -18,7 +19,9 @@ export function EmailStep({
   isTurnstileInteractive: boolean
   onSubmit: (email: string) => void
 }) {
-  const [email, setEmail] = useState('')
+  // Restored from sessionStorage so a round trip to the privacy policy keeps the
+  // typed address (cleared by useOtpLogin once signed in).
+  const [email, setEmail] = useState(readLoginEmailDraft)
   const [validationError, setValidationError] = useState(false)
 
   function handleSubmit(event: React.FormEvent) {
@@ -44,7 +47,10 @@ export function EmailStep({
         autoComplete="email"
         placeholder={fr.login.emailStep.placeholder}
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        onChange={(event) => {
+          setEmail(event.target.value)
+          writeLoginEmailDraft(event.target.value)
+        }}
         className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
       />
       {validationError && (
@@ -63,8 +69,9 @@ export function EmailStep({
         {isSubmitting ? fr.login.emailStep.submitting : fr.login.emailStep.submit}
       </button>
       {/* Same tab, like every other in-app link: a new tab leaves the
-          installed PWA. Only the typed email is lost; a report being written
-          on /new is autosaved as a draft. */}
+          installed PWA. The typed email survives the round trip (sessionStorage,
+          see loginEmailDraft.ts), and a report being written on /new is
+          autosaved as a draft. */}
       <Link
         to="/confidentialite"
         className="text-center text-xs text-neutral-500 underline hover:text-neutral-700"

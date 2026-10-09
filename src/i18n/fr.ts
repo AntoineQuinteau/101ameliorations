@@ -11,7 +11,7 @@ export const fr = {
     error: 'Une erreur est survenue.',
     retry: 'Réessayer',
     anonymousAuthor: 'Usager',
-    backToMap: 'Retour à la carte',
+    back: 'Retour',
     close: 'Fermer',
   },
   category: {

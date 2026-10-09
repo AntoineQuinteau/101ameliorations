@@ -10,7 +10,7 @@ import { useUpdateDisplayName } from '../auth/useUpdateDisplayName'
 import { DisplayNameForm } from './DisplayNameForm'
 import { MyKlashList } from './MyKlashList'
 import { useDeleteMyAccount } from './useDeleteMyAccount'
-import { BackToMapLink } from '../../components/BackToMapLink'
+import { BackLink } from '../../components/BackLink'
 
 /** Spec §6.5: my klashs, my pseudo, sign-out, and — since step 9 — RGPD
  * account deletion. "My confirmations" is deferred to a later step (see
@@ -54,7 +54,7 @@ export function MePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
-      <BackToMapLink />
+      <BackLink />
 
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.me.title}</h1>
 

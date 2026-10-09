@@ -188,6 +188,8 @@ Une seule application responsive. Routes :
 | `/me`    | Mes klashs, mon pseudo                                                                |
 | `/admin` | Modération et traitement (rôles ≥ moderator)                                          |
 
+Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
+
 ### 6.1 Carte (`/`)
 
 - Leaflet (react-leaflet), tuiles MapTiler (style « Streets » ou « Outdoor », clé restreinte aux domaines de l'app). Vue initiale : centre Bayonne (43.49, -1.47), zoom 10, zoom minimum 8 (pour que la zone de service élargie tienne dans un viewport), zoom maximum 20 en plan et 22 en vue satellite (zoom natif de chaque tuileset), contrainte aux bounds de la zone de service.
@@ -225,6 +227,7 @@ Hors v1 : file d'attente hors-ligne des signalements (Background Sync) — voir 
 
 - Email → Turnstile invisible → `signInWithOtp` → saisie du code à 6 chiffres (autofill SMS/mail géré par `autocomplete="one-time-code"`).
 - Première connexion : choix d'un pseudo (facultatif, sinon « Usager »).
+- L'email saisi est conservé en `sessionStorage` (jamais dans l'URL) et effacé une fois connecté, pour qu'un aller-retour vers la politique de confidentialité (lien sous le formulaire) ne le perde pas. Le paramètre `?next=` est préservé : « Retour » ramène à l'URL exacte de `/login`.
 - Session persistante (localStorage). Déconnexion dans `/me`.
 
 ### 6.5 Mon espace (`/me`)

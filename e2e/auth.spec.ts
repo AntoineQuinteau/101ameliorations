@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { dismissInstallBanner } from './support/dismissInstallBanner'
 import { loginAs, skipNicknameStepIfShown } from './support/login'
 import { getLatestOtpCode } from './support/otp'
 
@@ -10,6 +11,58 @@ test.describe('auth', () => {
   test('the email step links to the privacy policy', async ({ page }) => {
     await page.goto('/login')
     await expect(page.getByRole('link', { name: /Politique de confidentialité/ })).toBeVisible()
+  })
+
+  test('the typed email and ?next= survive a round trip to the privacy policy', async ({
+    page,
+  }) => {
+    const email = freshEmail('auth-roundtrip')
+
+    await page.goto('/login?next=%2Fme')
+    await dismissInstallBanner(page)
+    await page.getByLabel('Adresse email').fill(email)
+
+    await page.getByRole('link', { name: /Politique de confidentialité/ }).click()
+    await expect(page).toHaveURL('/confidentialite')
+
+    // The page was reached from /login, so "Retour" goes back there, not to the map.
+    await page.getByRole('link', { name: 'Retour', exact: true }).click()
+    await expect(page).toHaveURL('/login?next=%2Fme')
+    await expect(page.getByLabel('Adresse email')).toHaveValue(email)
+
+    // The email never ends up in the URL.
+    expect(page.url()).not.toContain(encodeURIComponent(email))
+    expect(page.url()).not.toContain(email)
+
+    // ?next= is still honoured at the end of the flow, and the stored email is gone.
+    await loginAs(page, email)
+    await expect(page).toHaveURL('/me')
+    expect(await page.evaluate(() => sessionStorage.length)).toBe(0)
+  })
+
+  test('"Retour" falls back to the map on a deep link and goes back otherwise', async ({
+    page,
+  }) => {
+    // First entry of the session: no previous in-app page.
+    await page.goto('/confidentialite')
+    await dismissInstallBanner(page)
+    await page.getByRole('link', { name: 'Retour', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    // A deep link redirected by RequireAuth (`<Navigate replace>`) is still the first
+    // entry of the tab: going back would leave the app, so "Retour" goes to the map.
+    await page.goto('/me')
+    await expect(page).toHaveURL('/login?next=%2Fme')
+    await page.getByRole('link', { name: 'Retour', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
+    // Reached by client-side navigation from another in-app page: back to that page.
+    await page.getByRole('button', { name: 'À propos' }).click()
+    await page.locator('a[href="/confidentialite"]').click()
+    await expect(page).toHaveURL('/confidentialite')
+    await page.getByRole('link', { name: 'Retour', exact: true }).click()
+    await expect(page).toHaveURL('/')
+    await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
   })
 
   test('a brand-new email can log in end to end and the session persists across a reload', async ({
