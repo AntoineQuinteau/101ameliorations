@@ -29,7 +29,9 @@ export function AdminShortcut() {
       aria-label={label}
       title={label}
       className={mapControlButtonClassName({
-        className: 'absolute top-16 right-3 z-[1000]',
+        // Hidden below 25rem of height: the vertically centred zoom/locate
+        // column on the same edge rises into this band on windows that short.
+        className: 'absolute top-16 right-3 z-[1000] [@media(max-height:25rem)]:hidden',
       })}
     >
       <ShieldCheck className="size-5" />

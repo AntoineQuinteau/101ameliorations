@@ -9,11 +9,12 @@ const POLL_MS = 250
 // sets none): a waiter gives up *before* its own test would time out, so a
 // stuck queue fails with this file's message instead of an opaque timeout.
 const GIVE_UP_AFTER_MS = 20_000
-// A lock older than a test can live is dead whatever its owner says (a reused
-// PID, or no owner file because the holder died between `mkdir` and writing
-// it). A worker that outlives its test timeout is restarted, so no live
-// holder gets near this.
+// A live holder touches its lock every `HEARTBEAT_MS`; one that has not for
+// this long is dead whatever its owner file says (a reused PID, or no owner
+// file because the holder died between `mkdir` and writing it). Long enough to
+// ride out a slow login, short enough to clear a crashed run's leftovers.
 const DEAD_AFTER_MS = 35_000
+const HEARTBEAT_MS = 5_000
 // How long the cleanup mutex below may exist before it is assumed abandoned.
 const CLEANUP_STALE_AFTER_MS = 10_000
 
@@ -49,8 +50,8 @@ async function ageMs(target: string): Promise<number | null> {
 }
 
 /** The holder is gone: its process no longer exists (a Playwright worker is
- * restarted after a test timeout, so its `finally` never ran), or the lock is
- * older than any test can run. */
+ * restarted after a test timeout, so its `finally` never ran), or it stopped
+ * refreshing the lock. */
 async function isDeadLock(lockDir: string): Promise<boolean> {
   const age = await ageMs(lockDir)
   if (age === null) return false // released in the meantime
@@ -104,7 +105,9 @@ async function clearDeadLock(lockDir: string): Promise<boolean> {
  *
  * The lock is a directory: `mkdir` either creates it or fails with `EEXIST`
  * atomically, across processes. It holds the owner's PID, so a lock whose
- * holder died is taken over at once rather than after a timeout.
+ * holder died is taken over at once rather than after a timeout, and its owner
+ * keeps its modification time fresh while it works, so a slow but live holder
+ * is never mistaken for a dead one.
  */
 export async function withEmailLock<T>(email: string, fn: () => Promise<T>): Promise<T> {
   const key = createHash('sha1').update(email.toLowerCase()).digest('hex')
@@ -135,9 +138,15 @@ export async function withEmailLock<T>(email: string, fn: () => Promise<T>): Pro
     throw error
   }
 
+  const heartbeat = setInterval(() => {
+    const now = new Date()
+    void fs.utimes(lockDir, now, now).catch(() => {})
+  }, HEARTBEAT_MS)
+
   try {
     return await fn()
   } finally {
+    clearInterval(heartbeat)
     // Only remove our own lock: if it was judged dead and taken over, the
     // directory now belongs to someone else.
     if ((await readOwner(lockDir)) === process.pid) {
