@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react'
+import { Link } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { emailSchema } from './authSchemas'
@@ -61,6 +62,15 @@ export function EmailStep({
       >
         {isSubmitting ? fr.login.emailStep.submitting : fr.login.emailStep.submit}
       </button>
+      {/* Same tab, like every other in-app link: a new tab leaves the
+          installed PWA. Only the typed email is lost; a report being written
+          on /new is autosaved as a draft. */}
+      <Link
+        to="/confidentialite"
+        className="text-center text-xs text-neutral-500 underline hover:text-neutral-700"
+      >
+        {fr.login.emailStep.privacyLink}
+      </Link>
     </form>
   )
 }

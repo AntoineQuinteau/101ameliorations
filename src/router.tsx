@@ -13,6 +13,7 @@ import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage'
 import { MapPage } from './features/map/MapPage'
 import { MePage } from './features/me/MePage'
 import { NewKlashPage } from './features/newKlash/NewKlashPage'
+import { ADMIN_ROLES } from './lib/klashPermissions'
 
 export const router = createBrowserRouter([
   {
@@ -38,7 +39,7 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <RequireRole allow={['moderator', 'authority', 'admin']}>
+          <RequireRole allow={ADMIN_ROLES}>
             <AdminPage />
           </RequireRole>
         ),

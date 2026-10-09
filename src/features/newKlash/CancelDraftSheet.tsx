@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
 
 /** Confirmation shown when cancelling a report that has something worth
@@ -19,13 +19,7 @@ export function CancelDraftSheet({
    * dismissing this sheet must land the user back on the form, not on the map. */
   onDismiss: () => void
 }) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onDismiss()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onDismiss])
+  useEscapeKey(onDismiss)
 
   return (
     <div

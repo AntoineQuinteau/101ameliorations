@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
+import { useShowAdminEntryPoints } from '../auth/useShowAdminEntryPoints'
 import { useProfile } from '../auth/useProfile'
 import { useUpdateDisplayName } from '../auth/useUpdateDisplayName'
 import { DisplayNameForm } from './DisplayNameForm'
@@ -17,6 +18,7 @@ import { BackToMapLink } from '../../components/BackToMapLink'
 export function MePage() {
   const { user, signOut } = useAuth()
   const { data: profile } = useProfile()
+  const showAdminLink = useShowAdminEntryPoints()
   const updateDisplayName = useUpdateDisplayName()
   const deleteAccountMutation = useDeleteMyAccount()
   const navigate = useNavigate()
@@ -71,6 +73,14 @@ export function MePage() {
                 <span className="text-sm text-neutral-600">{profile.organization}</span>
               </div>
             )}
+            {showAdminLink && (
+              <Link
+                to="/admin"
+                className="inline-flex w-fit items-center rounded-md border border-teal-700 px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
+              >
+                {fr.me.adminLink}
+              </Link>
+            )}
           </div>
         )}
         <DisplayNameForm
@@ -100,6 +110,12 @@ export function MePage() {
       <section className="mt-8 rounded-xl border border-red-200 bg-red-50/50 p-4">
         <h2 className="text-sm font-semibold text-red-900">{fr.me.deleteAccount.title}</h2>
         <p className="mt-1 text-sm text-red-800">{fr.me.deleteAccount.body}</p>
+        <Link
+          to="/confidentialite"
+          className="mt-1 block w-fit text-sm text-red-800 underline hover:text-red-900"
+        >
+          {fr.legal.privacy.title}
+        </Link>
 
         {isConfirmingDelete ? (
           <div className="mt-3 flex flex-col gap-2">

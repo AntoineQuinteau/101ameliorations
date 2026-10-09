@@ -1,4 +1,5 @@
 import type { UserRole } from '../../types/profile'
+import { canAccessAdmin } from '../../lib/klashPermissions'
 import { useAuth } from './useAuth'
 import { useProfile } from './useProfile'
 
@@ -14,6 +15,8 @@ export interface RoleInfo {
   isStaff: boolean
   canModerate: boolean
   canProcess: boolean
+  /** May open `/admin`: moderator, authority or admin (spec §6.6). */
+  canAccessAdmin: boolean
 }
 
 /** Derives role-based permissions from the signed-in user's profile (spec
@@ -37,5 +40,6 @@ export function useRole(): RoleInfo {
     isStaff: role === 'moderator' || role === 'admin',
     canModerate: role === 'moderator' || role === 'admin',
     canProcess: role === 'authority' || role === 'admin',
+    canAccessAdmin: canAccessAdmin(role),
   }
 }

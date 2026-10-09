@@ -100,9 +100,9 @@ jobs:
         # instance is independent of (and outlives) `database`'s, which is
         # already stopped by the time this job would otherwise see it — jobs
         # don't share runners. Seeded this time (no --no-seed): the specs
-        # need the three staff accounts (seed-moderator@/seed-authority@/
-        # seed-admin@101ameliorations.test) and the ~630 seeded klashs that
-        # `supabase/seed.sql` provides, not just the schema.
+        # need the per-worker staff accounts from `supabase/seed-e2e.sql` and
+        # the ~630 seeded klashs that `supabase/seed.sql` provides, not just
+        # the schema.
         run: supabase start
       - run: supabase db reset
       - name: Install managed Chromium

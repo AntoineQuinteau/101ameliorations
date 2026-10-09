@@ -16,6 +16,7 @@ export function MapControlButton({
   variant = 'solid',
   shape = 'circle',
   className = '',
+  ref,
   children,
 }: {
   label: string
@@ -25,10 +26,13 @@ export function MapControlButton({
   variant?: 'solid' | 'active'
   shape?: 'circle' | 'pill-top' | 'pill-bottom'
   className?: string
+  /** Lets the owner focus the button later (React 19: `ref` is a plain prop). */
+  ref?: React.Ref<HTMLButtonElement>
   children: React.ReactNode
 }) {
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onClick}
       disabled={disabled}

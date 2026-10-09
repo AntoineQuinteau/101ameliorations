@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
+import { AboutSheet } from './AboutSheet'
+import { AdminShortcut } from './AdminShortcut'
 import { AuthBadge } from './AuthBadge'
 import { BboxWatcher } from './BboxWatcher'
 import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
@@ -21,12 +23,11 @@ import { PendingPinMarker } from './PendingPinMarker'
 import { PinConfirmCard } from './PinConfirmCard'
 import { ServiceAreaBounds } from './ServiceAreaBounds'
 import { UserPositionMarker } from './UserPositionMarker'
-import { useHasHover } from './useHasHover'
+import { useHasHover } from '../../hooks/useHasHover'
 import { useKlashesInBbox } from './useKlashesInBbox'
 import { useMapLayer } from './useMapLayer'
-import { AppFooterLinks } from '../../components/AppFooterLinks'
 import { ErrorMessage } from '../../components/ErrorMessage'
-import { Funnel } from 'lucide-react'
+import { Funnel, Info } from 'lucide-react'
 import {
   INITIAL_MAP_CENTER,
   INITIAL_MAP_ZOOM,
@@ -48,6 +49,8 @@ export function MapPage() {
   const [selectedKlash, setSelectedKlash] = useState<Klash | null>(null)
   const [pendingPin, setPendingPin] = useState<{ lat: number; lng: number } | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const aboutButtonRef = useRef<HTMLButtonElement>(null)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
@@ -80,7 +83,38 @@ export function MapPage() {
     setSearchParams(filtersToSearchParams(nextFilters), { replace: true })
   }
 
+  // Every way of closing the about sheet goes through here. It also clears the
+  // preview: on a fine-pointer device hovering a marker sets `selectedKlash`
+  // even while the sheet hides it, which would otherwise pop a card the user
+  // didn't ask for once the sheet is gone.
+  function closeAbout() {
+    setIsAboutOpen(false)
+    setSelectedKlash(null)
+  }
+
+  // The about sheet and the filters panel are mutually exclusive: opening
+  // either closes the other (`toggleAbout` also clears the pending pin, which
+  // the about sheet would otherwise sit on top of). Opening filters leaves the
+  // pin alone, as it always has: on desktop the filters card is a small
+  // overlay that doesn't compete with it.
+  function toggleFilters() {
+    if (isAboutOpen) closeAbout()
+    setIsFiltersOpen((open) => !open)
+  }
+
+  function toggleAbout() {
+    if (isAboutOpen) {
+      closeAbout()
+      return
+    }
+    setIsFiltersOpen(false)
+    setSelectedKlash(null)
+    setPendingPin(null)
+    setIsAboutOpen(true)
+  }
+
   function handleMarkerSelect(klash: Klash) {
+    if (isAboutOpen) closeAbout()
     // On a fine-pointer device, hover already previews the klash (see
     // onHover below) — a click there goes straight to the detail page,
     // skipping the extra "voir le détail" tap that only makes sense as a
@@ -169,14 +203,25 @@ export function MapPage() {
           onSelect={handleMarkerSelect}
           onHover={hasHover ? setSelectedKlash : undefined}
         />
-        <MapClickToReport onPick={(lat, lng) => setPendingPin({ lat, lng })} />
+        <MapClickToReport
+          onPick={(lat, lng) => {
+            // Like clicking outside a popover: with the About sheet open, the
+            // click only dismisses it, instead of also dropping a pin the user
+            // didn't ask for.
+            if (isAboutOpen) {
+              closeAbout()
+              return
+            }
+            setPendingPin({ lat, lng })
+          }}
+        />
         {pendingPin && <PendingPinMarker position={[pendingPin.lat, pendingPin.lng]} />}
         {userPosition && <UserPositionMarker userPosition={userPosition} />}
       </MapContainer>
 
       <AuthBadge />
 
-      {showFloatingControls && <AppFooterLinks />}
+      {showFloatingControls && <AdminShortcut />}
 
       {showFloatingControls && <MapLayerToggle layer={layer} onChange={setLayer} />}
 
@@ -189,7 +234,7 @@ export function MapPage() {
       {showFloatingControls && (
         <MapControlButton
           label={filtersActive ? fr.map.filters.openActive : fr.map.filters.open}
-          onClick={() => setIsFiltersOpen((open) => !open)}
+          onClick={toggleFilters}
           pressed={isFiltersOpen}
           className="absolute top-16 left-3 z-[1000]"
         >
@@ -203,6 +248,19 @@ export function MapPage() {
         </MapControlButton>
       )}
 
+      {/* Third in the left-hand column, under the filters button. */}
+      {showFloatingControls && (
+        <MapControlButton
+          ref={aboutButtonRef}
+          label={fr.about.title}
+          onClick={toggleAbout}
+          pressed={isAboutOpen}
+          className="absolute top-29 left-3 z-[1000]"
+        >
+          <Info className="size-5" />
+        </MapControlButton>
+      )}
+
       <MapZoomLocateControls
         map={map}
         serviceArea={serviceArea}
@@ -210,13 +268,15 @@ export function MapPage() {
         visible={showFloatingControls}
       />
 
-      {hasDraft && !pendingPin && !selectedKlash && showFloatingControls && <DraftInProgressChip />}
+      {hasDraft && !pendingPin && !selectedKlash && !isAboutOpen && showFloatingControls && (
+        <DraftInProgressChip />
+      )}
 
-      {!pendingPin && !selectedKlash && showFloatingControls && (
+      {!pendingPin && !selectedKlash && !isAboutOpen && showFloatingControls && (
         <button
           type="button"
           onClick={handleReportHereButton}
-          className="absolute bottom-16 md:bottom-4 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
+          className="absolute bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-teal-800"
         >
           {fr.map.reportWhereIAm}
         </button>
@@ -236,15 +296,15 @@ export function MapPage() {
       )}
 
       {/* Kept clear of every floating control, at any viewport size:
-          top-28 (112px) puts it below the left-hand layer/filters column
-          (ends ~108px), and px-16 (64px) keeps the card out of the right
+          top-44 (176px) puts it below the left-hand layer/filters/about
+          column (ends ~160px), and px-16 (64px) keeps the card out of the right
           edge's zoom/locate column (right-3 + 44px = 56px), which is
           vertically centred and so reaches this band on short screens. The
           wrapper itself spans the full width, so it's pointer-events-none
           with only the card re-enabled — otherwise its empty sides would
           still swallow taps and map drags across the whole band. */}
       {isError && (
-        <div className="pointer-events-none absolute inset-x-0 top-28 z-[1000] px-16 py-3">
+        <div className="pointer-events-none absolute inset-x-0 top-44 z-[1000] px-16 py-3">
           <div className="pointer-events-auto mx-auto max-w-md rounded-xl bg-white shadow-lg ring-1 ring-black/5">
             <ErrorMessage message={fr.map.loadError} onRetry={() => refetch()} />
           </div>
@@ -269,7 +329,9 @@ export function MapPage() {
         )
       )}
 
-      {!isFiltersOpen && selectedKlash && (
+      {isAboutOpen && <AboutSheet onClose={closeAbout} returnFocusRef={aboutButtonRef} />}
+
+      {!isFiltersOpen && !isAboutOpen && selectedKlash && (
         <KlashPreviewCard
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}

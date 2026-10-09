@@ -91,18 +91,37 @@ export async function fetchAdminKlashes(
   return { klashes: data.map(klashFromRow), totalCount: count ?? 0, page }
 }
 
-/** Klashs stuck in `new` for more than 7 days (spec §6.6 "file à trier").
- * Public read (same RLS as the rest of klashes_public); this app only
- * surfaces it to staff. */
-export async function fetchTriageQueue(): Promise<Klash[]> {
-  const { data, error } = await supabase
+/** Age after which a `new` klash lands in the triage queue (spec §6.6). The
+ * one definition: the queue, the map badge's count and the copy on `/admin`
+ * (`fr.admin.triage.body`/`empty`, which take it as an argument) all use it. */
+export const TRIAGE_AGE_DAYS = 7
+
+/** The triage queue's definition — `new` klashs older than `TRIAGE_AGE_DAYS`
+ * (spec §6.6 "file à trier") — in one place, so the queue and the count shown
+ * on the map can't drift apart. Public read (same RLS as the rest of
+ * klashes_public); this app only surfaces it to staff. Takes the select as
+ * arguments because the two callers want different columns and options. */
+function triageQuery(columns: string, options?: { count: 'exact'; head: true }) {
+  return supabase
     .from('klashes_public')
-    .select('*')
+    .select(columns, options)
     .eq('status', 'new')
-    .lt('created_at', daysAgoIso(7))
-    .order('created_at', { ascending: true })
+    .lt('created_at', daysAgoIso(TRIAGE_AGE_DAYS))
+}
+
+/** Klashs stuck in `new` for more than `TRIAGE_AGE_DAYS` days, oldest first. */
+export async function fetchTriageQueue(): Promise<Klash[]> {
+  const { data, error } = await triageQuery('*').order('created_at', { ascending: true })
   if (error) throw error
   return data.map(klashFromRow)
+}
+
+/** Size of the same queue, without fetching its rows: a head-only count, for
+ * the map's staff shortcut badge. */
+export async function fetchTriageCount(): Promise<number> {
+  const { count, error } = await triageQuery('id', { count: 'exact', head: true })
+  if (error) throw error
+  return count ?? 0
 }
 
 /** Finds a profile by its account email, for `/admin`'s role management

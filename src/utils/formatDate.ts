@@ -30,7 +30,7 @@ export function formatDateTime(isoDate: string): string {
 
 /** ISO timestamp for `days` days before now — shared by the admin table's
  * period filter (`adminFilterParams.ts`'s `sinceForPeriod`) and the triage
- * queue's 7-day cutoff (`api/admin.ts`'s `fetchTriageQueue`), so the two
+ * queue's cutoff (`api/admin.ts`'s `TRIAGE_AGE_DAYS`), so the two
  * can't silently diverge. */
 export function daysAgoIso(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()

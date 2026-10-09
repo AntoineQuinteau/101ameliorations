@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
 import type { KlashCategory, KlashStatus, KlashImportance } from '../../types/klash'
 import {
@@ -43,8 +44,8 @@ function toggleButtonClass(active: boolean): string {
  * Always mounted (unlike the mobile sheet, which only exists while open):
  * `isOpen` drives an opacity/scale transition instead of a mount/unmount, so
  * showing and hiding the card is an animated transition rather than a hard
- * cut. `aria-hidden` + `pointer-events-none` keep it out of the accessibility
- * tree and unclickable while closed, matching the visual state. */
+ * cut. `inert` keeps it out of the accessibility tree, the tab order and
+ * pointer hit-testing while closed, matching the visual state. */
 export function DesktopFiltersCard({
   isOpen,
   filters,
@@ -58,17 +59,15 @@ export function DesktopFiltersCard({
 }) {
   return (
     <div
-      aria-hidden={!isOpen}
+      inert={!isOpen}
       // max-w accounts for the left-16 (64px) offset plus a 12px right-hand
       // margin: w-72 (288px) alone pushes the card's right edge past the
       // viewport on anything narrower than ~427px (64 + 288 + 12 = 364, but
       // a fine-pointer/hover viewport can be as narrow as an iPad in Slide
       // Over at 320px) — a fixed percentage of the viewport (85vw) doesn't
       // account for that fixed left offset at all, so it still overflowed.
-      className={`absolute top-16 left-16 z-[1000] w-72 max-w-[calc(100vw-5rem)] origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${
-        isOpen
-          ? 'translate-y-0 scale-100 opacity-100'
-          : 'pointer-events-none -translate-y-1 scale-95 opacity-0'
+      className={`absolute top-16 left-16 z-[1000] w-72 max-w-[calc(100vw-5rem)] max-h-[calc(100dvh-5rem)] overflow-y-auto origin-top-left rounded-xl bg-white/85 p-3 shadow-lg ring-1 ring-black/5 backdrop-blur-sm transition-all duration-150 ease-out ${
+        isOpen ? 'translate-y-0 scale-100 opacity-100' : '-translate-y-1 scale-95 opacity-0'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -163,6 +162,13 @@ export function DesktopFiltersCard({
           </div>
         </div>
       </div>
+
+      <Link
+        to="/export"
+        className="mt-3 block text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:underline"
+      >
+        {fr.map.filters.exportLink}
+      </Link>
     </div>
   )
 }

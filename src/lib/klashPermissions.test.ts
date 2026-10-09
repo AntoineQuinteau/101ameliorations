@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canDeleteKlash, canEditKlash } from './klashPermissions'
+import { canAccessAdmin, canDeleteKlash, canEditKlash } from './klashPermissions'
 import type { KlashStatus } from '../types/klash'
 import type { UserRole } from '../types/profile'
 
@@ -87,5 +87,19 @@ describe('canDeleteKlash', () => {
 
   it('is false for a signed-out or unresolved visitor', () => {
     expect(canDeleteKlash(null, false, 'new')).toBe(false)
+  })
+})
+
+describe('canAccessAdmin', () => {
+  it('is true for every role at or above moderator, authority included', () => {
+    const roles: UserRole[] = ['moderator', 'authority', 'admin']
+    for (const role of roles) {
+      expect(canAccessAdmin(role)).toBe(true)
+    }
+  })
+
+  it('is false for a plain user and for a signed-out or unresolved visitor', () => {
+    expect(canAccessAdmin('user')).toBe(false)
+    expect(canAccessAdmin(null)).toBe(false)
   })
 })

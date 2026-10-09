@@ -1,8 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { loginAs } from './support/login'
-
-const MODERATOR_EMAIL = 'seed-moderator@101ameliorations.test'
-const AUTHORITY_EMAIL = 'seed-authority@101ameliorations.test'
+import { staffEmail } from './support/staff'
 
 /**
  * Opens `/admin`'s klash table, filters to `status = new`, jumps to the
@@ -63,7 +61,7 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
 test.describe('lifecycle', () => {
   test('moderator triages a new klash to rejected', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, MODERATOR_EMAIL)
+    await loginAs(page, staffEmail('moderator'))
 
     const klashUrl = await findNewKlashUrl(page, 0)
     await page.goto(klashUrl)
@@ -85,7 +83,7 @@ test.describe('lifecycle', () => {
 
   test('authority acknowledges a new klash', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, AUTHORITY_EMAIL)
+    await loginAs(page, staffEmail('authority'))
 
     // A different klash than the moderator test above, to avoid the two
     // tests racing to change the same row's status (each finds its own

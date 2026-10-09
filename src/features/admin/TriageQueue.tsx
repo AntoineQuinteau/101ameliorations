@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { TRIAGE_AGE_DAYS } from '../../api/admin'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
@@ -9,7 +10,7 @@ function ageInDays(createdAt: string): number {
   return Math.floor((Date.now() - new Date(createdAt).getTime()) / (24 * 60 * 60 * 1000))
 }
 
-/** "À trier" queue (spec §6.6): klashs `new` for more than 7 days, with no
+/** "À trier" queue (spec §6.6): klashs `new` for more than `TRIAGE_AGE_DAYS` days, with no
  * moderator/authority action yet. Self-contained, like StatusHistory/
  * CommentList: owns its own query and loading/error/empty states. */
 export function TriageQueue() {
@@ -17,13 +18,13 @@ export function TriageQueue() {
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-neutral-500">{fr.admin.triage.body}</p>
+      <p className="text-sm text-neutral-500">{fr.admin.triage.body(TRIAGE_AGE_DAYS)}</p>
 
       {isLoading && <Spinner />}
       {isError && <ErrorMessage message={fr.admin.triage.loadError} onRetry={() => refetch()} />}
 
       {klashes && klashes.length === 0 && (
-        <p className="text-sm text-neutral-500">{fr.admin.triage.empty}</p>
+        <p className="text-sm text-neutral-500">{fr.admin.triage.empty(TRIAGE_AGE_DAYS)}</p>
       )}
 
       {klashes && klashes.length > 0 && (

@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginAs } from './support/login'
-
-const ADMIN_EMAIL = 'seed-admin@101ameliorations.test'
-const MODERATOR_EMAIL = 'seed-moderator@101ameliorations.test'
+import { staffEmail } from './support/staff'
 
 /**
  * /admin (spec §6.6). The roles tab is admin-only — see
@@ -12,7 +10,7 @@ const MODERATOR_EMAIL = 'seed-moderator@101ameliorations.test'
 test.describe('admin', () => {
   test('admin sees the klash table, triage queue, and roles tab', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, ADMIN_EMAIL)
+    await loginAs(page, staffEmail('admin'))
 
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
@@ -40,7 +38,7 @@ test.describe('admin', () => {
 
   test('moderator does not see the roles tab', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, MODERATOR_EMAIL)
+    await loginAs(page, staffEmail('moderator'))
 
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
@@ -53,4 +51,42 @@ test.describe('admin', () => {
     // "Gérer les rôles" is admin-only).
     await expect(page.getByRole('button', { name: 'Rôles' })).toHaveCount(0)
   })
+
+  // Entry points are desktop-only for now (wide viewport + mouse, see
+  // useDesktopLayout): /admin isn't laid out for touch devices yet. The route
+  // itself stays reachable by URL, which the tests above cover on both projects.
+  for (const role of ['admin', 'moderator', 'authority'] as const) {
+    test(`${role} can reach /admin from the map shortcut and from /me on desktop only`, async ({
+      page,
+      isMobile,
+    }) => {
+      await page.goto('/login')
+      await loginAs(page, staffEmail(role))
+      await page.goto('/')
+
+      const shortcut = page.getByRole('link', { name: /^Administration/ })
+      const meLink = page.getByRole('link', { name: "Accéder à l'administration" })
+
+      if (isMobile) {
+        // Touch devices get neither entry point (see useDesktopLayout). Navigate
+        // client-side (not page.goto) so the profile query's cache survives, and
+        // wait for something that only renders once the role has resolved
+        // before asserting anything is absent: both entry points render nothing
+        // while it loads, which would make "absent" pass for the wrong reason.
+        await page.getByRole('link', { name: 'Mon espace' }).click()
+        await expect(page.getByText('Rôle', { exact: true })).toBeVisible()
+        await expect(meLink).toHaveCount(0)
+        await page.getByRole('link', { name: 'Retour à la carte' }).click()
+        await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
+        await expect(shortcut).toHaveCount(0)
+        return
+      }
+
+      await expect(shortcut).toBeVisible()
+      await page.goto('/me')
+      await meLink.click()
+      await expect(page).toHaveURL(/\/admin$/)
+      await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
+    })
+  }
 })

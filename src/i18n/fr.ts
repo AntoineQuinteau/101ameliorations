@@ -97,6 +97,7 @@ export const fr = {
       periodLast90Days: '90 derniers jours',
       reset: 'Réinitialiser',
       viewOnMap: 'Voir sur la carte',
+      exportLink: 'Télécharger toutes les données',
     },
     layer: {
       // A stable name, not an action label that flips with the state
@@ -223,6 +224,7 @@ export const fr = {
       placeholder: 'vous@exemple.fr',
       submit: 'Recevoir le code',
       submitting: 'Envoi en cours…',
+      privacyLink: 'Comment sont utilisées vos données ? Politique de confidentialité',
     },
     codeStep: {
       instructions: (email: string) =>
@@ -263,6 +265,7 @@ export const fr = {
     myKlashesEmptyCta: 'Voir la carte',
     loadError: 'Impossible de charger vos signalements.',
     roleLabel: 'Rôle',
+    adminLink: "Accéder à l'administration",
     organizationLabel: 'Organisation',
     pseudoLabel: 'Pseudo',
     pseudoSave: 'Enregistrer',
@@ -370,6 +373,12 @@ export const fr = {
   },
   admin: {
     title: 'Administration',
+    shortcut: {
+      labelWithCount: (count: number) =>
+        count === 1
+          ? 'Administration (1 signalement à trier)'
+          : `Administration (${count} signalements à trier)`,
+    },
     accessDenied: "Vous n'avez pas accès à cette page.",
     tabs: {
       klashes: 'Signalements',
@@ -402,9 +411,10 @@ export const fr = {
     },
     triage: {
       title: 'À trier',
-      body: 'Signalements « nouveau » depuis plus de 7 jours, sans suite pour le moment.',
+      body: (days: number) =>
+        `Signalements « nouveau » depuis plus de ${days} jours, sans suite pour le moment.`,
       loadError: 'Impossible de charger la file à trier.',
-      empty: 'Aucun signalement en attente de tri depuis plus de 7 jours.',
+      empty: (days: number) => `Aucun signalement en attente de tri depuis plus de ${days} jours.`,
       ageInDays: (days: number) => (days === 1 ? 'Depuis 1 jour' : `Depuis ${days} jours`),
     },
     roles: {
@@ -433,6 +443,12 @@ export const fr = {
     iosInstallHint:
       "Pour installer l'application : appuyez sur le bouton de partage, puis « Sur l'écran d'accueil ».",
   },
+  about: {
+    title: 'À propos',
+    description:
+      "101améliorations recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes.",
+    exportHint: 'CSV, GeoJSON',
+  },
   export: {
     title: 'Export des données',
     body: 'Tous les signalements publics de 101améliorations, sans donnée personnelle : statut, catégorie, importance, position, compteurs. Généré depuis les données publiques de la carte.',
@@ -440,10 +456,8 @@ export const fr = {
     downloadGeoJson: 'Télécharger en GeoJSON',
     preparing: (loaded: number) => `Préparation de l'export… (${loaded} signalements)`,
     error: "Impossible de générer l'export.",
-    footerLink: 'Export des données',
   },
   legal: {
-    footerLink: 'Mentions légales',
     notice: {
       title: 'Mentions légales',
       publisher: {

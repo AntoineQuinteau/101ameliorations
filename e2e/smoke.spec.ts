@@ -61,3 +61,77 @@ test('map floating controls are present and interactive', async ({ page }) => {
     )
     .toBe(true)
 })
+
+// "À propos" sheet (spec §6.1): the one entry point to the export and the
+// legal/privacy pages, replacing the three footer chips.
+test('about sheet opens from the map and links to export, legal and privacy pages', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  // Wait for the map controls first: a count of 0 straight after goto would
+  // pass before anything has rendered.
+  const aboutButton = page.getByRole('button', { name: 'À propos' })
+  await expect(aboutButton).toBeVisible()
+
+  // The old footer chips are gone; their targets now live in the sheet.
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toHaveCount(0)
+
+  await aboutButton.click()
+  await expect(aboutButton).toHaveAttribute('aria-pressed', 'true')
+
+  await expect(page.getByRole('link', { name: /Export des données/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Politique de confidentialité' })).toBeVisible()
+
+  // Escape closes it.
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toHaveCount(0)
+
+  await aboutButton.click()
+  await page.getByRole('link', { name: 'Mentions légales' }).click()
+  await expect(page).toHaveURL(/\/mentions-legales$/)
+})
+
+test('filters panel links to the data export', async ({ page }) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  await page.getByRole('button', { name: 'Filtres' }).click()
+  await page.getByRole('link', { name: /Télécharger toutes les données/ }).click()
+  await expect(page).toHaveURL(/\/export$/)
+})
+
+test('staff admin shortcut is not offered to a signed-out visitor', async ({ page }) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  // AdminShortcut renders nothing until auth has resolved, so a count of 0 right
+  // after goto proves nothing: wait for something that only appears afterwards.
+  await expect(page.getByRole('link', { name: 'Se connecter' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Administration/ })).toHaveCount(0)
+})
+
+// A click on the map while the About sheet is open only dismisses the sheet,
+// like clicking outside a popover; it must not also drop a report pin.
+test('clicking the map with the About sheet open only closes it', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a long press, not a click, picks a point on touch devices')
+
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  const aboutButton = page.getByRole('button', { name: 'À propos' })
+  await expect(aboutButton).toBeVisible()
+  await aboutButton.click()
+  await expect(page.getByRole('dialog', { name: 'À propos' })).toBeVisible()
+
+  const reportHere = page.getByRole('button', { name: 'Signaler ici', exact: true })
+  await page.mouse.click(640, 300)
+  await expect(page.getByRole('dialog', { name: 'À propos' })).toHaveCount(0)
+  await expect(reportHere).toHaveCount(0)
+
+  // The next click is a normal pick again.
+  await page.mouse.click(640, 300)
+  await expect(reportHere).toBeVisible()
+})

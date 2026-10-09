@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
 
 /** Camera-or-gallery choice, shown on touch devices when adding a photo (spec §6.2,
@@ -17,13 +17,7 @@ export function PhotoSourceSheet({
   onPickGallery: () => void
   onCancel: () => void
 }) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onCancel()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onCancel])
+  useEscapeKey(onCancel)
 
   return (
     <div
