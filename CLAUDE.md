@@ -22,6 +22,15 @@ React 19 + Vite + TypeScript (strict) + Tailwind, react-router, TanStack Query, 
 - Small, focused commits with conventional messages (`feat:`, `fix:`, `chore:`, `db:`). Push to a feature branch; the human merges to `main`.
 - Before claiming a step is done: `npm run lint`, `npm run typecheck`, `npm test` all pass, and the preview URL is listed in the final message.
 
+## Code review policy
+
+- Blocking findings only: bugs, regressions, security/RLS holes, spec or CLAUDE.md violations. Cleanups are optional, at most 3, labeled "(optional)", and never block a merge.
+- Second and later passes review only the diff since the previous pass, not the whole PR.
+- Do not re-raise a finding already answered on the PR (fixed or "won't fix").
+- Fix flaky tests at the root (isolate data, accounts, state) instead of adding locks, retries or timing machinery.
+- One session drives a PR: the session that reviews also fixes and pushes. Never push to a PR another session is driving.
+- Done = no blocking finding + CI green. Then stop reviewing.
+
 ## Definition of done for the whole v1
 
 Spec §9 steps 1–9 complete, tested on a real phone by the human, and RLS tests in `supabase/tests/` cover every forbidden action from the permissions table in spec §2.
