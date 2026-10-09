@@ -20,15 +20,48 @@ export async function loginAs(page: Page, email: string): Promise<void> {
   await dismissInstallBanner(page)
   await page.getByLabel('Adresse email').fill(email)
 
-  const sentAt = Date.now()
-  await page.getByRole('button', { name: 'Recevoir le code' }).click()
-
-  await page.getByLabel('Code de connexion').waitFor({ state: 'visible' })
+  const sentAt = await requestOtpCode(page)
   const code = await getLatestOtpCode(email, sentAt)
   await page.getByLabel('Code de connexion').fill(code)
   await page.getByRole('button', { name: 'Valider' }).click()
 
   await skipNicknameStepIfShown(page)
+}
+
+// Supabase refuses a second OTP email to the same address within
+// `auth.email.max_frequency` (5s, supabase/config.toml). The seeded staff
+// accounts are shared by specs running in parallel (both Playwright projects,
+// several workers), so two of them can ask for a code for the same address
+// within that window; the loser sees the app's "Trop de tentatives" message
+// instead of the code step. Retrying once the window has passed makes that
+// collision harmless instead of a flaky 30s timeout.
+const OTP_SEND_ATTEMPTS = 3
+const OTP_RESEND_DELAY_MS = 6_000
+
+/**
+ * Clicks "Recevoir le code" and waits for the code step, retrying when the
+ * send was refused for being too soon after another one to the same address.
+ * Returns when the request that produced the code started, for
+ * `getLatestOtpCode`'s staleness guard.
+ */
+async function requestOtpCode(page: Page): Promise<number> {
+  const codeField = page.getByLabel('Code de connexion')
+  const tooSoon = page.getByRole('alert').filter({ hasText: 'Trop de tentatives' })
+
+  for (let attempt = 1; ; attempt++) {
+    const sentAt = Date.now()
+    await page.getByRole('button', { name: 'Recevoir le code' }).click()
+
+    const outcome = await Promise.race([
+      codeField.waitFor({ state: 'visible' }).then(() => 'sent' as const),
+      tooSoon.waitFor({ state: 'visible' }).then(() => 'refused' as const),
+    ])
+    if (outcome === 'sent') return sentAt
+    if (attempt === OTP_SEND_ATTEMPTS) {
+      throw new Error(`OTP email still refused after ${OTP_SEND_ATTEMPTS} attempts`)
+    }
+    await page.waitForTimeout(OTP_RESEND_DELAY_MS)
+  }
 }
 
 /**
