@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom'
 import { Badge } from '../../components/Badge'
 import { fr } from '../../i18n/fr'
 import { statusTone } from '../../lib/klashPresentation'
 import { klashCategoryLabel, type Klash } from '../../types/klash'
 import { formatDate } from '../../utils/formatDate'
+import { AdminKlashCardLink } from './AdminKlashCardLink'
 
 /** The admin klash listing below the `md` breakpoint, where the six-column
  * table would need a horizontal scroll: one tappable card per klash, like
@@ -14,10 +14,7 @@ export function AdminKlashCardList({ klashes }: { klashes: Klash[] }) {
     <ul aria-label={fr.admin.tabs.klashes} className="flex flex-col gap-2 md:hidden">
       {klashes.map((klash) => (
         <li key={klash.id}>
-          <Link
-            to={`/k/${klash.id}`}
-            className="flex flex-col gap-2 rounded-md border border-neutral-200 p-3 hover:bg-neutral-50"
-          >
+          <AdminKlashCardLink klashId={klash.id} className="flex-col gap-2">
             <span className="text-sm font-medium break-words text-neutral-900">{klash.title}</span>
             <span className="flex flex-wrap items-center gap-2">
               <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
@@ -32,7 +29,7 @@ export function AdminKlashCardList({ klashes }: { klashes: Klash[] }) {
               {fr.map.confirmationsCount(klash.confirmationsCount)} ·{' '}
               {fr.admin.table.commentsCount(klash.commentsCount)}
             </span>
-          </Link>
+          </AdminKlashCardLink>
         </li>
       ))}
     </ul>
