@@ -27,9 +27,8 @@
       "Bash(npx supabase stop)",
       "Bash(npx supabase status)",
       "Bash(npx supabase db reset)",
-      "Bash(npx supabase db reset *)",
+      "Bash(npx supabase db reset --no-seed)",
       "Bash(npx supabase test db)",
-      "Bash(npx supabase test db *)",
       "Bash(npx supabase migration new *)",
       "Bash(npx supabase migration list --local)",
       "Bash(npx supabase db diff *)",
@@ -47,6 +46,8 @@
       "Bash(docker logs *)"
     ],
     "ask": [
+      "Bash(npx supabase * --linked*)",
+      "Bash(npx supabase * --db-url *)",
       "Bash(npx supabase db push *)",
       "Bash(npx supabase link *)",
       "Bash(npx wrangler deploy *)",
