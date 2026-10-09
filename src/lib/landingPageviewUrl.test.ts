@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { landingPageviewUrl } from './analytics'
+import { landingPageviewUrl } from './landingPageviewUrl'
 
 describe('landingPageviewUrl', () => {
   it('keeps utm parameters so the tracker can read them', () => {
