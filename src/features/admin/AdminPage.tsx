@@ -10,7 +10,7 @@ import { useRole } from '../auth/useRole'
 import { AdminKlashTable } from './AdminKlashTable'
 import { RoleManagement } from './RoleManagement'
 import { TriageQueue } from './TriageQueue'
-import { BackToMapLink } from '../../components/BackToMapLink'
+import { BackLink } from '../../components/BackLink'
 
 /** `/admin` (spec §6.6, rôles ≥ moderator). Scoped for this step to a
  * paginated/filtered klash table, the "à trier" queue, and role management
@@ -45,7 +45,7 @@ export function AdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-4">
-      <BackToMapLink />
+      <BackLink />
 
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.admin.title}</h1>
 

@@ -29,7 +29,7 @@ import { useMyConfirmation } from './useMyConfirmation'
 import { useShareKlash } from './useShareKlash'
 import { useUpdateKlash } from './useUpdateKlash'
 import { Check } from 'lucide-react'
-import { BackToMapLink } from '../../components/BackToMapLink'
+import { BackLink } from '../../components/BackLink'
 
 /** Maps an updateKlash failure to a French message: RLS turns a forbidden
  * edit (e.g. the klash left `new` mid-edit) into a distinguishable 'klash
@@ -122,7 +122,7 @@ export function KlashDetailPage() {
   return (
     <div className="mx-auto max-w-xl px-4 py-4">
       <div className="flex items-center justify-between">
-        <BackToMapLink />
+        <BackLink />
         <Link
           to={user ? '/me' : '/login'}
           className="text-sm font-medium text-teal-700 hover:underline"

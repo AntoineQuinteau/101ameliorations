@@ -8,7 +8,7 @@ import { safeNextPath } from './safeNextPath'
 import { useAuth } from './useAuth'
 import { useOtpLogin } from './useOtpLogin'
 import { useProfile } from './useProfile'
-import { BackToMapLink } from '../../components/BackToMapLink'
+import { BackLink } from '../../components/BackLink'
 
 /** Email -> 6-digit code -> optional pseudo, in one page (spec §6.4). Kept as
  * a single route rather than a separate "welcome" screen so `?next=` is
@@ -65,7 +65,7 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto max-w-sm px-4 py-8">
-      <BackToMapLink />
+      <BackLink />
 
       <h1 className="mb-6 text-xl font-semibold text-neutral-900">{fr.login.title}</h1>
 
