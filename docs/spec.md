@@ -188,7 +188,7 @@ Une seule application responsive. Routes :
 | `/me`    | Mes klashs, mon pseudo                                                                |
 | `/admin` | Modération et traitement (rôles ≥ moderator)                                          |
 
-Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (lien direct, rechargement) à la carte.
+Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
 
 ### 6.1 Carte (`/`)
 

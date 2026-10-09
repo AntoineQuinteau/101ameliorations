@@ -49,6 +49,13 @@ test.describe('auth', () => {
     await page.getByRole('link', { name: 'Retour', exact: true }).click()
     await expect(page).toHaveURL('/')
 
+    // A deep link redirected by RequireAuth (`<Navigate replace>`) is still the first
+    // entry of the tab: going back would leave the app, so "Retour" goes to the map.
+    await page.goto('/me')
+    await expect(page).toHaveURL('/login?next=%2Fme')
+    await page.getByRole('link', { name: 'Retour', exact: true }).click()
+    await expect(page).toHaveURL('/')
+
     // Reached by client-side navigation from another in-app page: back to that page.
     await page.getByRole('button', { name: 'À propos' }).click()
     await page.locator('a[href="/confidentialite"]').click()
