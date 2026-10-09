@@ -109,11 +109,20 @@ export function AdminKlashTable() {
     [],
   )
 
+  // The debounced write runs after later renders. Calling the latest
+  // `updateParams` through a ref makes it merge onto the filters as they are
+  // when the timer fires: the one captured at keypress would write back a
+  // status/category/period the user changed in the meantime.
+  const updateParamsRef = useRef(updateParams)
+  useEffect(() => {
+    updateParamsRef.current = updateParams
+  })
+
   function handleSearchInputChange(value: string) {
     setSearchInput(value)
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
     searchDebounceRef.current = setTimeout(
-      () => updateParams({ searchText: value }),
+      () => updateParamsRef.current({ searchText: value }),
       SEARCH_DEBOUNCE_MS,
     )
   }
@@ -202,7 +211,7 @@ export function AdminKlashTable() {
         <button
           type="button"
           onClick={handleReset}
-          className="min-h-11 self-end rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 md:min-h-0"
+          className="self-end rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
         >
           {fr.admin.table.resetFilters}
         </button>
