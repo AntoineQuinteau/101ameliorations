@@ -172,7 +172,12 @@ export function NewKlashPage() {
   // same synchronous tick, before a re-render could ever update state.
   const submitGuardRef = useRef(createSubmitGuard())
 
-  const geolocation = useGeolocation()
+  // Not asked for at all when its fix would be discarded anyway (see the
+  // effect below): the page was handed a position, or restored a draft's.
+  // Asking regardless made the browser prompt for the location permission
+  // on a long-pressed "Signaler ici", where the user chose a point by hand
+  // precisely instead of sharing their own position.
+  const geolocation = useGeolocation(!hasExplicitPosition && !shouldAutoRestoreDraft)
   const { data: nearbyKlashes = [] } = useKlashesInBbox(viewportBbox, serviceArea)
   // The accuracy PositionStep shows (spec §6.2 step 1: "< 50 m" vs "affinez
   // la position") — that of the GPS fix the pin currently sits on, and null
