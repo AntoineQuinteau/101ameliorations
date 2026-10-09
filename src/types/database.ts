@@ -80,6 +80,101 @@ export type Database = {
           },
         ]
       }
+      campaign_link_scans: {
+        Row: {
+          id: number
+          link_was_active: boolean
+          scanned_at: string
+          slug: string
+        }
+        ComputedFields: never
+        Insert: {
+          id?: never
+          link_was_active: boolean
+          scanned_at?: string
+          slug: string
+        }
+        Update: {
+          id?: never
+          link_was_active?: boolean
+          scanned_at?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'campaign_link_scans_slug_fkey'
+            columns: ['slug']
+            isOneToOne: false
+            referencedRelation: 'campaign_links'
+            referencedColumns: ['slug']
+          },
+        ]
+      }
+      campaign_links: {
+        Row: {
+          campaign: string
+          content: string
+          created_at: string
+          created_by: string | null
+          destination: string
+          is_active: boolean
+          medium: Database['public']['Enums']['campaign_medium']
+          slug: string
+          source: string
+        }
+        ComputedFields: never
+        Insert: {
+          campaign: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          destination?: string
+          is_active?: boolean
+          medium: Database['public']['Enums']['campaign_medium']
+          slug: string
+          source: string
+        }
+        Update: {
+          campaign?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          destination?: string
+          is_active?: boolean
+          medium?: Database['public']['Enums']['campaign_medium']
+          slug?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'campaign_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'campaign_links_source_fkey'
+            columns: ['source']
+            isOneToOne: false
+            referencedRelation: 'campaign_sources'
+            referencedColumns: ['source']
+          },
+        ]
+      }
+      campaign_sources: {
+        Row: {
+          source: string
+        }
+        ComputedFields: never
+        Insert: {
+          source: string
+        }
+        Update: {
+          source?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           author_id: string
@@ -309,6 +404,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          can_manage_campaigns: boolean
           created_at: string
           display_name: string | null
           id: string
@@ -317,6 +413,7 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
+          can_manage_campaigns?: boolean
           created_at?: string
           display_name?: string | null
           id: string
@@ -324,6 +421,7 @@ export type Database = {
           role?: Database['public']['Enums']['user_role']
         }
         Update: {
+          can_manage_campaigns?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
@@ -499,6 +597,32 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_campaign_link: {
+        Args: {
+          p_campaign: string
+          p_content?: string
+          p_destination?: string
+          p_medium: Database['public']['Enums']['campaign_medium']
+          p_source: string
+        }
+        Returns: {
+          campaign: string
+          content: string
+          created_at: string
+          created_by: string | null
+          destination: string
+          is_active: boolean
+          medium: Database['public']['Enums']['campaign_medium']
+          slug: string
+          source: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'campaign_links'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_klash: {
         Args: {
           category: Database['public']['Enums']['klash_category']
@@ -539,6 +663,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      current_user_can_manage_campaigns: { Args: Record<PropertyKey, never>; Returns: boolean }
       current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['Enums']['user_role']
@@ -554,6 +679,7 @@ export type Database = {
         }[]
       }
       get_klash_author_contact: { Args: { klash_id: string }; Returns: string }
+      is_campaign_token: { Args: { value: string }; Returns: boolean }
       klashes_in_bbox: {
         Args: { max_lat: number; max_lng: number; min_lat: number; min_lng: number }
         Returns: {
@@ -616,9 +742,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      normalize_campaign_token: { Args: { value: string }; Returns: string }
       purge_author_contact_lookups: { Args: Record<PropertyKey, never>; Returns: undefined }
+      resolve_campaign_link: {
+        Args: { p_count?: boolean; p_slug: string }
+        Returns: {
+          campaign: string
+          content: string
+          destination: string
+          medium: Database['public']['Enums']['campaign_medium']
+          source: string
+        }[]
+      }
     }
     Enums: {
+      campaign_medium: 'social' | 'email' | 'print' | 'press'
       klash_category:
         | 'category_1'
         | 'category_2'
@@ -745,6 +883,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      campaign_medium: ['social', 'email', 'print', 'press'],
       klash_category: [
         'category_1',
         'category_2',

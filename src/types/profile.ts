@@ -11,6 +11,7 @@ export const profileSchema = z.object({
   displayName: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  canManageCampaigns: z.boolean(),
   createdAt: z.string(),
 })
 export type Profile = z.infer<typeof profileSchema>
@@ -21,6 +22,7 @@ const profileRowSchema = z.object({
   display_name: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  can_manage_campaigns: z.boolean(),
   created_at: z.string(),
 })
 
@@ -32,6 +34,7 @@ export function profileFromRow(row: unknown): Profile {
     displayName: parsed.display_name,
     role: parsed.role,
     organization: parsed.organization,
+    canManageCampaigns: parsed.can_manage_campaigns,
     createdAt: parsed.created_at,
   }
 }
