@@ -408,6 +408,8 @@ export const fr = {
       nextPage: 'Page suivante',
       pageIndicator: (page: number, pageCount: number) => `Page ${page} / ${pageCount}`,
       hasProposedSolution: 'Solution proposée',
+      commentsCount: (count: number) =>
+        count === 0 ? 'Aucun commentaire' : count === 1 ? '1 commentaire' : `${count} commentaires`,
     },
     triage: {
       title: 'À trier',

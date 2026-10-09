@@ -56,7 +56,10 @@ export function RoleManagement() {
     <div className="flex flex-col gap-4">
       <p className="text-sm text-neutral-500">{fr.admin.roles.body}</p>
 
-      <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
+      <form
+        onSubmit={handleSearch}
+        className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
+      >
         <label className="flex flex-col gap-1 text-sm text-neutral-700">
           {fr.admin.roles.searchLabel}
           <input

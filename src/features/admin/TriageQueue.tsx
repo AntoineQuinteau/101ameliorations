@@ -1,9 +1,9 @@
-import { Link } from 'react-router-dom'
 import { TRIAGE_AGE_DAYS } from '../../api/admin'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import { formatDate } from '../../utils/formatDate'
+import { AdminKlashCardLink } from './AdminKlashCardLink'
 import { useTriageQueue } from './useAdminKlashes'
 
 function ageInDays(createdAt: string): number {
@@ -31,18 +31,17 @@ export function TriageQueue() {
         <ul className="flex flex-col gap-2">
           {klashes.map((klash) => (
             <li key={klash.id}>
-              <Link
-                to={`/k/${klash.id}`}
-                className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 p-3 hover:bg-neutral-50"
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-medium text-neutral-900">{klash.title}</span>
+              <AdminKlashCardLink klashId={klash.id} className="items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="text-sm font-medium break-words text-neutral-900">
+                    {klash.title}
+                  </span>
                   <span className="text-xs text-neutral-500">{formatDate(klash.createdAt)}</span>
                 </div>
-                <span className="text-xs text-neutral-500">
+                <span className="shrink-0 text-xs whitespace-nowrap text-neutral-500">
                   {fr.admin.triage.ageInDays(ageInDays(klash.createdAt))}
                 </span>
-              </Link>
+              </AdminKlashCardLink>
             </li>
           ))}
         </ul>

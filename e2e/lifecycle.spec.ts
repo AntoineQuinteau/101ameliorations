@@ -3,7 +3,7 @@ import { loginAs } from './support/login'
 import { staffEmail } from './support/staff'
 
 /**
- * Opens `/admin`'s klash table, filters to `status = new`, jumps to the
+ * Opens `/admin`'s klash listing (table or cards), filters to `status = new`, jumps to the
  * LAST page, and returns the `/k/:id` URL of the Nth-from-the-end matching
  * klash via its title link.
  *
@@ -25,9 +25,10 @@ import { staffEmail } from './support/staff'
 async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string> {
   await page.goto('/admin')
   await page.getByLabel('Statut').selectOption('new')
-  await expect(page.getByRole('table')).toBeVisible()
 
-  const rows = page.locator('tbody tr')
+  // One link per klash in either layout: a table row from 768px, a card
+  // below (both are in the DOM, CSS shows one — hence `:visible`).
+  const rows = page.locator('a[href^="/k/"]:visible')
   await expect(rows.first()).toBeVisible()
 
   // Checking isEnabled() before each click races the click's own
@@ -53,8 +54,8 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
       `Last page of 'new' klashes has only ${count} rows, need index ${indexFromEnd} from the end`,
     )
   }
-  const href = await rows.nth(index).getByRole('link').getAttribute('href')
-  if (!href) throw new Error(`No href on row ${index} of the admin klash table's last page`)
+  const href = await rows.nth(index).getAttribute('href')
+  if (!href) throw new Error(`No href on row ${index} of the admin klash listing's last page`)
   return href
 }
 
