@@ -47,7 +47,8 @@
     ],
     "ask": [
       "Bash(npx supabase * --linked*)",
-      "Bash(npx supabase * --db-url *)",
+      "Bash(npx supabase * --db-url*)",
+      "Bash(git * --output*)",
       "Bash(npx supabase db push *)",
       "Bash(npx supabase link *)",
       "Bash(npx wrangler deploy *)",
