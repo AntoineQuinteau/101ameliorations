@@ -11,8 +11,7 @@ import { triageBadgeText } from './triageBadge'
  * badge. A `<Link>` styled with `mapControlButtonClassName`, same as
  * `AuthBadge`.
  *
- * Whether it shows is `useShowAdminEntryPoints` (staff role, resolved, desktop
- * layout for now). It is rendered only then, rather than hidden with CSS, so
+ * Whether it shows is `useShowAdminEntryPoints` (staff role, resolved). It is rendered only then, rather than hidden with CSS, so
  * the triage count isn't fetched for a badge nobody can see. */
 export function AdminShortcut() {
   const isShown = useShowAdminEntryPoints()

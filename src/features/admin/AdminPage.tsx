@@ -49,7 +49,7 @@ export function AdminPage() {
 
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.admin.title}</h1>
 
-      <div className="mt-4 flex gap-1 border-b border-neutral-200">
+      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-neutral-200">
         <TabButton active={effectiveTab === 'klashes'} onClick={() => changeTab('klashes')}>
           {fr.admin.tabs.klashes}
         </TabButton>
@@ -85,7 +85,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`border-b-2 px-3 py-2 text-sm font-medium ${
+      className={`min-h-11 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap ${
         active
           ? 'border-teal-700 text-teal-700'
           : 'border-transparent text-neutral-500 hover:text-neutral-700'

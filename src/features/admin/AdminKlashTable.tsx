@@ -17,6 +17,7 @@ import { statusTone } from '../../lib/klashPresentation'
 import type { KlashCategory, KlashStatus } from '../../types/klash'
 import { klashCategoryLabel, klashCategorySchema, klashStatusSchema } from '../../types/klash'
 import { formatDate } from '../../utils/formatDate'
+import { AdminKlashCardList } from './AdminKlashCardList'
 import { useAdminKlashes } from './useAdminKlashes'
 
 // Debounces the search text written to the URL/query key, so a moderator
@@ -132,15 +133,15 @@ export function AdminKlashTable() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3 rounded-md border border-neutral-200 p-3">
-        <label className="flex flex-col gap-1 text-sm text-neutral-700">
+      <div className="grid grid-cols-2 gap-3 rounded-md border border-neutral-200 p-3 md:flex md:flex-wrap md:items-end">
+        <label className="col-span-2 flex flex-col gap-1 text-sm text-neutral-700">
           {fr.admin.table.searchLabel}
           <input
             type="text"
             value={searchInput}
             onChange={(event) => handleSearchInputChange(event.target.value)}
             placeholder={fr.admin.table.searchPlaceholder}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
+            className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           />
         </label>
 
@@ -153,7 +154,7 @@ export function AdminKlashTable() {
                 status: event.target.value ? (event.target.value as KlashStatus) : null,
               })
             }
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
+            className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           >
             <option value="">{fr.admin.table.periodAny}</option>
             {klashStatusSchema.options.map((status) => (
@@ -173,7 +174,7 @@ export function AdminKlashTable() {
                 category: event.target.value ? (event.target.value as KlashCategory) : null,
               })
             }
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
+            className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           >
             <option value="">{fr.admin.table.periodAny}</option>
             {klashCategorySchema.options.map((category) => (
@@ -189,7 +190,7 @@ export function AdminKlashTable() {
           <select
             value={params.period}
             onChange={(event) => handlePeriodChange(event.target.value as Period)}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
+            className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           >
             <option value="any">{fr.admin.table.periodAny}</option>
             <option value="7">{fr.admin.table.periodLast7Days}</option>
@@ -201,7 +202,7 @@ export function AdminKlashTable() {
         <button
           type="button"
           onClick={handleReset}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          className="min-h-11 self-end rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 md:min-h-0"
         >
           {fr.admin.table.resetFilters}
         </button>
@@ -214,8 +215,10 @@ export function AdminKlashTable() {
         <p className="text-sm text-neutral-500">{fr.admin.table.empty}</p>
       )}
 
+      {data && data.klashes.length > 0 && <AdminKlashCardList klashes={data.klashes} />}
+
       {data && data.klashes.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-neutral-200 text-xs text-neutral-500">
@@ -234,7 +237,7 @@ export function AdminKlashTable() {
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/k/${klash.id}`}
-                        className="font-medium text-teal-700 hover:underline"
+                        className="inline-block font-medium text-teal-700 hover:underline pointer-coarse:py-3"
                       >
                         {klash.title}
                       </Link>
@@ -258,7 +261,7 @@ export function AdminKlashTable() {
       )}
 
       {data && data.klashes.length > 0 && (
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between gap-2 text-sm">
           <button
             type="button"
             disabled={displayedPage === 0}
@@ -267,7 +270,7 @@ export function AdminKlashTable() {
           >
             {fr.admin.table.previousPage}
           </button>
-          <span className="text-neutral-500">
+          <span className="text-center text-neutral-500">
             {fr.admin.table.pageIndicator(displayedPage + 1, pageCount)}
           </span>
           <button
