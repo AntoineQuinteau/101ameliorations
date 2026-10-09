@@ -8,16 +8,21 @@ import { staffEmail } from './support/staff'
  * which conditionally renders both the "Rôles" tab button and its content.
  */
 test.describe('admin', () => {
-  test('admin sees the klash table, triage queue, and roles tab', async ({ page }) => {
+  test('admin sees the klash table, triage queue, and roles tab', async ({ page, isMobile }) => {
     await page.goto('/login')
     await loginAs(page, staffEmail('admin'))
 
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
 
-    // Klash table (default tab).
-    await expect(page.getByRole('table')).toBeVisible()
-    await expect(page.locator('tbody tr').first()).toBeVisible()
+    // Klash listing (default tab): a table from 768px, a card list below.
+    if (isMobile) {
+      await expect(page.getByRole('list', { name: 'Signalements' })).toBeVisible()
+      await expect(page.getByRole('table')).toBeHidden()
+    } else {
+      await expect(page.getByRole('table')).toBeVisible()
+      await expect(page.locator('tbody tr').first()).toBeVisible()
+    }
 
     // Triage queue tab.
     await page.getByRole('button', { name: 'À trier' }).click()
@@ -52,41 +57,44 @@ test.describe('admin', () => {
     await expect(page.getByRole('button', { name: 'Rôles' })).toHaveCount(0)
   })
 
-  // Entry points are desktop-only for now (wide viewport + mouse, see
-  // useDesktopLayout): /admin isn't laid out for touch devices yet. The route
-  // itself stays reachable by URL, which the tests above cover on both projects.
+  // Both entry points are offered to staff on every device; the route itself
+  // is guarded by RequireRole and RLS.
   for (const role of ['admin', 'moderator', 'authority'] as const) {
-    test(`${role} can reach /admin from the map shortcut and from /me on desktop only`, async ({
-      page,
-      isMobile,
-    }) => {
+    test(`${role} can reach /admin from the map shortcut and from /me`, async ({ page }) => {
       await page.goto('/login')
       await loginAs(page, staffEmail(role))
       await page.goto('/')
 
-      const shortcut = page.getByRole('link', { name: /^Administration/ })
-      const meLink = page.getByRole('link', { name: "Accéder à l'administration" })
-
-      if (isMobile) {
-        // Touch devices get neither entry point (see useDesktopLayout). Navigate
-        // client-side (not page.goto) so the profile query's cache survives, and
-        // wait for something that only renders once the role has resolved
-        // before asserting anything is absent: both entry points render nothing
-        // while it loads, which would make "absent" pass for the wrong reason.
-        await page.getByRole('link', { name: 'Mon espace' }).click()
-        await expect(page.getByText('Rôle', { exact: true })).toBeVisible()
-        await expect(meLink).toHaveCount(0)
-        await page.getByRole('link', { name: 'Retour à la carte' }).click()
-        await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
-        await expect(shortcut).toHaveCount(0)
-        return
-      }
-
-      await expect(shortcut).toBeVisible()
-      await page.goto('/me')
-      await meLink.click()
+      await page.getByRole('link', { name: /^Administration/ }).click()
       await expect(page).toHaveURL(/\/admin$/)
       await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
+
+      await page.goto('/me')
+      await page.getByRole('link', { name: "Accéder à l'administration" }).click()
+      await expect(page).toHaveURL(/\/admin$/)
     })
   }
+
+  test('/admin fits the screen on every tab and a klash opens from the listing', async ({
+    page,
+  }) => {
+    await page.goto('/login')
+    await loginAs(page, staffEmail('admin'))
+    await page.goto('/admin')
+    await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
+
+    const hasHorizontalScroll = () =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      )
+
+    for (const tab of ['À trier', 'Rôles', 'Signalements']) {
+      await page.getByRole('button', { name: tab, exact: true }).click()
+      expect(await hasHorizontalScroll()).toBe(false)
+    }
+
+    const firstKlash = page.locator('a[href^="/k/"]:visible').first()
+    await firstKlash.click()
+    await expect(page).toHaveURL(/\/k\//)
+  })
 })
