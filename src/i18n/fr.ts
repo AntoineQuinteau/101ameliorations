@@ -353,7 +353,8 @@ export const fr = {
       submit: 'Continuer',
     },
     submit: {
-      loginIntro: 'Pour envoyer votre signalement, connectez-vous.',
+      loginIntro:
+        'Pour envoyer votre signalement, connectez-vous : indiquez votre adresse email, nous vous enverrons un code à saisir ici, sans mot de passe à créer. Un email vérifié rend les signalements crédibles et permet de vous recontacter si un complément d’information est utile.',
       submitting: 'Envoi du signalement…',
       submitError: "Impossible d'envoyer ce signalement.",
       outOfAreaError: 'Ce point est hors de la zone de signalement.',
@@ -450,6 +451,22 @@ export const fr = {
     description:
       "101améliorations recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes.",
     exportHint: 'CSV, GeoJSON',
+    howItWorks: 'Comment ça marche ?',
+  },
+  welcome: {
+    title: 'Bienvenue sur 101améliorations',
+    purpose:
+      "Ce site recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes, pour les faire corriger.",
+    howToReportTitle: 'Comment signaler',
+    // Takes the on-screen button labels (fr.map.*) so a rename follows.
+    howToReport: (whereIAmLabel: string, hereLabel: string) =>
+      `Touchez « ${whereIAmLabel} » pour signaler là où vous êtes, ou maintenez appuyé sur la carte (sur ordinateur : cliquez sur la carte) pour choisir un point précis, puis touchez « ${hereLabel} ».`,
+    accountTitle: 'Un compte pour signaler',
+    account:
+      'Pour envoyer un signalement, il faut un compte : une adresse email et un code reçu par email suffisent, sans mot de passe.',
+    why: "Un email vérifié rend les signalements crédibles et responsables, et permet à l'association ou à la collectivité de vous recontacter pour un complément d'information. Il n'est jamais affiché publiquement.",
+    close: 'Voir la carte',
+    login: 'Se connecter ou créer un compte',
   },
   export: {
     title: 'Export des données',
