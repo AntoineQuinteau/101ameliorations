@@ -14,10 +14,14 @@ export function useAdminKlashes(filters: AdminKlashFilters, page: number) {
   })
 }
 
-/** The "à trier" queue: klashs `new` for more than 7 days (spec §6.6). */
-export function useTriageQueue() {
+/** The "à trier" queue: klashs `new` for more than 7 days (spec §6.6).
+ * `enabled` lets a caller outside `/admin` (the map's staff shortcut) keep
+ * the query idle for visitors who may not open it; the cache entry is shared
+ * with the "À trier" tab either way. */
+export function useTriageQueue({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: adminKlashKeys.triage(),
     queryFn: fetchTriageQueue,
+    enabled,
   })
 }

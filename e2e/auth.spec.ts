@@ -7,6 +7,11 @@ function freshEmail(label: string): string {
 }
 
 test.describe('auth', () => {
+  test('the email step links to the privacy policy', async ({ page }) => {
+    await page.goto('/login')
+    await expect(page.getByRole('link', { name: /Politique de confidentialité/ })).toBeVisible()
+  })
+
   test('a brand-new email can log in end to end and the session persists across a reload', async ({
     page,
   }) => {

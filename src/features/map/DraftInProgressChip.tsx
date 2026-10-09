@@ -15,7 +15,7 @@ export function DraftInProgressChip() {
     <button
       type="button"
       onClick={() => navigate('/new?draft=1')}
-      className="absolute bottom-28 md:bottom-16 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-teal-800 shadow hover:bg-white"
+      className="absolute bottom-16 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-medium text-teal-800 shadow hover:bg-white"
     >
       {fr.map.draftInProgress}
     </button>

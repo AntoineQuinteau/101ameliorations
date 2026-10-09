@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react'
+import { Link } from 'react-router-dom'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { fr } from '../../i18n/fr'
 import { emailSchema } from './authSchemas'
@@ -61,6 +62,12 @@ export function EmailStep({
       >
         {isSubmitting ? fr.login.emailStep.submitting : fr.login.emailStep.submit}
       </button>
+      <Link
+        to="/confidentialite"
+        className="text-center text-xs text-neutral-500 hover:text-neutral-700 hover:underline"
+      >
+        {fr.login.emailStep.privacyLink}
+      </Link>
     </form>
   )
 }

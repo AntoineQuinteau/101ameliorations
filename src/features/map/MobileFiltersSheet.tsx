@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
 import type { KlashCategory, KlashStatus, KlashImportance } from '../../types/klash'
 import {
@@ -171,6 +172,12 @@ export function MobileFiltersSheet({
       >
         {fr.map.filters.viewOnMap}
       </button>
+      <Link
+        to="/export"
+        className="mt-2 shrink-0 text-center text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:underline"
+      >
+        {fr.map.filters.exportLink}
+      </Link>
     </div>
   )
 }

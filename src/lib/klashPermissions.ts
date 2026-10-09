@@ -39,3 +39,15 @@ export function canDeleteKlash(
 ): boolean {
   return isAuthor && status === 'new' ? true : role === 'moderator' || role === 'admin'
 }
+
+/** Roles allowed into `/admin` (spec §6.6, "rôles ≥ moderator"). Single
+ * source of truth for the route guard (`router.tsx`) and for every UI entry
+ * point to that page. Not the same set as `isStaff`/`canModerate`, which
+ * leave out `authority`. */
+export const ADMIN_ROLES: readonly UserRole[] = ['moderator', 'authority', 'admin']
+
+/** Whether `role` may open `/admin`. Only decides what to *show*: the route
+ * guard and RLS remain the authority. */
+export function canAccessAdmin(role: UserRole | null): boolean {
+  return role !== null && ADMIN_ROLES.includes(role)
+}

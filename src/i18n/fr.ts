@@ -97,6 +97,7 @@ export const fr = {
       periodLast90Days: '90 derniers jours',
       reset: 'Réinitialiser',
       viewOnMap: 'Voir sur la carte',
+      exportLink: 'Télécharger toutes les données',
     },
     layer: {
       // A stable name, not an action label that flips with the state
@@ -223,6 +224,7 @@ export const fr = {
       placeholder: 'vous@exemple.fr',
       submit: 'Recevoir le code',
       submitting: 'Envoi en cours…',
+      privacyLink: 'Comment sont utilisées vos données ? Politique de confidentialité',
     },
     codeStep: {
       instructions: (email: string) =>
@@ -263,6 +265,7 @@ export const fr = {
     myKlashesEmptyCta: 'Voir la carte',
     loadError: 'Impossible de charger vos signalements.',
     roleLabel: 'Rôle',
+    adminLink: "Accéder à l'administration",
     organizationLabel: 'Organisation',
     pseudoLabel: 'Pseudo',
     pseudoSave: 'Enregistrer',
@@ -270,6 +273,7 @@ export const fr = {
     signOut: 'Se déconnecter',
     deleteAccount: {
       title: 'Supprimer mon compte',
+      privacyLink: 'Politique de confidentialité',
       body: "Vos signalements, photos et commentaires ne seront pas supprimés : ils seront anonymisés (attribués à « Compte supprimé ») afin de préserver les données utiles à l'association et à la collectivité. Vos confirmations (+1) seront, elles, définitivement retirées. Cette action est irréversible.",
       confirmPrompt: 'Confirmez-vous la suppression définitive de votre compte ?',
       trigger: 'Supprimer mon compte…',
@@ -370,6 +374,13 @@ export const fr = {
   },
   admin: {
     title: 'Administration',
+    shortcut: {
+      label: 'Administration',
+      labelWithCount: (count: number) =>
+        count === 1
+          ? 'Administration (1 signalement à trier)'
+          : `Administration (${count} signalements à trier)`,
+    },
     accessDenied: "Vous n'avez pas accès à cette page.",
     tabs: {
       klashes: 'Signalements',
@@ -433,6 +444,16 @@ export const fr = {
     iosInstallHint:
       "Pour installer l'application : appuyez sur le bouton de partage, puis « Sur l'écran d'accueil ».",
   },
+  about: {
+    open: 'À propos',
+    title: 'À propos',
+    description:
+      "101améliorations recense les problèmes d'aménagement cyclable au Pays basque et dans le sud des Landes.",
+    close: 'Fermer',
+    export: { label: 'Export des données', hint: 'CSV, GeoJSON' },
+    legalNotice: { label: 'Mentions légales' },
+    privacy: { label: 'Politique de confidentialité' },
+  },
   export: {
     title: 'Export des données',
     body: 'Tous les signalements publics de 101améliorations, sans donnée personnelle : statut, catégorie, importance, position, compteurs. Généré depuis les données publiques de la carte.',
@@ -440,10 +461,8 @@ export const fr = {
     downloadGeoJson: 'Télécharger en GeoJSON',
     preparing: (loaded: number) => `Préparation de l'export… (${loaded} signalements)`,
     error: "Impossible de générer l'export.",
-    footerLink: 'Export des données',
   },
   legal: {
-    footerLink: 'Mentions légales',
     notice: {
       title: 'Mentions légales',
       publisher: {

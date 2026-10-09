@@ -3,6 +3,7 @@ import { loginAs } from './support/login'
 
 const ADMIN_EMAIL = 'seed-admin@101ameliorations.test'
 const MODERATOR_EMAIL = 'seed-moderator@101ameliorations.test'
+const AUTHORITY_EMAIL = 'seed-authority@101ameliorations.test'
 
 /**
  * /admin (spec §6.6). The roles tab is admin-only — see
@@ -53,4 +54,39 @@ test.describe('admin', () => {
     // "Gérer les rôles" is admin-only).
     await expect(page.getByRole('button', { name: 'Rôles' })).toHaveCount(0)
   })
+
+  // Entry points are desktop-only for now (`hidden md:*`): /admin isn't laid
+  // out for small screens yet. The route itself stays reachable by URL, which
+  // the tests above cover on both projects.
+  for (const [label, email] of [
+    ['admin', ADMIN_EMAIL],
+    ['moderator', MODERATOR_EMAIL],
+    ['authority', AUTHORITY_EMAIL],
+  ] as const) {
+    test(`${label} can reach /admin from the map shortcut and from /me on desktop only`, async ({
+      page,
+      isMobile,
+    }) => {
+      await page.goto('/login')
+      await loginAs(page, email)
+      await page.goto('/')
+
+      const shortcut = page.getByRole('link', { name: /^Administration/ })
+      const meLink = page.getByRole('link', { name: "Accéder à l'administration" })
+
+      if (isMobile) {
+        await expect(shortcut).toBeHidden()
+        await page.goto('/me')
+        await expect(page.getByRole('heading', { name: 'Mon espace' })).toBeVisible()
+        await expect(meLink).toBeHidden()
+        return
+      }
+
+      await expect(shortcut).toBeVisible()
+      await page.goto('/me')
+      await meLink.click()
+      await expect(page).toHaveURL(/\/admin$/)
+      await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
+    })
+  }
 })

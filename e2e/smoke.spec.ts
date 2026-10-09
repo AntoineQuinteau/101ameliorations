@@ -61,3 +61,47 @@ test('map floating controls are present and interactive', async ({ page }) => {
     )
     .toBe(true)
 })
+
+// "À propos" sheet (spec §6.1): the one entry point to the export and the
+// legal/privacy pages, replacing the three footer chips.
+test('about sheet opens from the map and links to export, legal and privacy pages', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  // The old footer chips are gone; their targets now live in the sheet.
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toHaveCount(0)
+
+  const aboutButton = page.getByRole('button', { name: 'À propos' })
+  await aboutButton.click()
+  await expect(aboutButton).toHaveAttribute('aria-pressed', 'true')
+
+  await expect(page.getByRole('link', { name: /Export des données/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Politique de confidentialité' })).toBeVisible()
+
+  // Escape closes it.
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('link', { name: 'Mentions légales' })).toHaveCount(0)
+
+  await aboutButton.click()
+  await page.getByRole('link', { name: 'Mentions légales' }).click()
+  await expect(page).toHaveURL(/\/mentions-legales$/)
+})
+
+test('filters panel links to the data export', async ({ page }) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  await page.getByRole('button', { name: 'Filtres' }).click()
+  await page.getByRole('link', { name: /Télécharger toutes les données/ }).click()
+  await expect(page).toHaveURL(/\/export$/)
+})
+
+test('staff admin shortcut is not offered to a signed-out visitor', async ({ page }) => {
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  await expect(page.getByRole('link', { name: /^Administration/ })).toHaveCount(0)
+})
