@@ -60,6 +60,9 @@ export function DesktopFiltersCard({
   return (
     <div
       aria-hidden={!isOpen}
+      // aria-hidden and pointer-events-none alone leave the closed card's
+      // buttons and links in the tab order; inert takes them out of it.
+      inert={!isOpen}
       // max-w accounts for the left-16 (64px) offset plus a 12px right-hand
       // margin: w-72 (288px) alone pushes the card's right edge past the
       // viewport on anything narrower than ~427px (64 + 288 + 12 = 364, but

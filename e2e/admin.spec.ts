@@ -55,7 +55,7 @@ test.describe('admin', () => {
     await expect(page.getByRole('button', { name: 'Rôles' })).toHaveCount(0)
   })
 
-  // Entry points are desktop-only for now (`hidden md:*`): /admin isn't laid
+  // Entry points are desktop-only for now (below `md`): /admin isn't laid
   // out for small screens yet. The route itself stays reachable by URL, which
   // the tests above cover on both projects.
   for (const [label, email] of [
@@ -75,10 +75,25 @@ test.describe('admin', () => {
       const meLink = page.getByRole('link', { name: "Accéder à l'administration" })
 
       if (isMobile) {
-        await expect(shortcut).toBeHidden()
-        await page.goto('/me')
-        await expect(page.getByRole('heading', { name: 'Mon espace' })).toBeVisible()
-        await expect(meLink).toBeHidden()
+        // Navigate client-side (not page.goto) so the profile query's cache
+        // survives, and wait for something that only renders once the role
+        // has resolved before asserting anything is hidden: both entry points
+        // render nothing while it loads, which would make "hidden" pass for
+        // the wrong reason. The /me link is rendered (count 1) but hidden by
+        // CSS; the map shortcut is not rendered at all below `md`.
+        await page.getByRole('link', { name: 'Mon espace' }).click()
+        await expect(page.getByText('Rôle', { exact: true })).toBeVisible()
+        // includeHidden: getByRole skips display:none elements by default,
+        // which would make the count 0 for the very state being asserted.
+        const hiddenMeLink = page.getByRole('link', {
+          name: "Accéder à l'administration",
+          includeHidden: true,
+        })
+        await expect(hiddenMeLink).toHaveCount(1)
+        await expect(hiddenMeLink).toBeHidden()
+        await page.getByRole('link', { name: 'Retour à la carte' }).click()
+        await expect(page.getByRole('button', { name: 'À propos' })).toBeVisible()
+        await expect(shortcut).toHaveCount(0)
         return
       }
 

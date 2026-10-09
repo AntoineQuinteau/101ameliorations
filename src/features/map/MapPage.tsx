@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
@@ -89,6 +89,10 @@ export function MapPage() {
     setIsAboutOpen(false)
     setIsFiltersOpen((open) => !open)
   }
+
+  // Stable, so AboutSheet's Escape listener isn't torn down and re-added on
+  // every pan or zoom re-render of this page.
+  const closeAbout = useCallback(() => setIsAboutOpen(false), [])
 
   function toggleAbout() {
     if (!isAboutOpen) {
@@ -308,7 +312,7 @@ export function MapPage() {
         )
       )}
 
-      {isAboutOpen && <AboutSheet onClose={() => setIsAboutOpen(false)} />}
+      {isAboutOpen && <AboutSheet onClose={closeAbout} />}
 
       {!isFiltersOpen && !isAboutOpen && selectedKlash && (
         <KlashPreviewCard
