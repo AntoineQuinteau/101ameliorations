@@ -91,7 +91,7 @@ tactile a déjà trouvé des bugs invisibles en desktop.
 
 ```bash
 npx supabase start
-npx supabase db reset   # comptes seed-moderator@/seed-authority@/seed-admin@
+npx supabase db reset   # + comptes staff e2e-<rôle>-<0..3>@ (supabase/seed-e2e.sql), un jeu par worker
 npm run e2e
 ```
 

@@ -1,6 +1,5 @@
 import type { Page } from '@playwright/test'
 import { dismissInstallBanner } from './dismissInstallBanner'
-import { withEmailLock } from './emailLock'
 import { getLatestOtpCode } from './otp'
 
 /**
@@ -11,8 +10,12 @@ import { getLatestOtpCode } from './otp'
  *
  * Works for both a brand-new email (nickname step appears, since
  * `profiles.display_name` starts null) and a returning one that already has
- * a pseudo (e.g. the seeded staff accounts — nickname step never appears,
+ * a pseudo (e.g. the e2e staff accounts — nickname step never appears,
  * see src/features/auth/nicknamePrompt.ts's `shouldPromptForPseudo`).
+ *
+ * Never log in to the same address from two workers at once: Supabase keeps
+ * a single OTP per user. Staff specs use `staffEmail` (./staff.ts), which
+ * gives each worker its own accounts.
  *
  * Assumes `page` is already on `/login` (with or without `?next=`) when
  * called.
@@ -21,32 +24,18 @@ export async function loginAs(page: Page, email: string): Promise<void> {
   await dismissInstallBanner(page)
   await page.getByLabel('Adresse email').fill(email)
 
-  // One login per address at a time: see `withEmailLock`.
-  await withEmailLock(email, async () => {
-    const { requestedAt, confirmedAt } = await requestOtpCode(page)
-    const code = await getLatestOtpCode(email, requestedAt)
-    await page.getByLabel('Code de connexion').fill(code)
-    await page.getByRole('button', { name: 'Valider' }).click()
+  const requestedAt = await requestOtpCode(page)
+  const code = await getLatestOtpCode(email, requestedAt)
+  await page.getByLabel('Code de connexion').fill(code)
+  await page.getByRole('button', { name: 'Valider' }).click()
 
-    await skipNicknameStepIfShown(page)
-
-    // Keep the lock until the next holder's send can't be refused for coming
-    // too soon after this one. Measured from when the send was confirmed (the
-    // code step appeared), not from the click: Supabase's window starts when it
-    // processes the request, somewhere in between, so the confirmation is the
-    // later and safer bound. A login already takes longer than this, so in
-    // practice there is nothing left to wait for.
-    const remainingMs = OTP_MIN_INTERVAL_MS - (Date.now() - confirmedAt)
-    if (remainingMs > 0) await page.waitForTimeout(remainingMs)
-  })
+  await skipNicknameStepIfShown(page)
 }
 
 // Supabase refuses a second OTP email to the same address within
-// `auth.email.max_frequency` (1s, supabase/config.toml). `withEmailLock`
-// queues same-address logins so that rarely happens; the retry below covers
-// the leftovers (an address also requested outside `loginAs`, a slow send).
-// Keep the interval just above that setting.
-const OTP_MIN_INTERVAL_MS = 1_100
+// `auth.email.max_frequency` (1s, supabase/config.toml). Back-to-back tests in
+// one worker can log in to the same staff account that quickly, so a refused
+// send is retried a few times.
 const OTP_SEND_ATTEMPTS = 3
 const OTP_RESEND_DELAY_MS = 1_500
 const OTP_REQUEST_TIMEOUT_MS = 15_000
@@ -57,10 +46,9 @@ const OTP_REQUEST_TIMEOUT_MS = 15_000
  * (`auth.email.max_frequency`).
  * Any other error shown instead of the code step fails right away, with its
  * text, rather than as an opaque timeout. Returns when the request that
- * produced the code was made (for `getLatestOtpCode`'s staleness guard) and
- * when its code step appeared (the send is then known to be done).
+ * produced the code was made, for `getLatestOtpCode`'s staleness guard.
  */
-async function requestOtpCode(page: Page): Promise<{ requestedAt: number; confirmedAt: number }> {
+async function requestOtpCode(page: Page): Promise<number> {
   const codeField = page.getByLabel('Code de connexion')
   const errorAlert = page.getByRole('alert')
 
@@ -71,7 +59,7 @@ async function requestOtpCode(page: Page): Promise<{ requestedAt: number; confir
     // The app clears the previous error as soon as a new request starts, so
     // an alert seen here belongs to this attempt.
     await codeField.or(errorAlert).first().waitFor({ timeout: OTP_REQUEST_TIMEOUT_MS })
-    if (await codeField.isVisible()) return { requestedAt, confirmedAt: Date.now() }
+    if (await codeField.isVisible()) return requestedAt
 
     const message = ((await errorAlert.first().textContent()) ?? '').trim()
     if (!message.includes('Trop de tentatives')) {

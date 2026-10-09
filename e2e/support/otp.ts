@@ -26,8 +26,8 @@ interface MailpitMessage {
  * not exist yet on the first check.
  *
  * `sentAfter` guards against a staleness race that's real here, not
- * theoretical: the three staff accounts (seed-moderator@, seed-authority@,
- * seed-admin@) are reused across specs, so "most recent message to this
+ * theoretical: each worker's staff accounts (e2e/support/staff.ts) are
+ * reused by the specs it runs one after another, so "most recent message to this
  * address" can otherwise return the *previous* test's code if this one's
  * hasn't landed in Mailpit yet. Pass `Date.now()` from just before
  * triggering the send.

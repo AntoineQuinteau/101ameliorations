@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginAs } from './support/login'
-
-const ADMIN_EMAIL = 'seed-admin@101ameliorations.test'
-const MODERATOR_EMAIL = 'seed-moderator@101ameliorations.test'
-const AUTHORITY_EMAIL = 'seed-authority@101ameliorations.test'
+import { staffEmail } from './support/staff'
 
 /**
  * /admin (spec §6.6). The roles tab is admin-only — see
@@ -13,7 +10,7 @@ const AUTHORITY_EMAIL = 'seed-authority@101ameliorations.test'
 test.describe('admin', () => {
   test('admin sees the klash table, triage queue, and roles tab', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, ADMIN_EMAIL)
+    await loginAs(page, staffEmail('admin'))
 
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
@@ -41,7 +38,7 @@ test.describe('admin', () => {
 
   test('moderator does not see the roles tab', async ({ page }) => {
     await page.goto('/login')
-    await loginAs(page, MODERATOR_EMAIL)
+    await loginAs(page, staffEmail('moderator'))
 
     await page.goto('/admin')
     await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
@@ -58,17 +55,13 @@ test.describe('admin', () => {
   // Entry points are desktop-only for now (wide viewport + mouse, see
   // useDesktopLayout): /admin isn't laid out for touch devices yet. The route
   // itself stays reachable by URL, which the tests above cover on both projects.
-  for (const [label, email] of [
-    ['admin', ADMIN_EMAIL],
-    ['moderator', MODERATOR_EMAIL],
-    ['authority', AUTHORITY_EMAIL],
-  ] as const) {
-    test(`${label} can reach /admin from the map shortcut and from /me on desktop only`, async ({
+  for (const role of ['admin', 'moderator', 'authority'] as const) {
+    test(`${role} can reach /admin from the map shortcut and from /me on desktop only`, async ({
       page,
       isMobile,
     }) => {
       await page.goto('/login')
-      await loginAs(page, email)
+      await loginAs(page, staffEmail(role))
       await page.goto('/')
 
       const shortcut = page.getByRole('link', { name: /^Administration/ })

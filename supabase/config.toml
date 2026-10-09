@@ -67,7 +67,7 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = ["./seed.sql"]
+sql_paths = ["./seed.sql", "./seed-e2e.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.
@@ -246,10 +246,9 @@ enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-# Lowered from 5s to the CLI default: the Playwright E2E suite (e2e/) logs in
-# to the same three seeded staff addresses from several parallel workers, and
-# with a 5s window each login had to keep its address for 5s+ (see
-# e2e/support/emailLock.ts). Same reasoning as the raised rate limits above:
+# Lowered from 5s to the CLI default: the Playwright E2E suite (e2e/) runs
+# specs back to back that log in to the same per-worker staff address (see
+# e2e/support/staff.ts), and a 5s window refused the second send. Same reasoning as the raised rate limits above:
 # delivery here is Mailpit, so there is no real-world cost. This file is only
 # read by `supabase start` (local and CI); `supabase db push` never applies
 # it to staging or production. Restart the local stack to pick it up
