@@ -1,3 +1,6 @@
+// Also answers /r/:slug (campaign short links, see ./redirect.ts) and
+// /ios-manifest.webmanifest (see ./manifest.ts).
+//
 // Rewrites the Open Graph / Twitter tags on /k/:id (spec §6.3, §9.8) so a
 // shared link previews with the klash's own title, description and photo —
 // something a client-side SPA cannot do itself, since crawlers never run
@@ -9,6 +12,9 @@
 // klash not found, Supabase unreachable, a timeout, missing env vars —
 // falls back to serving the shell untouched, with its static default tags
 // (see index.html).
+
+import { handleIosManifest } from './manifest'
+import { handleCampaignRedirect } from './redirect'
 
 export interface Env {
   ASSETS: Fetcher
@@ -86,6 +92,12 @@ async function fetchKlashPreview(env: Env, klashId: string): Promise<KlashPrevie
 
 export default {
   async fetch(request, env): Promise<Response> {
+    const campaignRedirect = await handleCampaignRedirect(request, env)
+    if (campaignRedirect) return campaignRedirect
+
+    const iosManifest = await handleIosManifest(request, env)
+    if (iosManifest) return iosManifest
+
     const url = new URL(request.url)
     const match = request.method === 'GET' ? KLASH_PATH_PATTERN.exec(url.pathname) : null
     if (!match) return env.ASSETS.fetch(request)

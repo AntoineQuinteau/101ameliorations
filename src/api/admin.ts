@@ -14,6 +14,7 @@ export const foundProfileSchema = z.object({
   displayName: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  canManageCampaigns: z.boolean(),
 })
 export type FoundProfile = z.infer<typeof foundProfileSchema>
 
@@ -22,6 +23,7 @@ const foundProfileRowSchema = z.object({
   display_name: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  can_manage_campaigns: z.boolean(),
 })
 
 function foundProfileFromRow(row: unknown): FoundProfile {
@@ -31,6 +33,7 @@ function foundProfileFromRow(row: unknown): FoundProfile {
     displayName: parsed.display_name,
     role: parsed.role,
     organization: parsed.organization,
+    canManageCampaigns: parsed.can_manage_campaigns,
   }
 }
 
@@ -134,17 +137,18 @@ export async function findProfileByEmail(email: string): Promise<FoundProfile | 
   return data[0] ? foundProfileFromRow(data[0]) : null
 }
 
-/** Updates a profile's role and/or organization (admin only —
+/** Updates a profile's role, organization and campaign right (admin only —
  * `profiles_update_admin` grants this unrestricted; `profiles_guard_role`
  * additionally allows only an admin to touch either column at all). */
 export async function updateProfileRoleAndOrganization(
   profileId: string,
   role: UserRole,
   organization: string | null,
+  canManageCampaigns: boolean,
 ): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')
-    .update({ role, organization })
+    .update({ role, organization, can_manage_campaigns: canManageCampaigns })
     .eq('id', profileId)
     .select('*')
     .single()

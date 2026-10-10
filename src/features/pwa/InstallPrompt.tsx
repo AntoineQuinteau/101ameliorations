@@ -1,16 +1,11 @@
 import { useState } from 'react'
 import { fr } from '../../i18n/fr'
 import { shouldShowIosInstallHint } from './iosInstall'
+import { isRunningStandalone } from './platform'
 import { useInstallPrompt } from './useInstallPrompt'
 import { X } from 'lucide-react'
 
 const IOS_HINT_DISMISSED_KEY = '101ameliorations:ios-install-hint-dismissed'
-
-function isRunningStandalone(): boolean {
-  // 'standalone' is Safari-only and not in TS's Navigator type.
-  const nav = window.navigator as Navigator & { standalone?: boolean }
-  return window.matchMedia('(display-mode: standalone)').matches || nav.standalone === true
-}
 
 function wasIosHintDismissed(): boolean {
   try {

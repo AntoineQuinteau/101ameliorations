@@ -44,3 +44,9 @@ export const settingsKeys = {
   all: ['settings'] as const,
   serviceAreaBbox: () => [...settingsKeys.all, 'serviceAreaBbox'] as const,
 }
+
+export const campaignKeys = {
+  all: ['campaigns'] as const,
+  stats: (touch: string) => [...campaignKeys.all, 'stats', touch] as const,
+  sources: () => [...campaignKeys.all, 'sources'] as const,
+}
