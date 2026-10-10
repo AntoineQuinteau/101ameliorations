@@ -2,6 +2,24 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAs } from './support/login'
 import { staffEmail } from './support/staff'
 
+/** Runs `action` (a filter or page change) and waits until the listing shows
+ * its result. The listing keeps the previous rows on screen, marked
+ * `aria-busy`, while the new ones load — so "a row is visible" or "the next
+ * button is disabled" says nothing about which page those rows belong to.
+ * Waiting for the request the action triggers guarantees the render that
+ * set `aria-busy` has happened; waiting for it to clear then guarantees the
+ * rows are the new ones. */
+async function reloadListing(page: Page, action: () => Promise<unknown>): Promise<void> {
+  const response = page.waitForResponse(
+    (res) => res.request().method() === 'GET' && res.url().includes('/rest/v1/klashes_public'),
+  )
+  // Not awaited if `action` throws: mark it handled so it can't surface later.
+  response.catch(() => {})
+  await action()
+  await response
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+}
+
 /**
  * Opens `/admin`'s klash listing (table or cards), filters to `status = new`, jumps to the
  * LAST page, and returns the `/k/:id` URL of the Nth-from-the-end matching
@@ -24,7 +42,7 @@ import { staffEmail } from './support/staff'
  */
 async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string> {
   await page.goto('/admin')
-  await page.getByLabel('Statut').selectOption('new')
+  await reloadListing(page, () => page.getByLabel('Statut').selectOption('new'))
 
   // One link per klash in either layout: a table row from 768px, a card
   // below (both are in the DOM, CSS shows one — hence `:visible`).
@@ -43,7 +61,7 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
   // isEnabled() check exits normally.
   const lastPageButton = page.getByRole('button', { name: 'Page suivante' })
   while (await lastPageButton.isEnabled()) {
-    await lastPageButton.click({ timeout: 3_000 }).catch(() => {})
+    await reloadListing(page, () => lastPageButton.click({ timeout: 3_000 })).catch(() => {})
     await expect(rows.first()).toBeVisible()
   }
 
