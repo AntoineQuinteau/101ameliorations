@@ -5,7 +5,7 @@
 -- Self-contained, like the other files here: own fixtures, UUID range
 -- cccccccc-... (disjoint from the other tests and the seed).
 begin;
-select plan(30);
+select plan(33);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -144,6 +144,18 @@ select throws_ok(
   $$ select public.create_campaign_link('cpam', 'print', 'c-2026', 'a', '//evil.example') $$,
   null, 'a protocol-relative destination is rejected');
 
+-- A slug truncated to 64 characters never ends with a hyphen.
+select is(
+  (select slug from public.create_campaign_link(
+    'cpam', 'print', 'long-2026-12', repeat('a', 58) || ' b c')),
+  'cpam-' || repeat('a', 58),
+  'first-word slug of a long content is valid');
+select is(
+  (select slug from public.create_campaign_link(
+    'cpam', 'email', 'long-2026-12', repeat('a', 58) || ' b c')),
+  'cpam-' || repeat('a', 57) || '-2',
+  'a truncated slug gets its suffix within 64 characters, without a double hyphen');
+
 -- ---------- immutability ----------
 select throws_ok(
   $$ update public.campaign_links set slug = 'other' where slug = 'cpam-mail' $$,
@@ -158,6 +170,11 @@ select throws_ok(
   $$ delete from public.campaign_links where slug = 'cpam-mail' $$,
   'a campaign link cannot be deleted, only deactivated',
   'a link cannot be deleted');
+
+-- Deleting the account that created a link keeps the link (author cleared).
+select lives_ok(
+  $$ delete from auth.users where id = 'cccccccc-0000-4000-8000-000000000003' $$,
+  'the creator of a link can be deleted');
 
 -- ---------- resolution ----------
 select is(

@@ -66,7 +66,22 @@ describe('handleCampaignRedirect', () => {
   })
 
   it.each([
+    'Mozilla/5.0 (Linux; Android 13; CUBOT NOTE 20) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
+    'Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 Preview/1.0',
+  ])('counts a real device whose user agent merely looks bot-like: %s', async (userAgent) => {
+    const fetchMock = stubRpc([ACTIVE_LINK])
+    await handleCampaignRedirect(
+      request('/r/cpam-papillon', { headers: { 'user-agent': userAgent } }),
+      env,
+    )
+    const call = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(JSON.parse(call[1].body as string).p_count).toBe(true)
+  })
+
+  it.each([
     ['link-preview bot', { headers: { 'user-agent': 'WhatsApp/2.23' } }],
+    ['crawler', { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' } }],
+    ['chat unfurler', { headers: { 'user-agent': 'Slackbot-LinkExpanding 1.0' } }],
     ['HEAD request', { method: 'HEAD' }],
   ])('redirects but does not count a %s', async (_name, init) => {
     const fetchMock = stubRpc([ACTIVE_LINK])

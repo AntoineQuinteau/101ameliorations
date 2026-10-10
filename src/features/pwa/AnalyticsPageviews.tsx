@@ -17,9 +17,12 @@ export function AnalyticsPageviews() {
 
   useEffect(() => {
     initAnalytics()
+    // Consumed even when the landing route is untracked: the arrival query
+    // belongs to that route only, never to a later one.
+    const isLanding = isFirst.current
+    isFirst.current = false
     if (UNTRACKED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return
-    if (isFirst.current) {
-      isFirst.current = false
+    if (isLanding) {
       trackPageview(landingPageviewUrl(pathname, landingSearch), document.referrer)
     } else {
       trackPageview(pathname)

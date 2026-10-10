@@ -15,9 +15,10 @@ const FETCH_TIMEOUT_MS = 1500
 // Link-preview fetchers (chat apps, social networks) and crawlers hit a link
 // when it is pasted, not when a person follows it: redirecting them is right,
 // counting them as scans is not. The user agent is only inspected here, never
-// stored.
+// stored. `bot` must end a word and not be the phone brand CUBOT; a bare
+// `preview` is not matched, real in-app browsers carry it too.
 const NON_HUMAN_USER_AGENT =
-  /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegram|skypeuripreview|preview|embedly|quora link|pinterest|vkshare|w3c_validator/i
+  /(?<!cu)bot\b|crawl|spider|slurp|facebookexternalhit|whatsapp|telegram|skypeuripreview|embedly|quora link|pinterest|vkshare|w3c_validator/i
 
 interface ResolvedLink {
   source: string
