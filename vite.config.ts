@@ -40,7 +40,11 @@ export default defineConfig(({ command, mode }) => {
           description:
             'Signalement des problèmes sur les voies cyclables du Pays basque et du sud des Landes',
           lang: 'fr',
-          start_url: '/',
+          // launch=pwa marks installed launches; it never alters attribution
+          // (src/features/attribution). `id` pins the app identity so changing
+          // start_url does not make browsers treat existing installs as new.
+          id: '/',
+          start_url: '/?launch=pwa',
           scope: '/',
           display: 'standalone',
           orientation: 'portrait',
@@ -62,6 +66,12 @@ export default defineConfig(({ command, mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
           navigateFallback: '/index.html',
+          // /r/* is a server redirect: it must always reach the network (and
+          // be counted), never be answered with the cached app shell.
+          navigateFallbackDenylist: [/^\/r\//],
+          // Cache matching ignores query strings, so a visit with utm_* or
+          // launch=pwa hits the same precached entry as a bare one.
+          ignoreURLParametersMatching: [/.*/],
           runtimeCaching: [
             {
               // MapTiler tiles (spec §7): recent tiles stay available offline,
@@ -120,7 +130,11 @@ export default defineConfig(({ command, mode }) => {
     test: {
       environment: 'jsdom',
       globals: true,
-      include: ['src/**/*.{test,spec}.{ts,tsx}', 'vite-plugins/**/*.test.ts'],
+      include: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'vite-plugins/**/*.test.ts',
+        'workers/**/*.test.ts',
+      ],
     },
   }
 })

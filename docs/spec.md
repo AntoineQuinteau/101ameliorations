@@ -19,19 +19,22 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action                                                                      | anonyme    | `user` | `moderator` (asso) | `authority` (agglo) | `admin` |
-| --------------------------------------------------------------------------- | ---------- | ------ | ------------------ | ------------------- | ------- |
-| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓      | ✓                  | ✓                   | ✓       |
-| Créer un klash, ajouter des photos                                          |            | ✓      | ✓                  | ✓                   | ✓       |
-| Confirmer (+1) un klash                                                     |            | ✓      | ✓                  | ✓                   | ✓       |
-| Commenter                                                                   |            | ✓      | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓      | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |        | ✓                  |                     | ✓       |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |        | ✓                  |                     | ✓       |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |        |                    | ✓                   | ✓       |
-| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |        | ✓                  | ✓                   | ✓       |
-| Export CSV / GeoJSON                                                        | ✓ (public) | ✓      | ✓                  | ✓                   | ✓       |
-| Gérer les rôles                                                             |            |        |                    |                     | ✓       |
+| Action                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
+| --------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                          |            | ✓          | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
+| Commenter                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |            | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |            | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |            |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |            | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                             |            |            |                    |                     | ✓       |
+| Créer / désactiver des liens de campagne, voir leurs statistiques (§6.8)    |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
+
+¹ Droit séparé `profiles.can_manage_campaigns`, attribué par un `admin` et cumulable avec n'importe quel rôle.
 
 Règles :
 
@@ -142,6 +145,8 @@ create table status_changes (
 );
 ```
 
+Suivi des campagnes (§6.8), migration `20261009090000_campaign_links.sql` : `profiles.can_manage_campaigns` (booléen, modifiable par un `admin` seulement, comme `role`), tables `campaign_sources`, `campaign_links` (slug, source, medium, campaign, content, destination, is_active ; seuls `destination` et `is_active` sont modifiables, jamais de suppression) et `campaign_link_scans` (slug + horodatage, aucune donnée personnelle, aucun accès client). Les valeurs source/campaign/content respectent la convention `^[a-z0-9]+(-[a-z0-9]+)*$` (≤ 64), vérifiée en base par `is_campaign_token()`. Création par la RPC `create_campaign_link()` ; résolution publique par `resolve_campaign_link(slug, count)`.
+
 Triggers et fonctions :
 
 - `handle_new_user()` : crée la ligne `profiles` à l'inscription.
@@ -244,6 +249,10 @@ Points d'entrée (rôles ≥ moderator uniquement, jamais affichés aux autres) 
 - `admin` uniquement : gestion des rôles (rechercher un profil par email via RPC security definer, changer le rôle, renseigner `organization`).
 - Statistiques simples : klashs par statut, par catégorie, par mois, délai moyen de résolution.
 
+### 6.8 Liens de campagne (`/r/:slug`)
+
+Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Création, QR codes et statistiques : onglet « Campagnes » de `/admin`, réservé à `can_manage_campaigns`. Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
+
 ### 6.7 Export
 
 Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte).
@@ -253,6 +262,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
 - Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
+- `start_url` = `/?launch=pwa` (le paramètre `launch` ne modifie jamais l'attribution). Les routes `/r/*` ne passent jamais par le cache du service worker, dont la correspondance ignore les paramètres d'URL. Une installation est comptée via `appinstalled`, et sur iOS au premier lancement en mode standalone. Sur iOS, le stockage de l'app installée étant séparé de celui de Safari, le Worker sert `/ios-manifest.webmanifest` dont le `start_url` embarque l'attribution (valeurs validées), restaurée seulement dans un stockage vide.
 - Hors v1 : file d'attente hors-ligne des signalements (Background Sync).
 
 ## 8. Stack et outillage
@@ -261,6 +271,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Back** : Supabase (projet région EU). Supabase CLI, migrations versionnées, `supabase db reset` pour un environnement local. Types TypeScript générés (`supabase gen types`).
 - **Auth** : email OTP. Templates d'email en français. Nom d'expéditeur = nom de l'asso.
 - **Hébergement** : Cloudflare Worker (assets statiques + fallback SPA) connecté au repo GitHub (`main` → prod, branches → preview via CI). Variables : `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_MAPTILER_KEY`, `VITE_TURNSTILE_SITE_KEY`, `VITE_TILE_BASE_URL` (optionnelle, inutilisée en prod — voir README, section variables d'environnement). Pas de variable pour la zone de service : elle est lue au runtime depuis `settings.service_area_bbox`, pas passée à la compilation.
+- **Mesure d'audience** : Umami Cloud, sans cookie, chargé seulement si `VITE_UMAMI_WEBSITE_ID` est défini (build de production). Facultatif : l'attribution des campagnes n'en dépend pas.
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.

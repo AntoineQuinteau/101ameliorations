@@ -185,10 +185,10 @@ function setOrDelete(params: URLSearchParams, key: string, value: string | null)
   }
 }
 
-export type AdminTab = 'klashes' | 'triage' | 'roles'
+export type AdminTab = 'klashes' | 'triage' | 'roles' | 'campaigns'
 
 const TAB_PARAM = 'tab'
-const ADMIN_TABS: AdminTab[] = ['klashes', 'triage', 'roles']
+const ADMIN_TABS: AdminTab[] = ['klashes', 'triage', 'roles', 'campaigns']
 
 /** Reads the active `/admin` tab from the URL, falling back to `klashes`
  * for anything absent or unrecognised. Does not on its own account for

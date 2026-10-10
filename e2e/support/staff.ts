@@ -1,6 +1,6 @@
 import { test } from '@playwright/test'
 
-export type StaffRole = 'moderator' | 'authority' | 'admin'
+export type StaffRole = 'moderator' | 'authority' | 'admin' | 'campaigner'
 
 // Number of e2e staff accounts per role in supabase/seed-e2e.sql. Must be at
 // least `workers` in playwright.config.ts.

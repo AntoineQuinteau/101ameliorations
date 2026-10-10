@@ -4,7 +4,11 @@
  * after rather than immediately — some browsers read it asynchronously, and
  * revoking too early can silently drop the download. */
 export function downloadTextFile(filename: string, mimeType: string, content: string): void {
-  const blob = new Blob([content], { type: mimeType })
+  downloadBlob(filename, new Blob([content], { type: mimeType }))
+}
+
+/** Same as `downloadTextFile` for binary content (e.g. a PNG). */
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

@@ -25,11 +25,13 @@ export function useUpdateProfileRoleAndOrganization() {
       profileId,
       role,
       organization,
+      canManageCampaigns,
     }: {
       profileId: string
       role: UserRole
       organization: string | null
-    }) => updateProfileRoleAndOrganization(profileId, role, organization),
+      canManageCampaigns: boolean
+    }) => updateProfileRoleAndOrganization(profileId, role, organization, canManageCampaigns),
     onSuccess: (_data, { profileId }) => {
       void queryClient.invalidateQueries({ queryKey: profileKeys.detail(profileId) })
     },

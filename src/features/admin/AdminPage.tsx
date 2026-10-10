@@ -9,6 +9,8 @@ import { fr } from '../../i18n/fr'
 import { useRole } from '../auth/useRole'
 import { AdminKlashTable } from './AdminKlashTable'
 import { RoleManagement } from './RoleManagement'
+import { CampaignsTab } from '../campaigns/CampaignsTab'
+import { canAccessAdmin } from '../../lib/klashPermissions'
 import { TriageQueue } from './TriageQueue'
 import { BackLink } from '../../components/BackLink'
 
@@ -24,20 +26,28 @@ import { BackLink } from '../../components/BackLink'
  * rationale as `AdminKlashTable`'s `params`), so browser back/forward
  * across tabs is picked up automatically. */
 export function AdminPage() {
-  const { role, isResolved } = useRole()
+  const { role, isResolved, canManageCampaigns } = useRole()
   const isAdmin = role === 'admin'
+  const isStaff = canAccessAdmin(role)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = useMemo(() => adminTabFromSearchParams(searchParams), [searchParams])
 
-  // A `?tab=roles` link opened by a non-admin (or while the role hasn't
-  // resolved yet) would otherwise render an empty panel — the roles tab's
-  // content is only rendered for `isAdmin`. Derived here instead of
-  // corrected in an effect: an effect would still render that empty panel
-  // for one frame before redirecting. Waits on `isResolved` so an admin
-  // reloading /admin?tab=roles isn't bounced to "Signalements" for the
-  // instant before their own role has loaded. The stale `?tab=roles` in
-  // the URL is simply overwritten the next time the user switches tabs.
-  const effectiveTab: AdminTab = tab === 'roles' && isResolved && !isAdmin ? 'klashes' : tab
+  // Which tabs this account may use: moderation tabs for staff roles, roles
+  // for admins, campaigns for campaign managers (a manager may have no staff
+  // role at all). A `?tab=` link to a tab the account lacks (or while the
+  // role hasn't resolved) would otherwise render an empty panel, so it falls
+  // back to the first available one. Derived here instead of corrected in an
+  // effect: an effect would still render the empty panel for one frame.
+  // Waits on `isResolved` so a reload on /admin?tab=roles isn't bounced for
+  // the instant before the role has loaded. The stale `?tab=` in the URL is
+  // simply overwritten the next time the user switches tabs.
+  const availableTabs: AdminTab[] = [
+    ...(isStaff ? (['klashes', 'triage'] as const) : []),
+    ...(isAdmin ? (['roles'] as const) : []),
+    ...(canManageCampaigns ? (['campaigns'] as const) : []),
+  ]
+  const effectiveTab: AdminTab =
+    !isResolved || availableTabs.includes(tab) ? tab : (availableTabs[0] ?? 'klashes')
 
   function changeTab(next: AdminTab) {
     setSearchParams((current) => adminTabToSearchParams(current, next), { replace: true })
@@ -50,23 +60,33 @@ export function AdminPage() {
       <h1 className="mt-2 text-xl font-semibold text-neutral-900">{fr.admin.title}</h1>
 
       <div className="mt-4 flex gap-1 overflow-x-auto border-b border-neutral-200">
-        <TabButton active={effectiveTab === 'klashes'} onClick={() => changeTab('klashes')}>
-          {fr.admin.tabs.klashes}
-        </TabButton>
-        <TabButton active={effectiveTab === 'triage'} onClick={() => changeTab('triage')}>
-          {fr.admin.tabs.triage}
-        </TabButton>
+        {isStaff && (
+          <>
+            <TabButton active={effectiveTab === 'klashes'} onClick={() => changeTab('klashes')}>
+              {fr.admin.tabs.klashes}
+            </TabButton>
+            <TabButton active={effectiveTab === 'triage'} onClick={() => changeTab('triage')}>
+              {fr.admin.tabs.triage}
+            </TabButton>
+          </>
+        )}
         {isAdmin && (
           <TabButton active={effectiveTab === 'roles'} onClick={() => changeTab('roles')}>
             {fr.admin.tabs.roles}
           </TabButton>
         )}
+        {canManageCampaigns && (
+          <TabButton active={effectiveTab === 'campaigns'} onClick={() => changeTab('campaigns')}>
+            {fr.admin.tabs.campaigns}
+          </TabButton>
+        )}
       </div>
 
       <div className="mt-4">
-        {effectiveTab === 'klashes' && <AdminKlashTable />}
-        {effectiveTab === 'triage' && <TriageQueue />}
+        {effectiveTab === 'klashes' && isStaff && <AdminKlashTable />}
+        {effectiveTab === 'triage' && isStaff && <TriageQueue />}
         {effectiveTab === 'roles' && isAdmin && <RoleManagement />}
+        {effectiveTab === 'campaigns' && canManageCampaigns && <CampaignsTab />}
       </div>
     </div>
   )
