@@ -243,7 +243,7 @@ Liste de mes klashs avec statut, mes confirmations, modification du pseudo, supp
 
 Points d'entrée (rôles ≥ moderator uniquement, jamais affichés aux autres) : un lien « Accéder à l'administration » dans `/me`, et le bouton bouclier de la carte (§6.1), sur tous les appareils. Masquer un lien n'est que cosmétique : la garde de route et la RLS font foi. Mise en page : sous 768 px, la table des klashs devient une liste de cartes et les filtres passent sur deux colonnes ; à partir de 768 px, table et filtres en ligne.
 
-- Table paginée de tous les klashs avec filtres (statut, catégorie, période, zone), tri, recherche texte. Pastille « Solution proposée » sur les klashs qui en ont une.
+- Table paginée de tous les klashs avec filtres (statut, catégorie, période, zone), tri, recherche texte. Le tri porte sur la date de création, les confirmations ou les commentaires (par défaut : plus récents d'abord), s'applique côté serveur avec un départage stable pour que la pagination reste cohérente, et se reflète dans l'URL comme les filtres ; « Réinitialiser » le remet au défaut. Les en-têtes de colonnes sont des boutons (`aria-sort`) ; sous 768 px, une liste déroulante « Trier par » les remplace. Pastille « Solution proposée » sur les klashs qui en ont une.
 - Actions par lot : changer le statut, marquer doublon (sélection de l'original), supprimer.
 - File « à trier » : klashs `new` de plus de 7 jours.
 - `admin` uniquement : gestion des rôles (rechercher un profil par email via RPC security definer, changer le rôle, renseigner `organization`).

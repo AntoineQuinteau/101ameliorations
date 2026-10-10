@@ -104,4 +104,133 @@ test.describe('admin', () => {
     await firstKlash.click()
     await expect(page).toHaveURL(/\/k\//)
   })
+
+  test('the klash listing sorts server-side, keeps the sort in the URL and resets it', async ({
+    page,
+    isMobile,
+  }) => {
+    await page.goto('/login')
+    await loginAs(page, staffEmail('admin'))
+    await page.goto('/admin')
+    await expect(page.getByRole('heading', { name: 'Administration' })).toBeVisible()
+
+    // The counts as displayed, in listing order: table cells from 768px,
+    // card text ("Aucune confirmation" / "1 confirmation" / "N confirmations"
+    // and the same for comments) below.
+    async function counts(kind: 'confirmations' | 'comments'): Promise<number[]> {
+      if (isMobile) {
+        const cards = await page.getByRole('list', { name: 'Signalements' }).getByRole('listitem')
+        const texts = await cards.allInnerTexts()
+        const word = kind === 'confirmations' ? /(\d+) confirmation/ : /(\d+) commentaire/
+        return texts.map((text) => Number(word.exec(text)?.[1] ?? 0))
+      }
+      const column = kind === 'confirmations' ? 5 : 6
+      const cells = await page.locator(`tbody tr td:nth-child(${column})`).allInnerTexts()
+      return cells.map(Number)
+    }
+    const settled = () => expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+    const isSorted = (values: number[], direction: 'asc' | 'desc') =>
+      values.every(
+        (value, i) =>
+          i === 0 || (direction === 'desc' ? values[i - 1] >= value : values[i - 1] <= value),
+      )
+
+    // Polled, not read once: the URL changes a render before the new rows
+    // arrive, so the order is only expected to settle.
+    async function expectSorted(kind: 'confirmations' | 'comments', direction: 'asc' | 'desc') {
+      await expect
+        .poll(async () => {
+          const values = await counts(kind)
+          return values.length > 1 && isSorted(values, direction)
+        })
+        .toBe(true)
+    }
+
+    await expect(page).not.toHaveURL(/sort=|dir=/)
+
+    async function sortBy(
+      kind: 'confirmations' | 'comments',
+      direction: 'asc' | 'desc',
+      mobileLabel: string,
+    ) {
+      if (isMobile) {
+        await page.getByLabel('Trier par').selectOption({ label: mobileLabel })
+      } else {
+        const header = page.getByRole('columnheader', {
+          name: kind === 'confirmations' ? 'Confirmations' : 'Commentaires',
+        })
+        const button = header.getByRole('button')
+        const active = (await header.getAttribute('aria-sort')) !== null
+        // An inactive column sorts descending first; the active one flips.
+        if (direction === 'asc' && !active) await button.click()
+        await button.click()
+      }
+      await expect(page).toHaveURL(
+        direction === 'desc'
+          ? new RegExp(`sort=${kind}(&|$)`)
+          : kind === 'confirmations'
+            ? /sort=confirmations&dir=asc/
+            : /sort=comments&dir=asc/,
+      )
+      await settled()
+    }
+
+    await sortBy('confirmations', 'desc', 'Plus confirmés')
+    if (!isMobile) {
+      await expect(page.getByRole('columnheader', { name: 'Confirmations' })).toHaveAttribute(
+        'aria-sort',
+        'descending',
+      )
+    }
+    await expectSorted('confirmations', 'desc')
+
+    await sortBy('confirmations', 'asc', 'Moins confirmés')
+    if (!isMobile) {
+      await expect(page.getByRole('columnheader', { name: 'Confirmations' })).toHaveAttribute(
+        'aria-sort',
+        'ascending',
+      )
+    }
+    await expectSorted('confirmations', 'asc')
+
+    // The sort survives a reload, URL and order both.
+    await page.reload()
+    await expect(page).toHaveURL(/sort=confirmations&dir=asc/)
+    await settled()
+    await expectSorted('confirmations', 'asc')
+    if (!isMobile) {
+      await expect(page.getByRole('columnheader', { name: 'Confirmations' })).toHaveAttribute(
+        'aria-sort',
+        'ascending',
+      )
+    } else {
+      await expect(page.getByLabel('Trier par')).toHaveValue('confirmations:asc')
+    }
+
+    // Keyboard: a header is a button reachable and activable without a mouse.
+    if (!isMobile) {
+      const commentsButton = page
+        .getByRole('columnheader', { name: 'Commentaires' })
+        .getByRole('button')
+      await commentsButton.focus()
+      await page.keyboard.press('Enter')
+      await expect(page).toHaveURL(/sort=comments(&|$)/)
+      await settled()
+      await expect(commentsButton).toBeFocused()
+      await expectSorted('comments', 'desc')
+    } else {
+      await sortBy('comments', 'desc', 'Plus commentés')
+      await expectSorted('comments', 'desc')
+    }
+
+    // Changing the sort returns to page 1; "Réinitialiser" restores the default.
+    await page.getByRole('button', { name: 'Page suivante' }).click()
+    await expect(page).toHaveURL(/page=2/)
+    await settled()
+    await sortBy('confirmations', 'desc', 'Plus confirmés')
+    await expect(page).not.toHaveURL(/page=/)
+
+    await page.getByRole('button', { name: 'Réinitialiser' }).click()
+    await expect(page).not.toHaveURL(/sort=|dir=|page=/)
+  })
 })

@@ -4,6 +4,7 @@ import { klashFromRow, type Klash, type KlashCategory, type KlashStatus } from '
 import { profileFromRow, userRoleSchema, type Profile } from '../types/profile'
 import type { UserRole } from '../types/profile'
 import { daysAgoIso } from '../utils/formatDate'
+import { adminSortOrder, type AdminSort } from '../features/admin/adminFilterParams'
 
 // find_profile_by_email() (unlike a plain `profiles` row) deliberately
 // returns only what's needed to act on the account — no created_at, no
@@ -64,12 +65,13 @@ export interface AdminKlashPage {
  * thousand rows) this is simpler than maintaining a separate count RPC. */
 export async function fetchAdminKlashes(
   filters: AdminKlashFilters,
+  sort: AdminSort,
   page: number,
 ): Promise<AdminKlashPage> {
-  let query = supabase
-    .from('klashes_public')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
+  let query = supabase.from('klashes_public').select('*', { count: 'exact' })
+  for (const [column, ascending] of adminSortOrder(sort)) {
+    query = query.order(column, { ascending })
+  }
 
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.category) query = query.eq('category', filters.category)
@@ -88,7 +90,7 @@ export async function fetchAdminKlashes(
     // serving page 0 instead; the caller reconciles the URL to the page
     // actually served. Recursion is bounded to depth 1: the recursive call
     // always passes page 0, and the guard requires page > 0.
-    if (error.code === 'PGRST103' && page > 0) return fetchAdminKlashes(filters, 0)
+    if (error.code === 'PGRST103' && page > 0) return fetchAdminKlashes(filters, sort, 0)
     throw error
   }
   return { klashes: data.map(klashFromRow), totalCount: count ?? 0, page }
