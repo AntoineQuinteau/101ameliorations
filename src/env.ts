@@ -25,6 +25,9 @@ const optionalString = z.preprocess(
 // toggle — see src/features/auth/useTurnstile.ts — so the client and the
 // dashboard switch must be able to land independently.
 //
+// VITE_UMAMI_WEBSITE_ID is optional: without it no visit measurement is
+// loaded (src/lib/analytics.ts); campaign attribution does not depend on it.
+//
 // VITE_MAPTILER_KEY is conditionally required: see the superRefine below —
 // it's only actually needed when tiles are requested straight from MapTiler.
 //
@@ -39,6 +42,10 @@ const schema = z
     VITE_MAPTILER_KEY: optionalString,
     VITE_TURNSTILE_SITE_KEY: optionalString,
     VITE_TILE_BASE_URL: optionalString,
+    VITE_UMAMI_WEBSITE_ID: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.string().uuid().optional(),
+    ),
   })
   .superRefine((value, ctx) => {
     // A custom VITE_TILE_BASE_URL means something else (the dev/CI proxy today, an edge

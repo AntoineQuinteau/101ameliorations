@@ -17,6 +17,9 @@ export interface RoleInfo {
   canProcess: boolean
   /** May open `/admin`: moderator, authority or admin (spec §6.6). */
   canAccessAdmin: boolean
+  /** May create campaign links and read their statistics (admin, or the
+   * separate `can_manage_campaigns` right). */
+  canManageCampaigns: boolean
 }
 
 /** Derives role-based permissions from the signed-in user's profile (spec
@@ -27,6 +30,7 @@ export function useRole(): RoleInfo {
   const profileQuery = useProfile()
 
   const role = profileQuery.data?.role ?? null
+  const canManageCampaigns = role === 'admin' || profileQuery.data?.canManageCampaigns === true
   // A signed-out visitor is fully resolved as soon as auth settles: their
   // profile query is `enabled: false`, and a disabled query stays `pending`
   // forever — waiting on it would hang the guard on an answer that never
@@ -40,6 +44,9 @@ export function useRole(): RoleInfo {
     isStaff: role === 'moderator' || role === 'admin',
     canModerate: role === 'moderator' || role === 'admin',
     canProcess: role === 'authority' || role === 'admin',
-    canAccessAdmin: canAccessAdmin(role),
+    // /admin also opens for a campaign manager who has no staff role (they
+    // only get the Campagnes tab, see AdminPage).
+    canAccessAdmin: canAccessAdmin(role) || canManageCampaigns,
+    canManageCampaigns,
   }
 }

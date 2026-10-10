@@ -17,16 +17,21 @@ import { useRole } from './useRole'
  * `/login` would imply that signing in grants access. */
 export function RequireRole({
   allow,
+  orCampaignManager = false,
   children,
 }: {
   allow: readonly UserRole[]
+  /** Also let in an account with the campaign-manager right, whatever its role. */
+  orCampaignManager?: boolean
   children: ReactNode
 }) {
-  const { role, isResolved } = useRole()
+  const { role, isResolved, canManageCampaigns } = useRole()
 
   if (!isResolved) return <Spinner />
 
-  if (!role || !allow.includes(role)) return <Navigate to="/" replace />
+  const allowed =
+    (role !== null && allow.includes(role)) || (orCampaignManager && canManageCampaigns)
+  if (!allowed) return <Navigate to="/" replace />
 
   return children
 }

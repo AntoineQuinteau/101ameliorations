@@ -4,6 +4,7 @@ import { klashFromRow, type Klash, type KlashCategory, type KlashStatus } from '
 import { profileFromRow, userRoleSchema, type Profile } from '../types/profile'
 import type { UserRole } from '../types/profile'
 import { daysAgoIso } from '../utils/formatDate'
+import { adminSortOrder, type AdminSort } from '../features/admin/adminFilterParams'
 
 // find_profile_by_email() (unlike a plain `profiles` row) deliberately
 // returns only what's needed to act on the account — no created_at, no
@@ -14,6 +15,7 @@ export const foundProfileSchema = z.object({
   displayName: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  canManageCampaigns: z.boolean(),
 })
 export type FoundProfile = z.infer<typeof foundProfileSchema>
 
@@ -22,6 +24,7 @@ const foundProfileRowSchema = z.object({
   display_name: z.string().nullable(),
   role: userRoleSchema,
   organization: z.string().nullable(),
+  can_manage_campaigns: z.boolean(),
 })
 
 function foundProfileFromRow(row: unknown): FoundProfile {
@@ -31,6 +34,7 @@ function foundProfileFromRow(row: unknown): FoundProfile {
     displayName: parsed.display_name,
     role: parsed.role,
     organization: parsed.organization,
+    canManageCampaigns: parsed.can_manage_campaigns,
   }
 }
 
@@ -61,12 +65,13 @@ export interface AdminKlashPage {
  * thousand rows) this is simpler than maintaining a separate count RPC. */
 export async function fetchAdminKlashes(
   filters: AdminKlashFilters,
+  sort: AdminSort,
   page: number,
 ): Promise<AdminKlashPage> {
-  let query = supabase
-    .from('klashes_public')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
+  let query = supabase.from('klashes_public').select('*', { count: 'exact' })
+  for (const [column, ascending] of adminSortOrder(sort)) {
+    query = query.order(column, { ascending })
+  }
 
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.category) query = query.eq('category', filters.category)
@@ -85,7 +90,7 @@ export async function fetchAdminKlashes(
     // serving page 0 instead; the caller reconciles the URL to the page
     // actually served. Recursion is bounded to depth 1: the recursive call
     // always passes page 0, and the guard requires page > 0.
-    if (error.code === 'PGRST103' && page > 0) return fetchAdminKlashes(filters, 0)
+    if (error.code === 'PGRST103' && page > 0) return fetchAdminKlashes(filters, sort, 0)
     throw error
   }
   return { klashes: data.map(klashFromRow), totalCount: count ?? 0, page }
@@ -134,17 +139,18 @@ export async function findProfileByEmail(email: string): Promise<FoundProfile | 
   return data[0] ? foundProfileFromRow(data[0]) : null
 }
 
-/** Updates a profile's role and/or organization (admin only —
+/** Updates a profile's role, organization and campaign right (admin only —
  * `profiles_update_admin` grants this unrestricted; `profiles_guard_role`
  * additionally allows only an admin to touch either column at all). */
 export async function updateProfileRoleAndOrganization(
   profileId: string,
   role: UserRole,
   organization: string | null,
+  canManageCampaigns: boolean,
 ): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')
-    .update({ role, organization })
+    .update({ role, organization, can_manage_campaigns: canManageCampaigns })
     .eq('id', profileId)
     .select('*')
     .single()

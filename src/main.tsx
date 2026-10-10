@@ -1,3 +1,5 @@
+// Must stay first: captures and cleans utm_* before the router reads the URL.
+import './features/attribution/captureOnLoad'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import * as Sentry from '@sentry/react'

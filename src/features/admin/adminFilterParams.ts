@@ -21,11 +21,64 @@ export function sinceForPeriod(period: Period): string | null {
   return daysAgoIso(Number(period))
 }
 
+export type AdminSortKey = 'created' | 'confirmations' | 'comments'
+export type SortDirection = 'asc' | 'desc'
+
+const SORT_KEYS: AdminSortKey[] = ['created', 'confirmations', 'comments']
+const SORT_DIRECTIONS: SortDirection[] = ['asc', 'desc']
+
+export interface AdminSort {
+  sort: AdminSortKey
+  direction: SortDirection
+}
+
+export const defaultAdminSort: AdminSort = { sort: 'created', direction: 'desc' }
+
+/** What a click on a sortable column header does: an inactive column becomes
+ * the sort, descending first (most recent / most confirmed / most commented
+ * is what a moderator reaches for); the active column flips its direction.
+ * There is no "unsorted" state — "Réinitialiser" restores the default. */
+export function nextSortOnHeaderClick(current: AdminSort, key: AdminSortKey): AdminSort {
+  if (current.sort !== key) return { sort: key, direction: 'desc' }
+  return { sort: key, direction: current.direction === 'desc' ? 'asc' : 'desc' }
+}
+
+const SORT_COLUMNS: Record<AdminSortKey, 'created_at' | 'confirmations_count' | 'comments_count'> =
+  {
+    created: 'created_at',
+    confirmations: 'confirmations_count',
+    comments: 'comments_count',
+  }
+
+/** The `order by` list for a sort choice, as `[column, ascending]` pairs.
+ * Always ends with `id`: confirmations and comments are small integers with
+ * long runs of equal values (mostly 0), and `created_at` alone isn't
+ * guaranteed unique either, so without a unique last key Postgres is free to
+ * order ties differently between two page requests — which duplicates or
+ * skips rows across pages. Ties fall back to newest first, whichever way
+ * the main column goes; a date sort breaks its (rare) ties in its own
+ * direction. */
+export function adminSortOrder({ sort, direction }: AdminSort): [string, boolean][] {
+  const ascending = direction === 'asc'
+  if (sort === 'created')
+    return [
+      ['created_at', ascending],
+      ['id', ascending],
+    ]
+  return [
+    [SORT_COLUMNS[sort], ascending],
+    ['created_at', false],
+    ['id', false],
+  ]
+}
+
 export interface AdminTableParams {
   status: KlashStatus | null
   category: KlashCategory | null
   period: Period
   searchText: string
+  sort: AdminSortKey
+  direction: SortDirection
   /** 0-based, matching the rest of the app's pagination state — the URL
    * itself uses 1-based page numbers (see `PAGE_PARAM` below). */
   page: number
@@ -36,6 +89,8 @@ export const defaultAdminTableParams: AdminTableParams = {
   category: null,
   period: 'any',
   searchText: '',
+  sort: defaultAdminSort.sort,
+  direction: defaultAdminSort.direction,
   page: 0,
 }
 
@@ -43,6 +98,8 @@ const STATUS_PARAM = 'status'
 const CATEGORY_PARAM = 'category'
 const PERIOD_PARAM = 'period'
 const SEARCH_PARAM = 'q'
+const SORT_PARAM = 'sort'
+const DIRECTION_PARAM = 'dir'
 const PAGE_PARAM = 'page'
 
 /** Reconstructs the admin table's filters/page from the current URL,
@@ -58,6 +115,12 @@ export function adminParamsFromSearchParams(params: URLSearchParams): AdminTable
   const category = rawCategory ? klashCategorySchema.safeParse(rawCategory) : null
   const rawPeriod = params.get(PERIOD_PARAM)
   const period = rawPeriod && PERIODS.includes(rawPeriod as Period) ? (rawPeriod as Period) : null
+  // Each of sort/dir falls back to its default on its own: an unknown
+  // direction must not discard a valid column, nor the reverse.
+  const rawSort = params.get(SORT_PARAM)
+  const sort = SORT_KEYS.find((key) => key === rawSort)
+  const rawDirection = params.get(DIRECTION_PARAM)
+  const direction = SORT_DIRECTIONS.find((value) => value === rawDirection)
   const rawPage = params.get(PAGE_PARAM)
   // Strict all-digits check before parsing: `Number.parseInt` alone would
   // accept trailing junk ("2abc" → 2) or exponential notation ("1e3" → 1),
@@ -71,6 +134,8 @@ export function adminParamsFromSearchParams(params: URLSearchParams): AdminTable
     category: category?.success ? category.data : defaultAdminTableParams.category,
     period: period ?? defaultAdminTableParams.period,
     searchText: params.get(SEARCH_PARAM) ?? defaultAdminTableParams.searchText,
+    sort: sort ?? defaultAdminTableParams.sort,
+    direction: direction ?? defaultAdminTableParams.direction,
     page: page ?? defaultAdminTableParams.page,
   }
 }
@@ -101,6 +166,12 @@ export function adminParamsToSearchParams(
     params.period === defaultAdminTableParams.period ? null : params.period,
   )
   setOrDelete(next, SEARCH_PARAM, params.searchText.trim().length > 0 ? params.searchText : null)
+  setOrDelete(next, SORT_PARAM, params.sort === defaultAdminTableParams.sort ? null : params.sort)
+  setOrDelete(
+    next,
+    DIRECTION_PARAM,
+    params.direction === defaultAdminTableParams.direction ? null : params.direction,
+  )
   setOrDelete(next, PAGE_PARAM, params.page > 0 ? String(params.page + 1) : null)
 
   return next
@@ -114,10 +185,10 @@ function setOrDelete(params: URLSearchParams, key: string, value: string | null)
   }
 }
 
-export type AdminTab = 'klashes' | 'triage' | 'roles'
+export type AdminTab = 'klashes' | 'triage' | 'roles' | 'campaigns'
 
 const TAB_PARAM = 'tab'
-const ADMIN_TABS: AdminTab[] = ['klashes', 'triage', 'roles']
+const ADMIN_TABS: AdminTab[] = ['klashes', 'triage', 'roles', 'campaigns']
 
 /** Reads the active `/admin` tab from the URL, falling back to `klashes`
  * for anything absent or unrecognised. Does not on its own account for
