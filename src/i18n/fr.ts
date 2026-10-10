@@ -122,6 +122,7 @@ export const fr = {
     notFoundBody: "Ce klash n'existe pas ou n'est plus visible.",
     loadError: 'Impossible de charger ce signalement.',
     reportedBy: 'Signalé par',
+    badgesLabel: 'Catégorie, importance et statut',
     proposedSolutionLabel: 'Proposition de solution',
     resolvedOn: (date: string) => `Résolu le ${date}`,
     updatedOn: (date: string) => `Mis à jour le ${date}`,
@@ -138,9 +139,7 @@ export const fr = {
     lifecycle: {
       historyTitle: 'Historique des statuts',
       historyLoadError: "Impossible de charger l'historique.",
-      historyEmpty: 'Aucun changement de statut pour le moment.',
-      transitionLine: (from: string, to: string) => `${from} → ${to}`,
-      noNote: 'Aucune note.',
+      createdStep: 'Signalement créé',
       changeStatusTitle: 'Changer le statut',
       newStatusLabel: 'Nouveau statut',
       noteLabel: 'Note (facultative)',
@@ -189,6 +188,7 @@ export const fr = {
   },
   comments: {
     title: 'Commentaires',
+    titleWithCount: (count: number) => `Commentaires (${count})`,
     loadError: 'Impossible de charger les commentaires.',
     empty: 'Aucun commentaire pour le moment.',
     loginPrompt: 'Connectez-vous pour commenter.',

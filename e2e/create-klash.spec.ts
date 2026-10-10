@@ -124,5 +124,9 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await expect(page.getByText('Trou / bosse ou chaussée abîmée')).toBeVisible()
   await expect(page.getByText('Importance élevée')).toBeVisible()
-  await expect(page.getByText('Nouveau', { exact: true })).toBeVisible()
+  await expect(
+    page
+      .getByRole('group', { name: 'Catégorie, importance et statut' })
+      .getByText('Nouveau', { exact: true }),
+  ).toBeVisible()
 })
