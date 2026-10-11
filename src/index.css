@@ -9,6 +9,16 @@ body,
   height: 100%;
 }
 
+/* Tailwind v4 leaves buttons with the browser's default arrow cursor (v3 gave
+   them the hand). Many buttons here look like plain text or a lone icon, so
+   every enabled one gets the hand, like links; a disabled one keeps the arrow. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 .klash-marker-dot {
   display: block;
   width: 16px;
