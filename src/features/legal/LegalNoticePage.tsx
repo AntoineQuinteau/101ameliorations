@@ -19,6 +19,15 @@ export function LegalNoticePage() {
           {t.publisher.body.map((line) => (
             <li key={line}>{line}</li>
           ))}
+          <li>
+            {t.publisher.contactLabel}{' '}
+            <a
+              href={`mailto:${t.publisher.contactEmail}`}
+              className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800"
+            >
+              {t.publisher.contactEmail}
+            </a>
+          </li>
         </ul>
       </section>
 

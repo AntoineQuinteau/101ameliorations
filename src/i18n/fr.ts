@@ -582,12 +582,13 @@ export const fr = {
         heading: 'Éditeur du site',
         body: [
           'Le site 101ameliorations.org est édité par :',
-          "Association Atelier Vélo Txirrind'Ola** (Association loi 1901).",
-          'Adresse du siège social :** 56 allées Marines, 64100 Bayonne, France.',
+          "Association Atelier Vélo Txirrind'Ola (Association loi 1901).",
+          'Adresse du siège social : 56 allées Marines, 64100 Bayonne, France.',
           'Téléphone : 07 81 50 72 73.',
-          'E-mail de contact : contact@txirrindola.org.',
           'Numéro SIRET : 789 375 433 00016',
         ],
+        contactLabel: 'E-mail de contact :',
+        contactEmail: 'contact@txirrindola.org',
       },
       publicationDirector: {
         heading: 'Directeur de la publication',
