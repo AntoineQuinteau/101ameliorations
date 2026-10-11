@@ -44,7 +44,10 @@ function mapUpdateKlashError(error: unknown): string {
 
 /** Detail page (spec §6.3): read-only content, the confirm (+1) button
  * (step 4), comments (step 6), and — since step 7 — the status history and
- * the role-gated actions (change status, edit, delete). */
+ * the role-gated actions (change status, edit, delete). From `lg` up the
+ * page widens to two columns — klash content and status timeline on the
+ * left, comments on the right — in CSS only; DOM order is the mobile order.
+ * Edit mode, loading and not-found stay a single narrow column. */
 export function KlashDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
@@ -120,7 +123,7 @@ export function KlashDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-4">
+    <div className={`mx-auto max-w-xl px-4 py-4 ${klash && !isEditing ? 'lg:max-w-5xl' : ''}`}>
       <div className="flex items-center justify-between">
         <BackLink />
         <Link
@@ -157,197 +160,203 @@ export function KlashDetailPage() {
       )}
 
       {klash && !isEditing && (
-        <article className="mt-4 flex flex-col gap-4">
-          <KlashMiniMap klash={klash} />
+        <article className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start lg:gap-8">
+          <div className="flex min-w-0 flex-col gap-4">
+            <KlashMiniMap klash={klash} />
 
-          <KlashPhotoGallery klashId={klash.id} />
+            <KlashPhotoGallery klashId={klash.id} />
 
-          <div className="flex flex-wrap gap-1.5">
-            <Badge label={klashCategoryLabel(klash)} tone="gray" />
-            <Badge
-              label={fr.importanceBadge[klash.importance]}
-              tone={importanceTone(klash.importance)}
-            />
-            <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
-          </div>
+            <div role="group" aria-label={fr.detail.badgesLabel} className="flex flex-wrap gap-1.5">
+              <Badge label={klashCategoryLabel(klash)} tone="gray" />
+              <Badge
+                label={fr.importanceBadge[klash.importance]}
+                tone={importanceTone(klash.importance)}
+              />
+              <Badge label={fr.status[klash.status]} tone={statusTone(klash.status)} />
+            </div>
 
-          <h1 className="text-xl font-semibold text-neutral-900">{klash.title}</h1>
+            <h1 className="text-xl font-semibold text-neutral-900">{klash.title}</h1>
 
-          {klash.description && (
-            <p className="text-sm whitespace-pre-wrap text-neutral-700">{klash.description}</p>
-          )}
+            {klash.description && (
+              <p className="text-sm whitespace-pre-wrap text-neutral-700">{klash.description}</p>
+            )}
 
-          {klash.proposedSolution && (
-            <div>
-              <h2 className="text-sm font-medium text-neutral-700">
-                {fr.detail.proposedSolutionLabel}
-              </h2>
-              <p className="text-sm whitespace-pre-wrap text-neutral-700">
-                {klash.proposedSolution}
+            {klash.proposedSolution && (
+              <div>
+                <h2 className="text-sm font-medium text-neutral-700">
+                  {fr.detail.proposedSolutionLabel}
+                </h2>
+                <p className="text-sm whitespace-pre-wrap text-neutral-700">
+                  {klash.proposedSolution}
+                </p>
+              </div>
+            )}
+
+            {klash.status === 'duplicate' && klash.duplicateOf && (
+              <p className="text-sm text-neutral-500">
+                {fr.detail.duplicateOfNotice}{' '}
+                <Link
+                  to={`/k/${klash.duplicateOf}`}
+                  className="font-medium text-teal-700 hover:underline"
+                >
+                  {fr.map.viewDetail}
+                </Link>
               </p>
-            </div>
-          )}
+            )}
 
-          {klash.status === 'duplicate' && klash.duplicateOf && (
-            <p className="text-sm text-neutral-500">
-              {fr.detail.duplicateOfNotice}{' '}
-              <Link
-                to={`/k/${klash.duplicateOf}`}
-                className="font-medium text-teal-700 hover:underline"
-              >
-                {fr.map.viewDetail}
-              </Link>
-            </p>
-          )}
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div>
+                <dt className="text-neutral-500">{fr.detail.reportedBy}</dt>
+                <dd className="font-medium text-neutral-900">
+                  {displayActor(
+                    klash.authorRole,
+                    klash.authorDisplayName,
+                    klash.authorOrganization,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-neutral-500">{fr.detail.confirmations}</dt>
+                <dd className="font-medium text-neutral-900">{klash.confirmationsCount}</dd>
+              </div>
+            </dl>
 
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            {canSeeAuthorContact && (
+              <div className="text-sm">
+                {authorContactMutation.data ? (
+                  <p className="font-medium text-neutral-900">{authorContactMutation.data}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => authorContactMutation.mutate(klash.id)}
+                    disabled={authorContactMutation.isPending}
+                    className="font-medium text-teal-700 hover:underline disabled:opacity-60"
+                  >
+                    {authorContactMutation.isPending
+                      ? fr.detail.authorContact.loading
+                      : fr.detail.authorContact.reveal}
+                  </button>
+                )}
+                {authorContactMutation.isError && (
+                  <p role="alert" className="mt-1 text-xs text-red-700">
+                    {fr.detail.authorContact.error}
+                  </p>
+                )}
+                {authorContactMutation.data && (
+                  <p className="mt-1 text-xs text-neutral-500">{fr.detail.authorContact.notice}</p>
+                )}
+              </div>
+            )}
+
             <div>
-              <dt className="text-neutral-500">{fr.detail.reportedBy}</dt>
-              <dd className="font-medium text-neutral-900">
-                {displayActor(klash.authorRole, klash.authorDisplayName, klash.authorOrganization)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-neutral-500">{fr.detail.confirmations}</dt>
-              <dd className="font-medium text-neutral-900">{klash.confirmationsCount}</dd>
-            </div>
-          </dl>
-
-          {canSeeAuthorContact && (
-            <div className="text-sm">
-              {authorContactMutation.data ? (
-                <p className="font-medium text-neutral-900">{authorContactMutation.data}</p>
-              ) : (
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => authorContactMutation.mutate(klash.id)}
-                  disabled={authorContactMutation.isPending}
-                  className="font-medium text-teal-700 hover:underline disabled:opacity-60"
+                  disabled={!user || isAuthor || confirmMutation.isPending}
+                  aria-busy={confirmMutation.isPending}
+                  onClick={() => confirmMutation.mutate()}
+                  className="inline-flex items-center justify-center gap-1 rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
                 >
-                  {authorContactMutation.isPending
-                    ? fr.detail.authorContact.loading
-                    : fr.detail.authorContact.reveal}
+                  {hasConfirmed ? (
+                    <>
+                      <Check className="size-4" />
+                      {fr.detail.confirmed}
+                    </>
+                  ) : (
+                    fr.detail.confirm
+                  )}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void share()}
+                  className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  {fr.detail.share}
+                </button>
+              </div>
+              {confirmMutation.isError && <ErrorMessage message={fr.detail.confirmError} />}
+              {shareFeedback === 'copied' && (
+                <p role="status" className="mt-1 text-xs text-neutral-500">
+                  {fr.detail.linkCopied}
+                </p>
               )}
-              {authorContactMutation.isError && (
+              {shareFeedback === 'error' && (
                 <p role="alert" className="mt-1 text-xs text-red-700">
-                  {fr.detail.authorContact.error}
+                  {fr.detail.shareError}
                 </p>
               )}
-              {authorContactMutation.data && (
-                <p className="mt-1 text-xs text-neutral-500">{fr.detail.authorContact.notice}</p>
-              )}
             </div>
-          )}
 
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled={!user || isAuthor || confirmMutation.isPending}
-                aria-busy={confirmMutation.isPending}
-                onClick={() => confirmMutation.mutate()}
-                className="inline-flex items-center justify-center gap-1 rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-              >
-                {hasConfirmed ? (
-                  <>
-                    <Check className="size-4" />
-                    {fr.detail.confirmed}
-                  </>
-                ) : (
-                  fr.detail.confirm
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => void share()}
-                className="inline-flex items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-              >
-                {fr.detail.share}
-              </button>
-            </div>
-            {confirmMutation.isError && <ErrorMessage message={fr.detail.confirmError} />}
-            {shareFeedback === 'copied' && (
-              <p role="status" className="mt-1 text-xs text-neutral-500">
-                {fr.detail.linkCopied}
-              </p>
-            )}
-            {shareFeedback === 'error' && (
-              <p role="alert" className="mt-1 text-xs text-red-700">
-                {fr.detail.shareError}
-              </p>
-            )}
-          </div>
-
-          <p className="text-xs text-neutral-500">
-            {klash.status === 'resolved' && klash.resolvedAt
-              ? fr.detail.resolvedOn(formatDate(klash.resolvedAt))
-              : fr.detail.updatedOn(formatDate(klash.updatedAt))}
-          </p>
-
-          {editFeedback === 'saved' && (
-            <p role="status" className="text-sm text-teal-800">
-              {fr.detail.edit.saved}
+            <p className="text-xs text-neutral-500">
+              {klash.status === 'resolved' && klash.resolvedAt
+                ? fr.detail.resolvedOn(formatDate(klash.resolvedAt))
+                : fr.detail.updatedOn(formatDate(klash.updatedAt))}
             </p>
-          )}
 
-          {(nextStatuses.length > 0 || canEdit || canDelete) && (
-            <div className="flex flex-col gap-2 rounded-md border border-neutral-200 p-3">
-              {isChangingStatus ? (
-                <ChangeStatusForm
-                  options={nextStatuses}
-                  isSubmitting={changeStatusMutation.isPending}
-                  submitErrorMessage={
-                    changeStatusMutation.isError ? fr.detail.lifecycle.submitError : null
-                  }
-                  onSubmit={handleChangeStatus}
-                  onCancel={() => setIsChangingStatus(false)}
-                />
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {nextStatuses.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsChangingStatus(true)}
-                      className="text-sm font-medium text-teal-700 hover:underline"
-                    >
-                      {fr.detail.lifecycle.changeStatusTitle}
-                    </button>
-                  )}
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditFeedback(null)
-                        updateMutation.reset()
-                        setIsEditing(true)
-                      }}
-                      className="text-sm font-medium text-teal-700 hover:underline"
-                    >
-                      {fr.detail.editKlash}
-                    </button>
-                  )}
-                  {canDelete && (
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      disabled={deleteMutation.isPending}
-                      className="text-sm font-medium text-red-700 hover:underline disabled:opacity-60"
-                    >
-                      {deleteMutation.isPending ? fr.detail.deleting : fr.detail.deleteKlash}
-                    </button>
-                  )}
-                </div>
-              )}
-              {deleteMutation.isError && (
-                <p role="alert" className="text-sm text-red-700">
-                  {fr.detail.deleteKlashError}
-                </p>
-              )}
-            </div>
-          )}
+            {editFeedback === 'saved' && (
+              <p role="status" className="text-sm text-teal-800">
+                {fr.detail.edit.saved}
+              </p>
+            )}
 
-          <StatusHistory klashId={klash.id} />
+            {(nextStatuses.length > 0 || canEdit || canDelete) && (
+              <div className="flex flex-col gap-2 rounded-md border border-neutral-200 p-3">
+                {isChangingStatus ? (
+                  <ChangeStatusForm
+                    options={nextStatuses}
+                    isSubmitting={changeStatusMutation.isPending}
+                    submitErrorMessage={
+                      changeStatusMutation.isError ? fr.detail.lifecycle.submitError : null
+                    }
+                    onSubmit={handleChangeStatus}
+                    onCancel={() => setIsChangingStatus(false)}
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {nextStatuses.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsChangingStatus(true)}
+                        className="text-sm font-medium text-teal-700 hover:underline"
+                      >
+                        {fr.detail.lifecycle.changeStatusTitle}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditFeedback(null)
+                          updateMutation.reset()
+                          setIsEditing(true)
+                        }}
+                        className="text-sm font-medium text-teal-700 hover:underline"
+                      >
+                        {fr.detail.editKlash}
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        disabled={deleteMutation.isPending}
+                        className="text-sm font-medium text-red-700 hover:underline disabled:opacity-60"
+                      >
+                        {deleteMutation.isPending ? fr.detail.deleting : fr.detail.deleteKlash}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {deleteMutation.isError && (
+                  <p role="alert" className="text-sm text-red-700">
+                    {fr.detail.deleteKlashError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <StatusHistory klash={klash} />
+          </div>
 
           <CommentList klashId={klash.id} />
         </article>
