@@ -71,6 +71,14 @@ test.describe('campaigns', () => {
     await papillon.getByRole('button', { name: 'QR code' }).click()
     await expect(papillon.getByRole('img', { name: /\/r\/cpam-papillon$/ })).toBeInViewport()
     await expect(page.getByRole('img', { name: /^QR code de / })).toHaveCount(1)
+
+    // Each unfolded panel has its own way out.
+    await papillon.getByRole('button', { name: 'Fermer' }).click()
+    await expect(page.getByRole('img', { name: /^QR code de / })).toHaveCount(0)
+    await papillon.getByRole('button', { name: 'Modifier' }).click()
+    await expect(papillon.getByLabel('Destination')).toBeVisible()
+    await papillon.getByRole('button', { name: 'Fermer' }).click()
+    await expect(papillon.getByLabel('Destination')).toHaveCount(0)
   })
 
   test('the Résultats tab shows the funnel per emitter, campaign and link', async ({ page }) => {

@@ -533,6 +533,8 @@ export const fr = {
       linkCopied: 'Lien copié',
       showQr: 'QR code',
       edit: 'Modifier',
+      editTitle: 'Modifier le lien',
+      close: 'Fermer',
       deactivate: 'Désactiver',
       activate: 'Réactiver',
       deactivateConfirm:
