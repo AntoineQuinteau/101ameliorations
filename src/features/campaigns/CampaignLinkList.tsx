@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Copy, Pencil, QrCode } from 'lucide-react'
+import { Check, Copy, Pencil, QrCode, X } from 'lucide-react'
 import { fr } from '../../i18n/fr'
 import type { CampaignStat } from '../../types/campaign'
 import { linkDescription } from './campaignLabels'
@@ -14,6 +14,8 @@ const fieldClass =
   'rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none'
 const buttonClass =
   'inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-300 px-3 text-sm font-medium disabled:opacity-60'
+/** A toggle whose panel is unfolded reads as pressed. */
+const openButtonClass = 'border-teal-700 bg-teal-50 text-teal-800'
 /** Same rule as the database check on campaign_links.destination. */
 const DESTINATION_PATTERN = /^\/(?!\/)[A-Za-z0-9._~%@:,;=+!$&'()*/-]*$/
 
@@ -133,7 +135,7 @@ function LinkRow({
             type="button"
             onClick={() => toggle('qr')}
             aria-expanded={openPanel === 'qr'}
-            className={buttonClass}
+            className={`${buttonClass} ${openPanel === 'qr' ? openButtonClass : ''}`}
           >
             <QrCode className="size-4" />
             {fr.campaigns.list.showQr}
@@ -142,7 +144,7 @@ function LinkRow({
             type="button"
             onClick={() => toggle('settings')}
             aria-expanded={openPanel === 'settings'}
-            className={buttonClass}
+            className={`${buttonClass} ${openPanel === 'settings' ? openButtonClass : ''}`}
           >
             <Pencil className="size-4" />
             {/* Icon only on a phone, so the three actions stay on one line. */}
@@ -151,6 +153,23 @@ function LinkRow({
         </div>
       </div>
 
+      {openPanel && (
+        // Its own close button: pressing the toggle again is not an obvious
+        // way out of an unfolded panel.
+        <div className="flex items-center justify-between gap-2 border-t border-neutral-200 pt-2">
+          <h3 className="text-sm font-semibold text-neutral-900">
+            {openPanel === 'qr' ? fr.campaigns.list.showQr : fr.campaigns.list.editTitle}
+          </h3>
+          <button
+            type="button"
+            onClick={() => onOpenChange(null)}
+            className="inline-flex min-h-11 items-center gap-1 px-2 text-sm text-neutral-600"
+          >
+            <X className="size-4" />
+            {fr.campaigns.list.close}
+          </button>
+        </div>
+      )}
       {openPanel === 'qr' && <CampaignQrCode slug={slug} />}
       {openPanel === 'settings' && <LinkSettings row={row} />}
     </div>
