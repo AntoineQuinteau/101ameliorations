@@ -73,7 +73,7 @@ test('create a klash end to end, with inline login for a fresh user', async ({ p
 
   // Step 4: submit, with inline login (spec §6.2 step 4) since this is a
   // fresh session.
-  await expect(page.getByText('Pour envoyer votre signalement, connectez-vous.')).toBeVisible()
+  await expect(page.getByText(/Pour envoyer votre signalement, connectez-vous/)).toBeVisible()
   await page.getByLabel('Adresse email').fill(email)
   const sentAt = Date.now()
   await page.getByRole('button', { name: 'Recevoir le code' }).click()

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
 import { AboutSheet } from './AboutSheet'
@@ -40,6 +40,10 @@ import type { Klash } from '../../types/klash'
 import type { Bbox } from '../../utils/bbox'
 import { requestCurrentPosition, type GeolocationResult } from '../../utils/geolocation'
 import { hasStoredDraft } from '../newKlash/draftStorage'
+import type { AppOutletContext } from '../../App'
+import { useAuth } from '../auth/useAuth'
+import { WelcomeDialog } from '../welcome/WelcomeDialog'
+import { readWelcomeSeen, shouldAutoShowWelcome, writeWelcomeSeen } from '../welcome/welcomeStorage'
 
 export function MapPage() {
   const navigate = useNavigate()
@@ -51,6 +55,12 @@ export function MapPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const aboutButtonRef = useRef<HTMLButtonElement>(null)
+  const { user, isInitializing } = useAuth()
+  const { setInstallPromptSuppressed } = useOutletContext<AppOutletContext>()
+  const [welcomeSeen, setWelcomeSeen] = useState(readWelcomeSeen)
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState(false)
+  // Only a reopen from the About sheet has a control to give focus back to.
+  const [isWelcomeFromAbout, setIsWelcomeFromAbout] = useState(false)
   const [filters, setFilters] = useState(() => filtersFromSearchParams(searchParams))
   const [layer, setLayer] = useMapLayer()
   const [map, setMap] = useState<L.Map | null>(null)
@@ -64,6 +74,42 @@ export function MapPage() {
   useEffect(() => {
     setHasDraft(hasStoredDraft())
   }, [])
+  // First-visit welcome dialog (spec §6.1): opens by itself for a signed-out
+  // visitor who hasn't seen it. A signed-in user never needs it, so it counts
+  // as seen for them (it would otherwise pop up after a later sign-out).
+  useEffect(() => {
+    if (shouldAutoShowWelcome({ seen: welcomeSeen, isInitializing, isSignedIn: user !== null })) {
+      setIsWelcomeOpen(true)
+    } else if (!welcomeSeen && !isInitializing && user) {
+      writeWelcomeSeen()
+      setWelcomeSeen(true)
+    }
+  }, [welcomeSeen, isInitializing, user])
+
+  // The install banner waits while the dialog is open or still due (including
+  // while auth initializes), so the two never stack or flash in sequence.
+  const isWelcomePending = !welcomeSeen && !user
+  const holdInstallPrompt = isWelcomeOpen || isWelcomePending
+  useEffect(() => {
+    setInstallPromptSuppressed(holdInstallPrompt)
+    return () => setInstallPromptSuppressed(false)
+  }, [holdInstallPrompt, setInstallPromptSuppressed])
+
+  // Every way of closing the dialog counts as having seen it.
+  function closeWelcome() {
+    writeWelcomeSeen()
+    setWelcomeSeen(true)
+    setIsWelcomeOpen(false)
+    setIsWelcomeFromAbout(false)
+  }
+
+  function showWelcomeFromAbout() {
+    closeAbout()
+    setPendingPin(null)
+    setIsWelcomeFromAbout(true)
+    setIsWelcomeOpen(true)
+  }
+
   const serviceArea = useServiceArea()
   const {
     data: klashes = [],
@@ -329,7 +375,20 @@ export function MapPage() {
         )
       )}
 
-      {isAboutOpen && <AboutSheet onClose={closeAbout} returnFocusRef={aboutButtonRef} />}
+      {isAboutOpen && (
+        <AboutSheet
+          onClose={closeAbout}
+          onShowWelcome={showWelcomeFromAbout}
+          returnFocusRef={aboutButtonRef}
+        />
+      )}
+
+      {isWelcomeOpen && (
+        <WelcomeDialog
+          onClose={closeWelcome}
+          returnFocusRef={isWelcomeFromAbout ? aboutButtonRef : undefined}
+        />
+      )}
 
       {!isFiltersOpen && !isAboutOpen && selectedKlash && (
         <KlashPreviewCard

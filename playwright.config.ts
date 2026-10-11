@@ -32,6 +32,19 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
+    // Every spec opens the map in a fresh context, where the first-visit welcome
+    // dialog (spec §6.1) would cover the page. Seeding "seen" here neutralizes it
+    // for the whole suite in one place; e2e/welcome.spec.ts overrides it. The key
+    // is WELCOME_SEEN_KEY in src/features/welcome/welcomeStorage.ts.
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: 'http://127.0.0.1:5173',
+          localStorage: [{ name: '101ameliorations:welcome-seen', value: '1' }],
+        },
+      ],
+    },
     ...(useSystemChromium ? { launchOptions: { executablePath: systemChromiumPath } } : {}),
   },
   projects: [

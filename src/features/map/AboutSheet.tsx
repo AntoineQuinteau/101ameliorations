@@ -27,9 +27,13 @@ const ROWS = [
  * would steal it from that control. */
 export function AboutSheet({
   onClose,
+  onShowWelcome,
   returnFocusRef,
 }: {
   onClose: () => void
+  /** Reopens the first-visit welcome dialog (spec §6.1); the caller also
+   * closes this sheet. */
+  onShowWelcome: () => void
   returnFocusRef: RefObject<HTMLElement | null>
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -69,6 +73,16 @@ export function AboutSheet({
         <p className="mt-1 text-sm text-neutral-600">{fr.about.description}</p>
 
         <ul className="mt-3 flex flex-col divide-y divide-neutral-200 rounded-md border border-neutral-200">
+          <li>
+            <button
+              type="button"
+              onClick={onShowWelcome}
+              className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left text-sm font-medium text-neutral-800 hover:bg-neutral-50"
+            >
+              <span>{fr.about.howItWorks}</span>
+              <ChevronRight className="size-4 shrink-0 text-neutral-400" aria-hidden />
+            </button>
+          </li>
           {ROWS.map((row) => (
             <li key={row.to}>
               <Link
