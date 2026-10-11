@@ -150,6 +150,10 @@ déclenche jamais cet évènement).
 Icônes et image Open Graph générées depuis `public/icon-source.svg` — voir le
 tableau des scripts ci-dessus. Ne jamais éditer les PNG générés à la main.
 
+## Liens de campagne et attribution
+
+Liens courts `/r/:slug` (Worker `workers/app/`), QR codes, attribution first/last touch et mesure des visites (Umami, variable optionnelle `VITE_UMAMI_WEBSITE_ID`) : voir [`docs/campaign-tracking.md`](docs/campaign-tracking.md). Pour le déploiement : `wrangler.jsonc` envoie `/k/*`, `/r/*` et `/ios-manifest.webmanifest` au Worker ; la variable de dépôt `VITE_UMAMI_WEBSITE_ID` n'est lue que par le job de production.
+
 ## Export des données
 
 `/export` (spec §6.7) : CSV et GeoJSON de tous les klashs publics, sans donnée

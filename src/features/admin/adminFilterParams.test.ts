@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   adminParamsFromSearchParams,
+  adminSortOrder,
   adminParamsToSearchParams,
   adminTabFromSearchParams,
   adminTabToSearchParams,
   defaultAdminTableParams,
+  nextSortOnHeaderClick,
   type AdminTableParams,
 } from './adminFilterParams'
 
@@ -21,7 +23,25 @@ describe('adminParamsToSearchParams', () => {
     expect(params.has('category')).toBe(false)
     expect(params.has('period')).toBe(false)
     expect(params.has('q')).toBe(false)
+    expect(params.has('sort')).toBe(false)
+    expect(params.has('dir')).toBe(false)
     expect(params.has('page')).toBe(false)
+  })
+
+  it('writes the sort column and direction independently, each only when non-default', () => {
+    const column = adminParamsToSearchParams(new URLSearchParams(), {
+      ...defaultAdminTableParams,
+      sort: 'confirmations',
+    })
+    expect(column.get('sort')).toBe('confirmations')
+    expect(column.has('dir')).toBe(false)
+
+    const direction = adminParamsToSearchParams(new URLSearchParams(), {
+      ...defaultAdminTableParams,
+      direction: 'asc',
+    })
+    expect(direction.has('sort')).toBe(false)
+    expect(direction.get('dir')).toBe('asc')
   })
 
   it('writes the page as 1-based', () => {
@@ -44,6 +64,14 @@ describe('adminParamsToSearchParams', () => {
     expect(params.has('status')).toBe(false)
     expect(params.has('q')).toBe(false)
   })
+
+  it('clears a previously-set sort back to the default', () => {
+    const current = new URLSearchParams('sort=comments&dir=asc&tab=triage')
+    const params = adminParamsToSearchParams(current, defaultAdminTableParams)
+    expect(params.has('sort')).toBe(false)
+    expect(params.has('dir')).toBe(false)
+    expect(params.get('tab')).toBe('triage')
+  })
 })
 
 describe('adminParamsFromSearchParams', () => {
@@ -57,6 +85,8 @@ describe('adminParamsFromSearchParams', () => {
       category: 'category_2',
       period: '30',
       searchText: 'nid de poule',
+      sort: 'comments',
+      direction: 'asc',
       page: 2,
     }
     const params = adminParamsToSearchParams(new URLSearchParams(), original)
@@ -66,6 +96,21 @@ describe('adminParamsFromSearchParams', () => {
   it('falls back to defaults for unknown status/category/period', () => {
     const params = new URLSearchParams('status=bogus&category=inconnue&period=42')
     expect(adminParamsFromSearchParams(params)).toEqual(defaultAdminTableParams)
+  })
+
+  it('falls back to the default sort for an unknown column or direction', () => {
+    expect(adminParamsFromSearchParams(new URLSearchParams('sort=bogus&dir=sideways'))).toEqual(
+      defaultAdminTableParams,
+    )
+  })
+
+  it('keeps a valid sort field when the other one is invalid', () => {
+    const column = adminParamsFromSearchParams(new URLSearchParams('sort=comments&dir=sideways'))
+    expect(column.sort).toBe('comments')
+    expect(column.direction).toBe('desc')
+    const direction = adminParamsFromSearchParams(new URLSearchParams('sort=bogus&dir=asc'))
+    expect(direction.sort).toBe('created')
+    expect(direction.direction).toBe('asc')
   })
 
   it('falls back to page 0 for a non-numeric or out-of-range page', () => {
@@ -111,4 +156,56 @@ describe('adminTabFromSearchParams / adminTabToSearchParams', () => {
     expect(params.get('q')).toBe('nid')
     expect(params.get('tab')).toBe('triage')
   })
+})
+
+describe('nextSortOnHeaderClick', () => {
+  it('sorts a newly-clicked column descending first', () => {
+    expect(nextSortOnHeaderClick({ sort: 'created', direction: 'asc' }, 'comments')).toEqual({
+      sort: 'comments',
+      direction: 'desc',
+    })
+  })
+
+  it('flips the direction of the active column', () => {
+    const desc = { sort: 'confirmations', direction: 'desc' } as const
+    const asc = nextSortOnHeaderClick(desc, 'confirmations')
+    expect(asc).toEqual({ sort: 'confirmations', direction: 'asc' })
+    expect(nextSortOnHeaderClick(asc, 'confirmations')).toEqual(desc)
+  })
+})
+
+describe('adminSortOrder', () => {
+  it('orders by the chosen column, then newest first, then id', () => {
+    expect(adminSortOrder({ sort: 'confirmations', direction: 'asc' })).toEqual([
+      ['confirmations_count', true],
+      ['created_at', false],
+      ['id', false],
+    ])
+    expect(adminSortOrder({ sort: 'comments', direction: 'desc' })).toEqual([
+      ['comments_count', false],
+      ['created_at', false],
+      ['id', false],
+    ])
+  })
+
+  it('breaks date ties by id in the same direction', () => {
+    expect(adminSortOrder({ sort: 'created', direction: 'desc' })).toEqual([
+      ['created_at', false],
+      ['id', false],
+    ])
+    expect(adminSortOrder({ sort: 'created', direction: 'asc' })).toEqual([
+      ['created_at', true],
+      ['id', true],
+    ])
+  })
+
+  it.each(['created', 'confirmations', 'comments'] as const)(
+    'ends with the unique id key for %s',
+    (sort) => {
+      for (const direction of ['asc', 'desc'] as const) {
+        const order = adminSortOrder({ sort, direction })
+        expect(order[order.length - 1][0]).toBe('id')
+      }
+    },
+  )
 })

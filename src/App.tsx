@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { AnalyticsPageviews } from './features/pwa/AnalyticsPageviews'
 import { InstallPrompt } from './features/pwa/InstallPrompt'
 import { ServiceWorkerRegistration } from './features/pwa/ServiceWorkerRegistration'
+import { useInstallTracking } from './features/pwa/useInstallTracking'
 
 /** What `App` hands its routes through the `<Outlet>` context. */
 export interface AppOutletContext {
@@ -13,12 +15,14 @@ export interface AppOutletContext {
 export function App() {
   const [isInstallPromptSuppressed, setInstallPromptSuppressed] = useState(false)
   const context: AppOutletContext = { setInstallPromptSuppressed }
+  useInstallTracking()
 
   return (
     <>
       <Outlet context={context} />
       <ServiceWorkerRegistration />
       <InstallPrompt suppressed={isInstallPromptSuppressed} />
+      <AnalyticsPageviews />
     </>
   )
 }

@@ -21,21 +21,25 @@ create temporary table e2e_staff (
   id           uuid primary key,
   email        text not null,
   role         public.user_role not null,
-  organization text
+  organization text,
+  can_manage_campaigns boolean not null default false
 );
 
-insert into e2e_staff (id, email, role, organization)
+insert into e2e_staff (id, email, role, organization, can_manage_campaigns)
 select
   format('20000000-0000-4000-8000-0000000000%s%s', r.n, slot)::uuid,
-  format('e2e-%s-%s@101ameliorations.test', r.role, slot),
+  format('e2e-%s-%s@101ameliorations.test', r.label, slot),
   r.role::public.user_role,
-  r.organization
+  r.organization,
+  r.can_manage_campaigns
 from generate_series(0, 3) as slot
 cross join (values
-  (1, 'moderator', null),
-  (2, 'authority', 'CAPB'),
-  (3, 'admin', null)
-) as r (n, role, organization);
+  (1, 'moderator', 'moderator', null, false),
+  (2, 'authority', 'authority', 'CAPB', false),
+  (3, 'admin', 'admin', null, false),
+  -- A plain user holding only the campaign-manager right.
+  (4, 'campaigner', 'user', null, true)
+) as r (n, label, role, organization, can_manage_campaigns);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -56,7 +60,9 @@ on conflict (id) do nothing;
 -- the nickname step from appearing (shouldPromptForPseudo).
 alter table public.profiles disable trigger profiles_guard_role;
 update public.profiles p
-set role = s.role, organization = s.organization, display_name = 'E2E ' || s.role::text
+set role = s.role, organization = s.organization,
+    can_manage_campaigns = s.can_manage_campaigns,
+    display_name = 'E2E ' || s.role::text
 from e2e_staff s
 where p.id = s.id;
 alter table public.profiles enable trigger profiles_guard_role;

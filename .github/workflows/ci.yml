@@ -325,6 +325,8 @@ jobs:
           VITE_MAPTILER_KEY: ${{ vars.VITE_MAPTILER_KEY }}
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          # Optional, production only: previews and e2e never send visits.
+          VITE_UMAMI_WEBSITE_ID: ${{ vars.VITE_UMAMI_WEBSITE_ID }}
           VITE_SENTRY_ENVIRONMENT: production
       - name: wrangler deploy
         env:

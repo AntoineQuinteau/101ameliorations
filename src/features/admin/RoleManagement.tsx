@@ -17,6 +17,7 @@ export function RoleManagement() {
   const [email, setEmail] = useState('')
   const [selectedRole, setSelectedRole] = useState<UserRole>('user')
   const [organization, setOrganization] = useState('')
+  const [canManageCampaigns, setCanManageCampaigns] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const findProfile = useFindProfileByEmail()
@@ -29,6 +30,7 @@ export function RoleManagement() {
       onSuccess: (profile) => {
         setSelectedRole(profile?.role ?? 'user')
         setOrganization(profile?.organization ?? '')
+        setCanManageCampaigns(profile?.canManageCampaigns ?? false)
       },
     })
   }
@@ -43,6 +45,7 @@ export function RoleManagement() {
         profileId: profile.id,
         role: selectedRole,
         organization: organization.trim().length > 0 ? organization.trim() : null,
+        canManageCampaigns,
       },
       { onSuccess: () => setSaved(true) },
     )
@@ -111,6 +114,16 @@ export function RoleManagement() {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              checked={canManageCampaigns || selectedRole === 'admin'}
+              disabled={selectedRole === 'admin'}
+              onChange={(event) => setCanManageCampaigns(event.target.checked)}
+            />
+            {fr.admin.roles.campaignRightLabel}
           </label>
 
           {selectedRole === 'authority' && (

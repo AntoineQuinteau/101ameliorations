@@ -35,7 +35,9 @@ export function CommentList({ klashId }: { klashId: string }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-sm font-semibold text-neutral-900">{fr.comments.title}</h2>
+      <h2 className="text-sm font-semibold text-neutral-900">
+        {comments ? fr.comments.titleWithCount(comments.length) : fr.comments.title}
+      </h2>
 
       {isLoading && <Spinner />}
       {isError && <ErrorMessage message={fr.comments.loadError} onRetry={() => refetch()} />}

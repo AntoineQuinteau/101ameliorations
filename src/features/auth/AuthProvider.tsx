@@ -5,6 +5,8 @@ import { supabase } from '../../lib/supabase'
 import { AuthContext, type AuthContextValue } from './authContext'
 import { clearDraftPhotos } from '../newKlash/draftPhotoStore'
 import { clearStoredDraft } from '../newKlash/draftStorage'
+import { attributionPayload } from '../attribution/attribution'
+import { readAttribution } from '../attribution/attributionStorage'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
@@ -52,9 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       isInitializing,
       signInWithOtp: async (email: string, captchaToken?: string) => {
+        // The attribution rides along as user metadata and is stored by the
+        // sign-up trigger (handle_new_user), which re-validates every field:
+        // it is client-supplied and not trusted. Supabase ignores `data` for
+        // an existing account, and the stored attribution is immutable anyway.
+        const attribution = readAttribution()
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { shouldCreateUser: true, captchaToken },
+          options: {
+            shouldCreateUser: true,
+            captchaToken,
+            data: attribution ? { attribution: attributionPayload(attribution) } : undefined,
+          },
         })
         if (error) throw error
       },

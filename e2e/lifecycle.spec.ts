@@ -2,6 +2,36 @@ import { test, expect, type Page } from '@playwright/test'
 import { loginAs } from './support/login'
 import { staffEmail } from './support/staff'
 
+/** Runs `action` (a filter or page change) and waits until the listing shows
+ * its result. The listing keeps the previous rows on screen, marked
+ * `aria-busy`, while the new ones load — so "a row is visible" or "the next
+ * button is disabled" says nothing about which page those rows belong to.
+ * Waiting for the request the action triggers guarantees the render that
+ * set `aria-busy` has happened; waiting for it to clear then guarantees the
+ * rows are the new ones. */
+async function reloadListing(page: Page, action: () => Promise<unknown>): Promise<void> {
+  const response = page.waitForResponse(
+    (res) => res.request().method() === 'GET' && res.url().includes('/rest/v1/klashes_public'),
+  )
+  // Not awaited if `action` throws: mark it handled so it can't surface later.
+  response.catch(() => {})
+  await action()
+  await response
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+}
+
+/** The header badges (category, importance, current status). The status
+ * timeline also renders status badges, so current-status assertions are
+ * scoped here to stay unambiguous. */
+function headerBadges(page: Page) {
+  return page.getByRole('group', { name: 'Catégorie, importance et statut' })
+}
+
+/** The steps of the "Historique des statuts" timeline, oldest first. */
+function historySteps(page: Page) {
+  return page.getByRole('region', { name: 'Historique des statuts' }).getByRole('listitem')
+}
+
 /**
  * Opens `/admin`'s klash listing (table or cards), filters to `status = new`, jumps to the
  * LAST page, and returns the `/k/:id` URL of the Nth-from-the-end matching
@@ -24,7 +54,7 @@ import { staffEmail } from './support/staff'
  */
 async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string> {
   await page.goto('/admin')
-  await page.getByLabel('Statut').selectOption('new')
+  await reloadListing(page, () => page.getByLabel('Statut').selectOption('new'))
 
   // One link per klash in either layout: a table row from 768px, a card
   // below (both are in the DOM, CSS shows one — hence `:visible`).
@@ -43,7 +73,7 @@ async function findNewKlashUrl(page: Page, indexFromEnd: number): Promise<string
   // isEnabled() check exits normally.
   const lastPageButton = page.getByRole('button', { name: 'Page suivante' })
   while (await lastPageButton.isEnabled()) {
-    await lastPageButton.click({ timeout: 3_000 }).catch(() => {})
+    await reloadListing(page, () => lastPageButton.click({ timeout: 3_000 })).catch(() => {})
     await expect(rows.first()).toBeVisible()
   }
 
@@ -67,7 +97,7 @@ test.describe('lifecycle', () => {
     const klashUrl = await findNewKlashUrl(page, 0)
     await page.goto(klashUrl)
 
-    await expect(page.getByText('Nouveau', { exact: true })).toBeVisible()
+    await expect(headerBadges(page).getByText('Nouveau', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Changer le statut' }).click()
     await page.getByLabel('Nouveau statut').selectOption('rejected')
@@ -75,11 +105,16 @@ test.describe('lifecycle', () => {
     await page.getByRole('button', { name: 'Valider' }).click()
 
     // Status badge updates.
-    await expect(page.getByText('Rejeté', { exact: true })).toBeVisible()
+    await expect(headerBadges(page).getByText('Rejeté', { exact: true })).toBeVisible()
 
-    // Status history updates with the new transition line and note.
-    await expect(page.getByText('Nouveau → Rejeté')).toBeVisible()
-    await expect(page.getByText('E2E : rejeté par le test lifecycle.')).toBeVisible()
+    // Status history updates: creation step, then the new step (Rejeté)
+    // carrying the note — i.e. Nouveau → Rejeté.
+    const steps = historySteps(page)
+    await expect(steps).toHaveCount(2)
+    await expect(steps.nth(0).getByText('Nouveau', { exact: true })).toBeVisible()
+    await expect(steps.nth(0).getByText('Signalement créé')).toBeVisible()
+    await expect(steps.nth(1).getByText('Rejeté', { exact: true })).toBeVisible()
+    await expect(steps.nth(1).getByText('E2E : rejeté par le test lifecycle.')).toBeVisible()
   })
 
   test('authority acknowledges a new klash', async ({ page }) => {
@@ -92,16 +127,22 @@ test.describe('lifecycle', () => {
     const klashUrl = await findNewKlashUrl(page, 1)
     await page.goto(klashUrl)
 
-    await expect(page.getByText('Nouveau', { exact: true })).toBeVisible()
+    await expect(headerBadges(page).getByText('Nouveau', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Changer le statut' }).click()
     await page.getByLabel('Nouveau statut').selectOption('acknowledged')
     await page.getByLabel('Note (facultative)').fill('E2E : pris en compte par le test lifecycle.')
     await page.getByRole('button', { name: 'Valider' }).click()
 
-    await expect(page.getByText('Pris en compte', { exact: true })).toBeVisible()
+    await expect(headerBadges(page).getByText('Pris en compte', { exact: true })).toBeVisible()
 
-    await expect(page.getByText('Nouveau → Pris en compte')).toBeVisible()
-    await expect(page.getByText('E2E : pris en compte par le test lifecycle.')).toBeVisible()
+    const steps = historySteps(page)
+    await expect(steps).toHaveCount(2)
+    await expect(steps.nth(0).getByText('Nouveau', { exact: true })).toBeVisible()
+    await expect(steps.nth(0).getByText('Signalement créé')).toBeVisible()
+    await expect(steps.nth(1).getByText('Pris en compte', { exact: true })).toBeVisible()
+    await expect(
+      steps.nth(1).getByText('E2E : pris en compte par le test lifecycle.'),
+    ).toBeVisible()
   })
 })
