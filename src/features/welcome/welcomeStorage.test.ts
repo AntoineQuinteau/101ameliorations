@@ -42,6 +42,11 @@ describe('writeWelcomeSeen', () => {
     expect(() => writeWelcomeSeen()).not.toThrow()
     spy.mockRestore()
   })
+
+  // Last on purpose: the in-memory fallback set above lasts for the module's life.
+  it('still reads as seen after a write that failed', () => {
+    expect(readWelcomeSeen()).toBe(true)
+  })
 })
 
 describe('shouldAutoShowWelcome', () => {

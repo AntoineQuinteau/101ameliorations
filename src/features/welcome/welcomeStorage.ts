@@ -2,16 +2,20 @@
 // context but e2e/welcome.spec.ts starts with the welcome dialog already seen.
 export const WELCOME_SEEN_KEY = '101ameliorations:welcome-seen'
 
+// Fallback for when storage is unavailable: MapPage remounts on every return to
+// the map, so without it the dialog would reopen each time.
+let seenInMemory = false
+
 /** Whether the first-visit welcome dialog (spec §6.1) was already closed on this
  * device. Exported as a pure function, like `readStoredMapLayer`, since this
  * project has no `@testing-library/react` to render a hook with. A storage
- * failure (Safari private browsing) reads as "not seen": the dialog shows, and
- * closing it still hides it for as long as the page stays open. */
+ * failure (Safari private browsing) reads as "not seen" until the dialog is
+ * closed, which then holds for as long as the page stays open. */
 export function readWelcomeSeen(): boolean {
   try {
-    return localStorage.getItem(WELCOME_SEEN_KEY) === '1'
+    return seenInMemory || localStorage.getItem(WELCOME_SEEN_KEY) === '1'
   } catch {
-    return false
+    return seenInMemory
   }
 }
 
@@ -20,6 +24,7 @@ export function writeWelcomeSeen(): void {
     localStorage.setItem(WELCOME_SEEN_KEY, '1')
   } catch {
     // Best-effort only: the dialog would just show again on the next visit.
+    seenInMemory = true
   }
 }
 
