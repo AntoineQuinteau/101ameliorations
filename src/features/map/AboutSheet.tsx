@@ -74,11 +74,12 @@ export function AboutSheet({
 
         {/* Kept out of the list below, which only holds links to pages: this
             opens a dialog over the map. Looks like a text link, but is 44px
-            tall and padded sideways so it stays an easy tap target. */}
+            tall so it stays an easy tap target. Flush with the text and the
+            list on the left, so neither hover nor the focus ring sticks out. */}
         <button
           type="button"
           onClick={onShowWelcome}
-          className="-mx-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-teal-700 hover:bg-teal-50 hover:text-teal-800"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-md pr-2 text-sm font-medium text-teal-700 hover:text-teal-800 hover:underline"
         >
           <CircleQuestionMark className="size-4 shrink-0" aria-hidden />
           {fr.about.howItWorks}
