@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, X } from 'lucide-react'
+import { ChevronRight, CircleQuestionMark, X } from 'lucide-react'
 import { BottomSheet } from '../../components/BottomSheet'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
@@ -72,17 +72,19 @@ export function AboutSheet({
         </div>
         <p className="mt-1 text-sm text-neutral-600">{fr.about.description}</p>
 
-        <ul className="mt-3 flex flex-col divide-y divide-neutral-200 rounded-md border border-neutral-200">
-          <li>
-            <button
-              type="button"
-              onClick={onShowWelcome}
-              className="flex w-full items-center justify-between gap-3 px-3 py-3 text-left text-sm font-medium text-neutral-800 hover:bg-neutral-50"
-            >
-              <span>{fr.about.howItWorks}</span>
-              <ChevronRight className="size-4 shrink-0 text-neutral-400" aria-hidden />
-            </button>
-          </li>
+        {/* Kept out of the list below, which only holds links to pages: this
+            opens a dialog over the map. Looks like a text link, but is 44px
+            tall and padded sideways so it stays an easy tap target. */}
+        <button
+          type="button"
+          onClick={onShowWelcome}
+          className="-mx-2 inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-teal-700 hover:bg-teal-50 hover:text-teal-800"
+        >
+          <CircleQuestionMark className="size-4 shrink-0" aria-hidden />
+          {fr.about.howItWorks}
+        </button>
+
+        <ul className="flex flex-col divide-y divide-neutral-200 rounded-md border border-neutral-200">
           {ROWS.map((row) => (
             <li key={row.to}>
               <Link
