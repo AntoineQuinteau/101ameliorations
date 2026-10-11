@@ -1,6 +1,30 @@
 import { fr } from '../../i18n/fr'
 import { BackLink } from '../../components/BackLink'
 
+// Capturing group so String.split keeps the e-mail addresses (odd indices).
+const EMAIL_PATTERN = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/
+
+/** Renders a line of text, turning any e-mail address into a mailto link. */
+function LinkifiedLine({ line }: { line: string }) {
+  return (
+    <>
+      {line.split(EMAIL_PATTERN).map((part, index) =>
+        index % 2 === 1 ? (
+          <a
+            key={index}
+            href={`mailto:${part}`}
+            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-800"
+          >
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  )
+}
+
 /** Mentions légales (spec §9 step 9): required for a public French site.
  * Identity fields (association name, SIRET, address, publication director)
  * are TODO placeholders in fr.legal.notice — see src/i18n/fr.ts. */
@@ -17,7 +41,9 @@ export function LegalNoticePage() {
         <h2 className="text-sm font-semibold text-neutral-900">{t.publisher.heading}</h2>
         <ul className="mt-2 flex flex-col gap-1 text-sm text-neutral-700">
           {t.publisher.body.map((line) => (
-            <li key={line}>{line}</li>
+            <li key={line}>
+              <LinkifiedLine line={line} />
+            </li>
           ))}
         </ul>
       </section>
