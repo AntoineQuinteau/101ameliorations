@@ -21,9 +21,11 @@ function currentMonth(): string {
 export function CampaignLinkForm({
   existingCampaigns,
   onCreated,
+  onCancel,
 }: {
   existingCampaigns: readonly string[]
   onCreated: (link: CampaignLink) => void
+  onCancel: () => void
 }) {
   const sources = useCampaignSources()
   const create = useCreateCampaignLink()
@@ -168,14 +170,23 @@ export function CampaignLinkForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        aria-busy={create.isPending}
-        className="inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
-      >
-        {create.isPending ? fr.campaigns.form.submitting : fr.campaigns.form.submit}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          aria-busy={create.isPending}
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+        >
+          {create.isPending ? fr.campaigns.form.submitting : fr.campaigns.form.submit}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700"
+        >
+          {fr.campaigns.form.close}
+        </button>
+      </div>
     </form>
   )
 }

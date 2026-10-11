@@ -4,8 +4,8 @@ import { initAnalytics, trackPageview } from '../../lib/analytics'
 import { landingPageviewUrl } from '../../lib/landingPageviewUrl'
 import { landingSearch } from '../attribution/captureOnLoad'
 
-// Admin screens are staff tooling, not audience.
-const UNTRACKED_PREFIXES = ['/admin']
+// Admin and campaign screens are staff tooling, not audience.
+const UNTRACKED_PREFIXES = ['/admin', '/campaigns']
 
 /** Sends one Umami pageview per route. The first carries the arrival URL with
  * its utm_* (already stripped from the address bar by the time React runs);

@@ -184,16 +184,17 @@ Anti-abus :
 
 Une seule application responsive. Routes :
 
-| Route    | Contenu                                                                               |
-| -------- | ------------------------------------------------------------------------------------- |
-| `/`      | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
-| `/k/:id` | Détail d'un klash                                                                     |
-| `/new`   | Création (feuille/modale par-dessus la carte)                                         |
-| `/login` | Saisie email → saisie du code OTP                                                     |
-| `/me`    | Mes klashs, mon pseudo                                                                |
-| `/admin` | Modération et traitement (rôles ≥ moderator)                                          |
+| Route        | Contenu                                                                               |
+| ------------ | ------------------------------------------------------------------------------------- |
+| `/`          | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
+| `/k/:id`     | Détail d'un klash                                                                     |
+| `/new`       | Création (feuille/modale par-dessus la carte)                                         |
+| `/login`     | Saisie email → saisie du code OTP                                                     |
+| `/me`        | Mes klashs, mon pseudo                                                                |
+| `/admin`     | Modération et traitement (rôles ≥ moderator)                                          |
+| `/campaigns` | Liens de campagne et leurs résultats (droit `can_manage_campaigns`, §6.8)             |
 
-Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
+Les pages secondaires (détail, connexion, `/me`, `/admin`, `/campaigns`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
 
 ### 6.1 Carte (`/`)
 
@@ -252,7 +253,12 @@ Points d'entrée (rôles ≥ moderator uniquement, jamais affichés aux autres) 
 
 ### 6.8 Liens de campagne (`/r/:slug`)
 
-Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Création, QR codes et statistiques : onglet « Campagnes » de `/admin`, réservé à `can_manage_campaigns`. Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
+Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
+
+Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin`) et indépendante de `/admin` — un gestionnaire de campagnes sans rôle de modération n'accède pas à `/admin`, un modérateur sans le droit n'accède pas à `/campaigns`. Point d'entrée : un lien « Gérer les campagnes » dans `/me`, à côté de « Accéder à l'administration », chacun affiché selon son propre droit ; pas de raccourci sur la carte. Deux onglets (`?tab=results` pour le second) :
+
+- **Liens** : bouton « Créer un lien » (formulaire replié par défaut), puis la liste des liens actifs, filtrable par campagne et par émetteur ; les liens désactivés s'affichent sur demande. Chaque lien montre son adresse courte, sa description, son nombre de scans et trois actions : copier le lien, QR code, modifier (destination, activer / désactiver). Le QR code (copie de l'image, SVG, PNG haute résolution) se déplie sous son lien, un seul à la fois dans toute la page, pour qu'un téléphone ne puisse pas scanner le mauvais.
+- **Résultats** (lecture seule) : scans → inscriptions → installations et taux de conversion, en tableaux par émetteur, par campagne et par lien, attribués au premier ou au dernier contact.
 
 ### 6.7 Export
 

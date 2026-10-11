@@ -5,7 +5,9 @@ import { NotFoundPage } from './components/NotFoundPage'
 import { AdminPage } from './features/admin/AdminPage'
 import { LoginPage } from './features/auth/LoginPage'
 import { RequireAuth } from './features/auth/RequireAuth'
+import { RequireCampaignManager } from './features/auth/RequireCampaignManager'
 import { RequireRole } from './features/auth/RequireRole'
+import { CampaignsPage } from './features/campaigns/CampaignsPage'
 import { ExportPage } from './features/export/ExportPage'
 import { KlashDetailPage } from './features/klash/KlashDetailPage'
 import { LegalNoticePage } from './features/legal/LegalNoticePage'
@@ -39,9 +41,17 @@ export const router = createBrowserRouter([
       {
         path: 'admin',
         element: (
-          <RequireRole allow={ADMIN_ROLES} orCampaignManager>
+          <RequireRole allow={ADMIN_ROLES}>
             <AdminPage />
           </RequireRole>
+        ),
+      },
+      {
+        path: 'campaigns',
+        element: (
+          <RequireCampaignManager>
+            <CampaignsPage />
+          </RequireCampaignManager>
         ),
       },
       { path: '*', element: <NotFoundPage /> },
