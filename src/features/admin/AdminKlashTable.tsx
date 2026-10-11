@@ -106,8 +106,9 @@ export function AdminKlashTable() {
   // requested one was out of range (see fetchAdminKlashes's PGRST103
   // recovery) — used for the indicator/buttons below so the UI doesn't
   // flash the stale, invalid page number while the reconciling effect
-  // hasn't run yet.
-  const displayedPage = data?.page ?? params.page
+  // hasn't run yet. Placeholder data is the previous query's: its page is
+  // not the one being loaded, so the URL's is used until the response lands.
+  const displayedPage = data && !isPlaceholderData ? data.page : params.page
 
   // Only write path for the URL — `params` above is derived from it, so
   // there's nothing else to keep in sync. `replace: true` avoids stacking
