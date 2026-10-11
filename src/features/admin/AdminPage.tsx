@@ -9,10 +9,10 @@ import { fr } from '../../i18n/fr'
 import { useRole } from '../auth/useRole'
 import { AdminKlashTable } from './AdminKlashTable'
 import { RoleManagement } from './RoleManagement'
-import { CampaignsTab } from '../campaigns/CampaignsTab'
 import { canAccessAdmin } from '../../lib/klashPermissions'
 import { TriageQueue } from './TriageQueue'
 import { BackLink } from '../../components/BackLink'
+import { TabButton } from '../../components/TabButton'
 
 /** `/admin` (spec §6.6, rôles ≥ moderator). Scoped for this step to a
  * paginated/filtered klash table, the "à trier" queue, and role management
@@ -26,25 +26,22 @@ import { BackLink } from '../../components/BackLink'
  * rationale as `AdminKlashTable`'s `params`), so browser back/forward
  * across tabs is picked up automatically. */
 export function AdminPage() {
-  const { role, isResolved, canManageCampaigns } = useRole()
+  const { role, isResolved } = useRole()
   const isAdmin = role === 'admin'
   const isStaff = canAccessAdmin(role)
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = useMemo(() => adminTabFromSearchParams(searchParams), [searchParams])
 
-  // Which tabs this account may use: moderation tabs for staff roles, roles
-  // for admins, campaigns for campaign managers (a manager may have no staff
-  // role at all). A `?tab=` link to a tab the account lacks (or while the
-  // role hasn't resolved) would otherwise render an empty panel, so it falls
-  // back to the first available one. Derived here instead of corrected in an
-  // effect: an effect would still render the empty panel for one frame.
-  // Waits on `isResolved` so a reload on /admin?tab=roles isn't bounced for
-  // the instant before the role has loaded. The stale `?tab=` in the URL is
-  // simply overwritten the next time the user switches tabs.
+  // `roles` is admin-only. A `?tab=roles` link opened by another staff role
+  // (or while the role hasn't resolved) would otherwise render an empty
+  // panel, so it falls back to the first tab. Derived here instead of
+  // corrected in an effect: an effect would still render the empty panel for
+  // one frame. Waits on `isResolved` so a reload on /admin?tab=roles isn't
+  // bounced for the instant before the role has loaded. The stale `?tab=` in
+  // the URL is simply overwritten the next time the user switches tabs.
   const availableTabs: AdminTab[] = [
     ...(isStaff ? (['klashes', 'triage'] as const) : []),
     ...(isAdmin ? (['roles'] as const) : []),
-    ...(canManageCampaigns ? (['campaigns'] as const) : []),
   ]
   const effectiveTab: AdminTab =
     !isResolved || availableTabs.includes(tab) ? tab : (availableTabs[0] ?? 'klashes')
@@ -75,46 +72,13 @@ export function AdminPage() {
             {fr.admin.tabs.roles}
           </TabButton>
         )}
-        {canManageCampaigns && (
-          <TabButton active={effectiveTab === 'campaigns'} onClick={() => changeTab('campaigns')}>
-            {fr.admin.tabs.campaigns}
-          </TabButton>
-        )}
       </div>
 
       <div className="mt-4">
         {effectiveTab === 'klashes' && isStaff && <AdminKlashTable />}
         {effectiveTab === 'triage' && isStaff && <TriageQueue />}
         {effectiveTab === 'roles' && isAdmin && <RoleManagement />}
-        {effectiveTab === 'campaigns' && canManageCampaigns && <CampaignsTab />}
       </div>
     </div>
-  )
-}
-
-// The focus ring is drawn inset: the tab row scrolls horizontally, which clips
-// an outline painted outside the button (same reason as the map controls, see
-// `mapControlButtonClassName`).
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-h-11 border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal-700 ${
-        active
-          ? 'border-teal-700 text-teal-700'
-          : 'border-transparent text-neutral-500 hover:text-neutral-700'
-      }`}
-    >
-      {children}
-    </button>
   )
 }

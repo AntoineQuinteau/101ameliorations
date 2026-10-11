@@ -6,11 +6,15 @@ import { fr } from '../../i18n/fr'
 import { useAuth } from '../auth/useAuth'
 import { useShowAdminEntryPoints } from '../auth/useShowAdminEntryPoints'
 import { useProfile } from '../auth/useProfile'
+import { useRole } from '../auth/useRole'
 import { useUpdateDisplayName } from '../auth/useUpdateDisplayName'
 import { DisplayNameForm } from './DisplayNameForm'
 import { MyKlashList } from './MyKlashList'
 import { useDeleteMyAccount } from './useDeleteMyAccount'
 import { BackLink } from '../../components/BackLink'
+
+const staffLinkClassName =
+  'inline-flex w-fit items-center rounded-md border border-teal-700 px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50'
 
 /** Spec §6.5: my klashs, my pseudo, sign-out, and — since step 9 — RGPD
  * account deletion. "My confirmations" is deferred to a later step (see
@@ -19,6 +23,7 @@ export function MePage() {
   const { user, signOut } = useAuth()
   const { data: profile } = useProfile()
   const showAdminLink = useShowAdminEntryPoints()
+  const { canManageCampaigns } = useRole()
   const updateDisplayName = useUpdateDisplayName()
   const deleteAccountMutation = useDeleteMyAccount()
   const navigate = useNavigate()
@@ -73,13 +78,19 @@ export function MePage() {
                 <span className="text-sm text-neutral-600">{profile.organization}</span>
               </div>
             )}
-            {showAdminLink && (
-              <Link
-                to="/admin"
-                className="inline-flex w-fit items-center rounded-md border border-teal-700 px-3 py-1.5 text-sm font-medium text-teal-800 hover:bg-teal-50"
-              >
-                {fr.me.adminLink}
-              </Link>
+            {(showAdminLink || canManageCampaigns) && (
+              <div className="flex flex-wrap gap-2">
+                {showAdminLink && (
+                  <Link to="/admin" className={staffLinkClassName}>
+                    {fr.me.adminLink}
+                  </Link>
+                )}
+                {canManageCampaigns && (
+                  <Link to="/campaigns" className={staffLinkClassName}>
+                    {fr.me.campaignsLink}
+                  </Link>
+                )}
+              </div>
             )}
           </div>
         )}

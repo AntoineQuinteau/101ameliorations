@@ -17,8 +17,8 @@ export interface RoleInfo {
   canProcess: boolean
   /** May open `/admin`: moderator, authority or admin (spec §6.6). */
   canAccessAdmin: boolean
-  /** May create campaign links and read their statistics (admin, or the
-   * separate `can_manage_campaigns` right). */
+  /** May open `/campaigns`: create campaign links and read their statistics
+   * (admin, or the separate `can_manage_campaigns` right, whatever the role). */
   canManageCampaigns: boolean
 }
 
@@ -44,9 +44,7 @@ export function useRole(): RoleInfo {
     isStaff: role === 'moderator' || role === 'admin',
     canModerate: role === 'moderator' || role === 'admin',
     canProcess: role === 'authority' || role === 'admin',
-    // /admin also opens for a campaign manager who has no staff role (they
-    // only get the Campagnes tab, see AdminPage).
-    canAccessAdmin: canAccessAdmin(role) || canManageCampaigns,
+    canAccessAdmin: canAccessAdmin(role),
     canManageCampaigns,
   }
 }
