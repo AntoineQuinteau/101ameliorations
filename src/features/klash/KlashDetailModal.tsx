@@ -17,7 +17,7 @@ export function KlashDetailModal({ klashId }: { klashId: string }) {
   }
 
   return (
-    <Modal label={fr.detail.dialogLabel} onClose={close}>
+    <Modal ariaLabel={fr.detail.dialogLabel} size="lg" closeButton onClose={close}>
       <KlashDetail klashId={klashId} onDeleted={close} inOverlay />
     </Modal>
   )

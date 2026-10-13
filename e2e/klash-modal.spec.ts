@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { INITIAL_MAP_CENTER } from '../src/config/serviceArea'
 import { dismissInstallBanner } from './support/dismissInstallBanner'
 import { stubKlashRow } from './support/stubKlashRow'
@@ -23,6 +23,19 @@ const modal = (page: Page) => page.getByRole('dialog', { name: 'Détail du signa
 
 async function clickMarker(page: Page) {
   await page.locator('.leaflet-marker-icon.leaflet-interactive').first().click()
+}
+
+/** The locator's box once two reads 100 ms apart agree: the map may still be settling
+ * (tiles, bounds) right after the marker first shows. */
+async function settledBox(locator: Locator) {
+  let previous = await locator.boundingBox()
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await locator.page().waitForTimeout(100)
+    const current = await locator.boundingBox()
+    if (JSON.stringify(current) === JSON.stringify(previous)) return current
+    previous = current
+  }
+  throw new Error('marker position never settled')
 }
 
 /** Opens `/` and clicks the marker. Doesn't wait for the modal: on mobile there is none. */
@@ -76,7 +89,7 @@ test.describe('klash detail modal', () => {
       await dismissInstallBanner(page)
       const marker = page.locator('.leaflet-marker-icon.leaflet-interactive').first()
       await expect(marker).toBeVisible()
-      const before = await marker.boundingBox()
+      const before = await settledBox(marker)
 
       await marker.click()
       await expect(modal(page)).toBeVisible()
@@ -84,7 +97,7 @@ test.describe('klash detail modal', () => {
 
       await expect(page).toHaveURL(/\/\?status=new$/)
       await expect(marker).toBeVisible()
-      expect(await marker.boundingBox()).toEqual(before)
+      expect(await settledBox(marker)).toEqual(before)
     })
 
     test('a direct load is the full page, not a modal', async ({ page }) => {
