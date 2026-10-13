@@ -99,13 +99,14 @@ export function CampaignLinkForm({
     })
   }
 
-  const errorMessage = createSource.isError
-    ? fr.campaigns.form.sourceError
-    : create.isError
-      ? create.error instanceof Error && create.error.message.includes('already exists')
-        ? fr.campaigns.form.duplicate
-        : fr.campaigns.form.error
-      : null
+  const errorMessage =
+    isNewSource && createSource.isError
+      ? fr.campaigns.form.sourceError
+      : create.isError
+        ? create.error instanceof Error && create.error.message.includes('already exists')
+          ? fr.campaigns.form.duplicate
+          : fr.campaigns.form.error
+        : null
 
   return (
     <form
