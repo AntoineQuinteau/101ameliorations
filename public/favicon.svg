@@ -6,14 +6,19 @@
        way round. -->
 
   <rect width="512" height="512" rx="96" fill="#0f766e" />
-  <!-- Two bars for the "1"s and a ring for the "0", sized so the whole mark's
+  <!-- Two bars for the "1"s and a wheel for the "0", sized so the whole mark's
        bounding box stays inside the ~80% maskable-icon safe zone. -->
   <rect x="86" y="166" width="50" height="180" rx="8" fill="#ffffff" />
+  <!-- The "0" is a bicycle wheel: rim, four diameters (eight spokes) whose
+       round caps end under the rim, and a hub. -->
+  <circle cx="256" cy="256" r="79" fill="none" stroke="#ffffff" stroke-width="22" />
   <path
-    fill-rule="evenodd"
-    clip-rule="evenodd"
-    fill="#ffffff"
-    d="M166,256 a90,90 0 1,0 180,0 a90,90 0 1,0 -180,0 M202,256 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+    d="M191.3,229.2 L320.7,282.8 M229.2,191.3 L282.8,320.7 M282.8,191.3 L229.2,320.7 M320.7,229.2 L191.3,282.8"
   />
+  <circle cx="256" cy="256" r="12" fill="#ffffff" />
   <rect x="376" y="166" width="50" height="180" rx="8" fill="#ffffff" />
 </svg>

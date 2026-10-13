@@ -1,19 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- Source icon for the PWA/OG image pipeline (npm run gen:icons, npm run
-       gen:og-image). "101" drawn as plain geometric shapes rather than text:
-       a font glyph would not survive rasterization by @vite-pwa/assets-generator
-       or sharp, and a raster @font-face can't be guaranteed to load in either
-       tool's headless renderer. Regenerate every derived asset after editing
-       this file — do not hand-edit the PNGs it produces. -->
+       gen:og-image). "101" drawn as plain geometric shapes rather than text,
+       the "0" as a spoked bicycle wheel: a font glyph would not survive
+       rasterization by @vite-pwa/assets-generator or sharp, and a raster
+       @font-face can't be guaranteed to load in either tool's headless
+       renderer. Regenerate every derived asset after editing this file — do
+       not hand-edit the PNGs it produces. -->
   <rect width="512" height="512" rx="96" fill="#0f766e" />
-  <!-- Two bars for the "1"s and a ring for the "0", sized so the whole mark's
+  <!-- Two bars for the "1"s and a wheel for the "0", sized so the whole mark's
        bounding box stays inside the ~80% maskable-icon safe zone. -->
   <rect x="86" y="166" width="50" height="180" rx="8" fill="#ffffff" />
+  <!-- The "0" is a bicycle wheel: rim, four diameters (eight spokes) whose
+       round caps end under the rim, and a hub. -->
+  <circle cx="256" cy="256" r="79" fill="none" stroke="#ffffff" stroke-width="22" />
   <path
-    fill-rule="evenodd"
-    clip-rule="evenodd"
-    fill="#ffffff"
-    d="M166,256 a90,90 0 1,0 180,0 a90,90 0 1,0 -180,0 M202,256 a54,54 0 1,0 108,0 a54,54 0 1,0 -108,0"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+    d="M191.3,229.2 L320.7,282.8 M229.2,191.3 L282.8,320.7 M282.8,191.3 L229.2,320.7 M320.7,229.2 L191.3,282.8"
   />
+  <circle cx="256" cy="256" r="12" fill="#ffffff" />
   <rect x="376" y="166" width="50" height="180" rx="8" fill="#ffffff" />
 </svg>
