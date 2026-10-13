@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
 import { AboutSheet } from './AboutSheet'
@@ -43,11 +44,13 @@ import { hasStoredDraft } from '../newKlash/draftStorage'
 import type { AppOutletContext } from '../../App'
 import { useAuth } from '../auth/useAuth'
 import { KLASH_OVERLAY_STATE } from '../klash/klashOverlay'
+import { klashPhotosQuery } from '../klash/klashPhotosQuery'
 import { WelcomeDialog } from '../welcome/WelcomeDialog'
 import { readWelcomeSeen, shouldAutoShowWelcome, writeWelcomeSeen } from '../welcome/welcomeStorage'
 
 export function MapPage({ isKlashOverlayOpen }: { isKlashOverlayOpen: boolean }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const hasHover = useHasHover()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
@@ -161,6 +164,15 @@ export function MapPage({ isKlashOverlayOpen }: { isKlashOverlayOpen: boolean })
     setIsAboutOpen(true)
   }
 
+  // Desktop hover preview. Also warms the klash's photos: a click usually
+  // follows, and the detail modal then opens with its gallery already in
+  // place instead of having it push the rest of the content down a moment
+  // later. One small read per hovered klash, cached like any other query.
+  function handleMarkerHover(klash: Klash | null) {
+    setSelectedKlash(klash)
+    if (klash) void queryClient.prefetchQuery(klashPhotosQuery(klash.id))
+  }
+
   function handleMarkerSelect(klash: Klash) {
     if (isAboutOpen) closeAbout()
     // On a fine-pointer device, hover already previews the klash (see
@@ -255,7 +267,7 @@ export function MapPage({ isKlashOverlayOpen }: { isKlashOverlayOpen: boolean })
         <ClusteredKlashMarkers
           klashes={visibleKlashes}
           onSelect={handleMarkerSelect}
-          onHover={hasHover ? setSelectedKlash : undefined}
+          onHover={hasHover ? handleMarkerHover : undefined}
         />
         <MapClickToReport
           onPick={(lat, lng) => {

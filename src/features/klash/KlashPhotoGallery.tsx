@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchKlashPhotos, klashPhotoPublicUrl } from '../../api/klashPhotos'
-import { klashKeys } from '../../api/queryKeys'
+import { klashPhotoPublicUrl } from '../../api/klashPhotos'
 import { ErrorMessage } from '../../components/ErrorMessage'
-import { Spinner } from '../../components/Spinner'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
+import { klashPhotosQuery } from './klashPhotosQuery'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 /** Photo gallery for the detail page (spec §6.3): a thumbnail grid, and a
@@ -14,17 +13,11 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 export function KlashPhotoGallery({ klashId }: { klashId: string }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
-  const {
-    data: photos = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: klashKeys.photos(klashId),
-    queryFn: () => fetchKlashPhotos(klashId),
-  })
+  const { data: photos = [], isLoading, isError, refetch } = useQuery(klashPhotosQuery(klashId))
 
-  if (isLoading) return <Spinner />
+  // Nothing while loading, not a spinner: most klashs end up rendering nothing here,
+  // and a spinner that then vanishes makes everything below it jump up.
+  if (isLoading) return null
   if (isError) {
     return <ErrorMessage message={fr.detail.photosLoadError} onRetry={() => refetch()} />
   }

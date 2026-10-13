@@ -3,6 +3,25 @@
 @import 'leaflet.markercluster/dist/MarkerCluster.css';
 @import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
+/* Entrance of `Modal` (src/components/Modal.tsx): the backdrop fades in, taking the
+   panel with it, and the panel rises a few pixels. Applied under `motion-safe:` only. */
+@theme {
+  --animate-modal-backdrop: modal-backdrop-in 150ms ease-out;
+  --animate-modal-panel: modal-panel-in 150ms ease-out;
+
+  @keyframes modal-backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes modal-panel-in {
+    from {
+      transform: translateY(0.5rem) scale(0.98);
+    }
+  }
+}
+
 html,
 body,
 #root {

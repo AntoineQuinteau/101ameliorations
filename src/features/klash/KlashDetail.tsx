@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchKlashById } from '../../api/klashes'
 import { klashKeys } from '../../api/queryKeys'
@@ -18,6 +18,7 @@ import { useRole } from '../auth/useRole'
 import { ChangeStatusForm } from './ChangeStatusForm'
 import { CommentList } from './CommentList'
 import { EditKlashForm } from './EditKlashForm'
+import { findKlashInMapCache } from './findKlashInMapCache'
 import { KlashMiniMap } from './KlashMiniMap'
 import { KlashPhotoGallery } from './KlashPhotoGallery'
 import { KLASH_OVERLAY_STATE } from './klashOverlay'
@@ -64,6 +65,7 @@ export function KlashDetail({
 }) {
   const { user } = useAuth()
   const { role } = useRole()
+  const queryClient = useQueryClient()
   const [isChangingStatus, setIsChangingStatus] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editFeedback, setEditFeedback] = useState<'saved' | null>(null)
@@ -76,6 +78,10 @@ export function KlashDetail({
   } = useQuery({
     queryKey: klashKeys.detail(klashId),
     queryFn: () => fetchKlashById(klashId),
+    // Opened from the map, the klash is already in its cache: start from that
+    // copy, dated as it is, so it refetches here only once stale.
+    initialData: () => findKlashInMapCache(queryClient, klashId)?.klash,
+    initialDataUpdatedAt: () => findKlashInMapCache(queryClient, klashId)?.updatedAt,
   })
 
   // KlashDetailPage stays mounted across a navigation from one klash to
@@ -162,7 +168,9 @@ export function KlashDetail({
       )}
 
       {klash && !isEditing && (
-        <article className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start lg:gap-8">
+        <article
+          className={`${header ? 'mt-4' : ''} flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start lg:gap-6`}
+        >
           <div className="flex min-w-0 flex-col gap-4">
             <KlashMiniMap klash={klash} />
 
@@ -361,7 +369,11 @@ export function KlashDetail({
             <StatusHistory klash={klash} />
           </div>
 
-          <CommentList klashId={klash.id} />
+          {/* A light rule sets the comments apart from the klash; stretched so it
+              runs the full height of the taller column. */}
+          <div className="lg:self-stretch lg:border-l lg:border-neutral-200 lg:pl-6">
+            <CommentList klashId={klash.id} />
+          </div>
         </article>
       )}
     </div>
