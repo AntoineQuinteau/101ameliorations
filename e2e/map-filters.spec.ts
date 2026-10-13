@@ -66,7 +66,7 @@ test('closing the mobile sheet puts focus back on the filters button', async ({
   page,
   isMobile,
 }) => {
-  test.skip(!isMobile, 'the desktop card never unmounts the filters button')
+  test.skip(!isMobile, 'the desktop card is covered by the next test')
 
   await stubKlashes(page, [stubKlashRow(LAT, LNG)])
   await page.goto('/')
@@ -79,6 +79,48 @@ test('closing the mobile sheet puts focus back on the filters button', async ({
   await page.keyboard.press('Escape')
   await expect(sheet).toBeHidden()
   await expect(page.getByRole('button', { name: 'Filtres' })).toBeFocused()
+})
+
+test('the desktop card closes with its close button or Escape', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the mobile sheet is covered by the previous test')
+
+  await stubKlashes(page, [stubKlashRow(LAT, LNG)])
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  // The card stays mounted while closed, so its state is read off the
+  // button that toggles it rather than off the card's own visibility.
+  const filtersButton = page.getByRole('button', { name: 'Filtres' })
+  await filtersButton.click()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'true')
+
+  await page.getByRole('button', { name: 'Fermer' }).click()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'false')
+  await expect(filtersButton).toBeFocused()
+
+  await filtersButton.click()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('Escape')
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'false')
+  await expect(filtersButton).toBeFocused()
+})
+
+test('hovering a marker still previews it while the desktop card is open', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'no hover on touch, and the mobile sheet covers the map')
+
+  await stubKlashes(page, [stubKlashRow(LAT, LNG)])
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  const filtersButton = page.getByRole('button', { name: 'Filtres' })
+  await filtersButton.click()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'true')
+
+  await page.locator('.leaflet-marker-icon.leaflet-interactive').first().hover()
+  await expect(page.getByRole('heading', { name: 'Klash de test' })).toBeVisible()
 })
 
 test('a period preset in the URL selects its own chip', async ({ page, isMobile }) => {
@@ -114,8 +156,6 @@ test('the map says so when its filters hide every klash, and offers to reset', a
   await expect(notice).toBeVisible()
   await expect(page.locator('.leaflet-marker-icon.leaflet-interactive')).toHaveCount(0)
 
-  // Scoped to the notice: the closed desktop filters card stays mounted
-  // (inert), with a reset button of its own.
   await notice.getByRole('button', { name: 'Réinitialiser' }).click()
   await expect(notice).toBeHidden()
   await expect(page).not.toHaveURL(/category=/)

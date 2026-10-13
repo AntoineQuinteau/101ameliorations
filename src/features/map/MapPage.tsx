@@ -165,11 +165,13 @@ export function MapPage() {
     setIsFiltersOpen((open) => !open)
   }
 
-  // On mobile the filters button is unmounted while the sheet is open (see
+  // Closing the filters panel from inside it (close button, Escape, the
+  // mobile sheet's main button) puts focus back on the filters button. On
+  // mobile that button is unmounted while the sheet is open (see
   // `showFloatingControls`), so focus can only go back to it once it has
   // rendered again — hence an effect rather than a call right after closing,
   // as `AboutSheet` does with its always-mounted button.
-  function closeFiltersSheet() {
+  function closeFilters() {
     refocusFiltersButton.current = true
     setIsFiltersOpen(false)
   }
@@ -420,6 +422,7 @@ export function MapPage() {
           filters={filters}
           resultsCount={resultsCount}
           onChange={updateFilters}
+          onClose={closeFilters}
         />
       ) : (
         isFiltersOpen && (
@@ -427,7 +430,7 @@ export function MapPage() {
             filters={filters}
             resultsCount={resultsCount}
             onChange={updateFilters}
-            onClose={closeFiltersSheet}
+            onClose={closeFilters}
           />
         )
       )}
@@ -447,7 +450,10 @@ export function MapPage() {
         />
       )}
 
-      {!isFiltersOpen && !isAboutOpen && selectedKlash && (
+      {/* `showFloatingControls`, not `!isFiltersOpen`: only the mobile filters
+          sheet covers the screen. The desktop card is a corner overlay, and
+          hovering the markers a filter left is what it is kept open for. */}
+      {showFloatingControls && !isAboutOpen && selectedKlash && (
         <KlashPreviewCard
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}
