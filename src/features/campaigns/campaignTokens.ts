@@ -28,7 +28,8 @@ export function shortUrl(origin: string, slug: string): string {
   return `${origin.replace(/\/$/, '')}/r/${slug}`
 }
 
-/** `numerator / denominator` as a 0..1 ratio, or null when undefined. */
+/** `numerator / denominator` as a ratio (0..1 for a conversion, may exceed 1
+ * for klashes per sign-up), or null when undefined. */
 export function conversionRate(numerator: number, denominator: number): number | null {
   return denominator > 0 ? numerator / denominator : null
 }
@@ -37,10 +38,16 @@ export function formatRate(rate: number | null): string {
   return rate === null ? '—' : `${Math.round(rate * 100)} %`
 }
 
+/** An average with one decimal and a French comma, e.g. 1.5 -> "1,5". */
+export function formatAverage(value: number | null): string {
+  return value === null ? '—' : (Math.round(value * 10) / 10).toString().replace('.', ',')
+}
+
 export interface StatTotals {
   scans: number
   signups: number
   installs: number
+  klashes: number
 }
 
 export interface StatGroup extends StatTotals {
@@ -55,10 +62,11 @@ export function groupStats(
   const groups = new Map<string, StatGroup>()
   for (const row of rows) {
     const key = keyOf(row)
-    const group = groups.get(key) ?? { key, scans: 0, signups: 0, installs: 0 }
+    const group = groups.get(key) ?? { key, scans: 0, signups: 0, installs: 0, klashes: 0 }
     group.scans += row.scans
     group.signups += row.signups
     group.installs += row.installs
+    group.klashes += row.klashes
     groups.set(key, group)
   }
   return [...groups.values()]

@@ -56,6 +56,7 @@ export interface CampaignStat {
   scans: number
   signups: number
   installs: number
+  klashes: number
 }
 
 const campaignStatRowSchema = z.object({
@@ -70,6 +71,7 @@ const campaignStatRowSchema = z.object({
   scans: z.number(),
   signups: z.number(),
   installs: z.number(),
+  klashes: z.number(),
 })
 
 export function campaignStatFromRow(row: unknown): CampaignStat {
@@ -86,6 +88,7 @@ export function campaignStatFromRow(row: unknown): CampaignStat {
     scans: r.scans,
     signups: r.signups,
     installs: r.installs,
+    klashes: r.klashes,
   }
 }
 
