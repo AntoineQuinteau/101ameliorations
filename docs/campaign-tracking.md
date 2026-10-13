@@ -1,6 +1,6 @@
 # Suivi des campagnes et attribution
 
-101améliorations est diffusée par plusieurs canaux (Txirrindola, la presse, la CPAM).
+101améliorations est diffusée par plusieurs canaux (Txirrind'Ola, la presse, la CPAM).
 Ce document décrit comment on sait par quel canal arrive un visiteur, comment créer un
 lien de campagne, et quelles données sont stockées (utile pour la politique de
 confidentialité, déjà à jour dans `src/i18n/fr.ts`).

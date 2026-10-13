@@ -32,7 +32,7 @@ test.describe('campaigns', () => {
     await page.goto('/campaigns')
 
     await page.getByRole('button', { name: 'Créer un lien' }).click()
-    await page.getByLabel('Émetteur').first().selectOption({ label: 'Txirrindola' })
+    await page.getByLabel('Émetteur').first().selectOption({ label: 'Txirrind\'Ola' })
 
     // Precision is free text, normalized live.
     const precision = `Dépliant e2e ${Date.now()} ${Math.random().toString(36).slice(2, 6)}`
