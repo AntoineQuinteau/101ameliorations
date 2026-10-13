@@ -9,12 +9,15 @@ import { X } from 'lucide-react'
 export function PinConfirmCard({
   onConfirm,
   onCancel,
+  clearOfFiltersCard = false,
 }: {
   onConfirm: () => void
   onCancel: () => void
+  /** See `BottomSheet`. */
+  clearOfFiltersCard?: boolean
 }) {
   return (
-    <BottomSheet>
+    <BottomSheet clearOfFiltersCard={clearOfFiltersCard}>
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"

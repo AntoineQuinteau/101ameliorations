@@ -123,6 +123,32 @@ test('hovering a marker still previews it while the desktop card is open', async
   await expect(page.getByRole('heading', { name: 'Klash de test' })).toBeVisible()
 })
 
+// In a window too narrow for the centred preview to clear the filters card,
+// it shifts to the right of the card instead of covering the card's footer.
+test('the hover preview stays clear of the open desktop card', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'no hover on touch, and the mobile sheet covers the map')
+
+  await page.setViewportSize({ width: 1024, height: 640 })
+  await stubKlashes(page, [stubKlashRow(LAT, LNG)])
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  await page.getByRole('button', { name: 'Filtres' }).click()
+  const closeButton = page.getByRole('button', { name: 'Fermer' })
+  await expect(closeButton).toBeVisible()
+
+  await page.locator('.leaflet-marker-icon.leaflet-interactive').first().hover()
+  const previewTitle = page.getByRole('heading', { name: 'Klash de test' })
+  await expect(previewTitle).toBeVisible()
+
+  // The close button sits at the card's right edge, the title at the
+  // preview's left edge.
+  const closeBox = await closeButton.boundingBox()
+  const titleBox = await previewTitle.boundingBox()
+  if (!closeBox || !titleBox) throw new Error('filters card or preview not laid out')
+  expect(titleBox.x).toBeGreaterThan(closeBox.x + closeBox.width)
+})
+
 test('a period preset in the URL selects its own chip', async ({ page, isMobile }) => {
   await stubKlashes(page, [
     stubKlashRow(LAT, LNG, { created_at: new Date().toISOString() }),

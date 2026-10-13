@@ -255,6 +255,9 @@ export function MapPage() {
   // isFiltersOpen; on mobile the filters sheet takes over the whole screen,
   // so they hide while it's open.
   const showFloatingControls = hasHover || !isFiltersOpen
+  // The desktop filters card is open: the bottom sheets shift out from under
+  // it where the window is narrow enough for them to meet (see BottomSheet).
+  const isDesktopFiltersCardOpen = hasHover && isFiltersOpen
   const filtersActive = !isDefaultFilters(filters)
   // Only when resetting would bring something back: an area with no klash
   // at all is empty whatever the filters.
@@ -369,6 +372,7 @@ export function MapPage() {
         <PinConfirmCard
           onConfirm={() => goToNewKlash(pendingPin.lat, pendingPin.lng)}
           onCancel={() => setPendingPin(null)}
+          clearOfFiltersCard={isDesktopFiltersCardOpen}
         />
       )}
 
@@ -458,6 +462,7 @@ export function MapPage() {
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}
           interactive={!hasHover}
+          clearOfFiltersCard={isDesktopFiltersCardOpen}
         />
       )}
     </div>

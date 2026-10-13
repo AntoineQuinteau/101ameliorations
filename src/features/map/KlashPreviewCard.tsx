@@ -20,13 +20,16 @@ export function KlashPreviewCard({
   klash,
   onClose,
   interactive = true,
+  clearOfFiltersCard = false,
 }: {
   klash: Klash
   onClose: () => void
   interactive?: boolean
+  /** See `BottomSheet`. */
+  clearOfFiltersCard?: boolean
 }) {
   return (
-    <BottomSheet>
+    <BottomSheet clearOfFiltersCard={clearOfFiltersCard}>
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-sm font-semibold text-neutral-900">{klash.title}</h2>
