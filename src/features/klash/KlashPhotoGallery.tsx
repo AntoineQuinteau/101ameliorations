@@ -4,6 +4,7 @@ import { fetchKlashPhotos, klashPhotoPublicUrl } from '../../api/klashPhotos'
 import { klashKeys } from '../../api/queryKeys'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
@@ -77,16 +78,17 @@ function PhotoLightbox({
   // Same "sibling of MapContainer, not a portal" overlay pattern as
   // KlashPreviewCard/PinConfirmCard, extended here with keyboard support
   // (Escape to close, arrows to navigate) since a full-screen overlay with
-  // no keyboard escape is a dead end for anyone not using a mouse.
+  // no keyboard escape is a dead end for anyone not using a mouse. Escape goes
+  // through `useEscapeKey` so it closes only the lightbox, not a modal under it.
+  useEscapeKey(onClose)
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
       if (event.key === 'ArrowRight') onIndexChange((index + 1) % photos.length)
       if (event.key === 'ArrowLeft') onIndexChange((index - 1 + photos.length) % photos.length)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [index, photos.length, onIndexChange, onClose])
+  }, [index, photos.length, onIndexChange])
 
   const photo = photos[index]
   if (!photo) return null
