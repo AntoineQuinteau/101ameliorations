@@ -94,12 +94,20 @@ test('about sheet opens from the map and links to export, legal and privacy page
   await expect(page).toHaveURL(/\/mentions-legales$/)
 })
 
-test('filters panel links to the data export', async ({ page }) => {
+// Spec §6.7: only the desktop filters card carries the export link; on mobile
+// the About sheet is the way to it (covered above).
+test('filters panel links to the data export on desktop only', async ({ page, isMobile }) => {
   await page.goto('/')
   await dismissInstallBanner(page)
 
   await page.getByRole('button', { name: 'Filtres' }).click()
-  await page.getByRole('link', { name: /Télécharger toutes les données/ }).click()
+  const exportLink = page.getByRole('link', { name: /Télécharger toutes les données/ })
+  if (isMobile) {
+    await expect(page.getByRole('dialog', { name: 'Filtres' })).toBeVisible()
+    await expect(exportLink).toHaveCount(0)
+    return
+  }
+  await exportLink.click()
   await expect(page).toHaveURL(/\/export$/)
 })
 

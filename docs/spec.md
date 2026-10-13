@@ -262,7 +262,7 @@ Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin
 
 ### 6.7 Export
 
-Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte).
+Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et, sur desktop uniquement, depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte). La feuille de filtres mobile ne porte pas ce lien : « À propos » y suffit.
 
 ## 7. PWA
 

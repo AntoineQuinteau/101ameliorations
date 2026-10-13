@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
 import { fr } from '../../i18n/fr'
 import type { KlashCategory, KlashStatus, KlashImportance } from '../../types/klash'
@@ -37,7 +36,10 @@ function toggleButtonClass(active: boolean): string {
  * selection shows everything (see `KlashFilters`).
  *
  * Both actions sit in the footer, in thumb reach and 44px tall, with the
- * reset one only enabled once something is actually narrowed.
+ * reset one only enabled once something is actually narrowed. The data
+ * export link the desktop card ends with is left out here (spec §6.7): a
+ * small link under the main button is an easy mis-tap, and on mobile the
+ * About sheet already offers it as a full-height row.
  *
  * Keyboard and screen-reader support, like `AboutSheet`: a dialog named by
  * its title, which takes focus on open; Escape closes it. The caller puts
@@ -215,12 +217,6 @@ export function MobileFiltersSheet({
           {fr.map.filters.viewResults(resultsCount)}
         </button>
       </div>
-      <Link
-        to="/export"
-        className="mt-2 shrink-0 text-center text-xs font-medium text-neutral-500 hover:text-neutral-700 hover:underline"
-      >
-        {fr.map.filters.exportLink}
-      </Link>
     </div>
   )
 }
