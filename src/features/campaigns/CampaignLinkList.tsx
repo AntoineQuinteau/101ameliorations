@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, Copy, Pencil, QrCode, X } from 'lucide-react'
 import { fr } from '../../i18n/fr'
 import type { CampaignStat } from '../../types/campaign'
-import { linkDescription } from './campaignLabels'
+import { linkDescription, useSourceLabel } from './campaignLabels'
 import { CampaignLinkFilters } from './CampaignLinkFilters'
 import { CampaignQrCode } from './CampaignQrCode'
 import { shortUrl } from './campaignTokens'
@@ -89,6 +89,7 @@ function LinkRow({
   openPanel: OpenLinkPanel['panel'] | null
   onOpenChange: (next: OpenLinkPanel | null) => void
 }) {
+  const labelOf = useSourceLabel()
   const slug = row.slug as string
   const url = shortUrl(window.location.origin, slug)
   const [copied, flashCopied] = useCopied()
@@ -123,7 +124,7 @@ function LinkRow({
             )}
           </p>
           <p className="text-sm break-words text-neutral-600">
-            {linkDescription(row)} · {fr.campaigns.list.scans(row.scans)}
+            {linkDescription(row, labelOf)} · {fr.campaigns.list.scans(row.scans)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

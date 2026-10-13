@@ -1,10 +1,12 @@
 import { supabase } from '../lib/supabase'
 import {
   campaignLinkFromRow,
+  campaignSourceFromRow,
   campaignStatFromRow,
   type AttributionTouch,
   type CampaignLink,
   type CampaignMedium,
+  type CampaignSource,
   type CampaignStat,
 } from '../types/campaign'
 
@@ -17,10 +19,21 @@ export async function fetchCampaignStats(touch: AttributionTouch): Promise<Campa
   return data.map(campaignStatFromRow)
 }
 
-export async function fetchCampaignSources(): Promise<string[]> {
-  const { data, error } = await supabase.from('campaign_sources').select('source').order('source')
+export async function fetchCampaignSources(): Promise<CampaignSource[]> {
+  const { data, error } = await supabase
+    .from('campaign_sources')
+    .select('source, label')
+    .order('source')
   if (error) throw error
-  return data.map((row) => row.source)
+  return data.map(campaignSourceFromRow)
+}
+
+/** Creates an emitter from its free-text name; the database derives the key
+ * and returns the existing emitter when the key is already taken. */
+export async function createCampaignSource(label: string): Promise<CampaignSource> {
+  const { data, error } = await supabase.rpc('create_campaign_source', { p_label: label })
+  if (error) throw error
+  return campaignSourceFromRow(data)
 }
 
 /** Creates a link; the database normalizes campaign and content, generates the

@@ -1,4 +1,4 @@
-import type { CampaignStat } from '../../types/campaign'
+import type { CampaignSource, CampaignStat } from '../../types/campaign'
 
 // Client-side mirror of public.normalize_campaign_token() (the database is the
 // authority and normalizes again): lowercase, no accents, anything that is not
@@ -21,6 +21,21 @@ export function buildCampaignKey(name: string, month: string): string {
   const normalizedName = normalizeCampaignToken(name)
   if (!normalizedName || !/^\d{4}-\d{2}$/.test(month)) return ''
   return normalizeCampaignToken(`${normalizedName}-${month}`)
+}
+
+/** Source keys the database refuses: they are the synthetic sources of the
+ * attribution tables. */
+export const RESERVED_SOURCES: readonly string[] = ['direct', 'referral']
+
+/** The existing emitter whose key, or displayed label once normalized, is
+ * `key` (so "Association" finds `txdo` instead of creating `association`). */
+export function findExistingSource(
+  key: string,
+  sources: readonly CampaignSource[],
+  labelOf: (source: string) => string,
+): CampaignSource | undefined {
+  if (!key) return undefined
+  return sources.find((s) => s.source === key || normalizeCampaignToken(labelOf(s.source)) === key)
 }
 
 /** The short URL a QR code encodes (never the long utm URL). */

@@ -479,6 +479,15 @@ export const fr = {
     form: {
       title: 'Créer un lien',
       source: 'Émetteur',
+      sourceNew: 'Nouvel émetteur…',
+      sourceName: 'Nom du nouvel émetteur',
+      sourceNameHint: "Il apparaît dans l'adresse courte et ne pourra plus être modifié.",
+      sourceKey: 'Identifiant :',
+      sourceExists: 'Cet émetteur existe déjà, il sera utilisé.',
+      sourceReserved: 'Ce nom est réservé, choisissez-en un autre.',
+      sourceNewConfirm: (label: string, key: string) =>
+        `Créer l'émetteur « ${label} » (identifiant : ${key}) ? Son identifiant ne pourra plus être modifié.`,
+      sourceError: "Impossible de créer l'émetteur.",
       medium: 'Type de support',
       content: 'Précision',
       contentHint: 'Texte libre, ex. : papillon vélo. Il est converti automatiquement :',

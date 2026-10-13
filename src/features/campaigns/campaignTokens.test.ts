@@ -3,6 +3,7 @@ import type { CampaignStat } from '../../types/campaign'
 import {
   buildCampaignKey,
   conversionRate,
+  findExistingSource,
   formatRate,
   groupStats,
   normalizeCampaignToken,
@@ -77,5 +78,33 @@ describe('qrSvg', () => {
     const a = qrSvg('https://101ameliorations.org/r/cpam-papillon')
     expect(a.startsWith('<svg')).toBe(true)
     expect(a).not.toBe(qrSvg('https://101ameliorations.org/r/presse'))
+  })
+})
+
+describe('findExistingSource', () => {
+  const sources = [
+    { source: 'txdo', label: null },
+    { source: 'office-tourisme', label: 'Office de Tourisme' },
+  ]
+  const labelOf = (source: string) =>
+    ({ txdo: 'Association', 'office-tourisme': 'Office de Tourisme' })[source] ?? source
+
+  it('finds an emitter by its key', () => {
+    expect(findExistingSource('office-tourisme', sources, labelOf)?.source).toBe('office-tourisme')
+  })
+
+  it('finds an emitter by its translated label', () => {
+    expect(findExistingSource('association', sources, labelOf)?.source).toBe('txdo')
+  })
+
+  it('finds an emitter by its stored label', () => {
+    expect(findExistingSource('office-de-tourisme', sources, labelOf)?.source).toBe(
+      'office-tourisme',
+    )
+  })
+
+  it('returns nothing for an unknown or empty key', () => {
+    expect(findExistingSource('nouveau', sources, labelOf)).toBeUndefined()
+    expect(findExistingSource('', sources, labelOf)).toBeUndefined()
   })
 })
