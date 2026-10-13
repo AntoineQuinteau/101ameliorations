@@ -20,8 +20,14 @@ base** (`is_campaign_token()`), jamais seulement dans le navigateur. Dans la pag
 Campagnes on ne saisit jamais de `utm_*` : les champs « précision » et « nom de
 campagne » sont du texte libre, normalisé automatiquement.
 
-Ajouter un émetteur (une nouvelle source) demande une migration
-(`insert into campaign_sources`) et son libellé dans `fr.campaigns.source`.
+Un émetteur (une source) se crée directement dans le formulaire « Créer un lien »,
+sans migration ni déploiement : voir ci-dessous. Les noms `direct` et `referral` sont
+réservés (ce sont les sources de l'attribution sans lien) et refusés.
+
+La clé d'un émetteur (ex. `office-tourisme`) est définitive dès qu'un lien l'utilise :
+la base interdit de la modifier, même par migration. Seul son **libellé** (ce que
+l'on voit dans les listes) peut se corriger, par une migration
+(`update campaign_sources set label = …`).
 
 ## Créer une campagne et un lien
 
@@ -37,6 +43,11 @@ onglets : **Liens** (créer, retrouver, copier) et **Résultats** (les chiffres)
 
 1. **Onglet Liens → Créer un lien.**
 2. Choisir l'émetteur, le type de support et saisir la précision (ex. « papillon vélo »).
+   Pour un nouvel émetteur, choisir « Nouvel émetteur… » en bas de la liste et saisir son
+   nom (ex. « Office de tourisme ») : l'identifiant qui en découle (`office-de-tourisme`)
+   s'affiche et apparaîtra dans l'adresse courte. Si le nom correspond à un émetteur
+   existant (« Association » → `txdo`), celui-ci est utilisé. L'émetteur n'est créé qu'à
+   l'étape 4, après une confirmation.
 3. Campagne : en choisir une existante, ou « Nouvelle campagne… » (nom + mois, ex.
    « lancement » + octobre 2026 → `lancement-2026-10`).
 4. **Créer le lien.** L'écran affiche l'adresse courte (`https://101ameliorations.org/r/<slug>`)

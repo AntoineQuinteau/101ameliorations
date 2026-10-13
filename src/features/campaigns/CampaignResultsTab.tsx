@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Spinner } from '../../components/Spinner'
 import { fr } from '../../i18n/fr'
 import type { AttributionTouch } from '../../types/campaign'
-import { linkDescription, sourceLabel } from './campaignLabels'
+import { linkDescription, useSourceLabel } from './campaignLabels'
 import { CampaignLinkFilters } from './CampaignLinkFilters'
 import {
   conversionRate,
@@ -21,6 +21,7 @@ export function CampaignResultsTab() {
   const [touch, setTouch] = useState<AttributionTouch>('first')
   const [filters, setFilters] = useState<LinkFilters>(noLinkFilters)
   const stats = useCampaignStats(touch)
+  const labelOf = useSourceLabel()
 
   const rows = stats.data ?? []
   const links = rows.filter((row) => row.slug !== null)
@@ -56,7 +57,7 @@ export function CampaignResultsTab() {
             firstColumn={fr.campaigns.filters.source}
             rows={groupStats(rows, (row) => row.source).map((group) => ({
               ...group,
-              label: sourceLabel(group.key),
+              label: labelOf(group.key),
             }))}
           />
           <StatsTable
@@ -75,7 +76,7 @@ export function CampaignResultsTab() {
               .map((row) => ({
                 key: row.slug as string,
                 label: `/r/${row.slug}${row.isActive ? '' : ` ${fr.campaigns.results.inactive}`}`,
-                detail: linkDescription(row),
+                detail: linkDescription(row, labelOf),
                 scans: row.scans,
                 signups: row.signups,
                 installs: row.installs,

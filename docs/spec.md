@@ -19,20 +19,20 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
-| --------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
-| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
-| Créer un klash, ajouter des photos                                          |            | ✓          | ✓                  | ✓                   | ✓       |
-| Confirmer (+1) un klash                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
-| Commenter                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |            | ✓                  |                     | ✓       |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |            | ✓                  |                     | ✓       |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |            |                    | ✓                   | ✓       |
-| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |            | ✓                  | ✓                   | ✓       |
-| Export CSV / GeoJSON                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
-| Gérer les rôles                                                             |            |            |                    |                     | ✓       |
-| Créer / désactiver des liens de campagne, voir leurs statistiques (§6.8)    |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
+| Action                                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
+| ------------------------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                                          |            | ✓          | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
+| Commenter                                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires                            |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire                 |            |            | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                                    |            |            | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`                           |            |            |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                                   |            |            | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                                             |            |            |                    |                     | ✓       |
+| Créer un émetteur, créer / désactiver des liens de campagne, voir leurs statistiques (§6.8) |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
 
 ¹ Droit séparé `profiles.can_manage_campaigns`, attribué par un `admin` et cumulable avec n'importe quel rôle.
 
@@ -145,7 +145,7 @@ create table status_changes (
 );
 ```
 
-Suivi des campagnes (§6.8), migration `20261009090000_campaign_links.sql` : `profiles.can_manage_campaigns` (booléen, modifiable par un `admin` seulement, comme `role`), tables `campaign_sources`, `campaign_links` (slug, source, medium, campaign, content, destination, is_active ; seuls `destination` et `is_active` sont modifiables, jamais de suppression) et `campaign_link_scans` (slug + horodatage, aucune donnée personnelle, aucun accès client). Les valeurs source/campaign/content respectent la convention `^[a-z0-9]+(-[a-z0-9]+)*$` (≤ 64), vérifiée en base par `is_campaign_token()`. Création par la RPC `create_campaign_link()` ; résolution publique par `resolve_campaign_link(slug, count)`.
+Suivi des campagnes (§6.8), migration `20261009090000_campaign_links.sql` : `profiles.can_manage_campaigns` (booléen, modifiable par un `admin` seulement, comme `role`), tables `campaign_sources`, `campaign_links` (slug, source, medium, campaign, content, destination, is_active ; seuls `destination` et `is_active` sont modifiables, jamais de suppression) et `campaign_link_scans` (slug + horodatage, aucune donnée personnelle, aucun accès client). Les valeurs source/campaign/content respectent la convention `^[a-z0-9]+(-[a-z0-9]+)*$` (≤ 64), vérifiée en base par `is_campaign_token()`. Création par la RPC `create_campaign_link()` ; résolution publique par `resolve_campaign_link(slug, count)`. Migration `20261013090000_campaign_source_creation.sql` : `campaign_sources.label` (libellé saisi, null pour les émetteurs historiques dont le libellé reste dans `fr.ts`), clés réservées `direct` et `referral` (refusées par contrainte : ce sont les sources synthétiques de l'attribution) et RPC `create_campaign_source(label)`, seul chemin d'écriture, qui normalise la clé à partir du libellé et renvoie l'émetteur existant si la clé est déjà prise (libellé inchangé). La clé d'un émetteur utilisé par un lien est définitive (`guard_campaign_links`) ; seul le libellé peut être corrigé, par migration.
 
 Triggers et fonctions :
 
@@ -257,7 +257,7 @@ Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Con
 
 Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin`) et indépendante de `/admin` — un gestionnaire de campagnes sans rôle de modération n'accède pas à `/admin`, un modérateur sans le droit n'accède pas à `/campaigns`. Point d'entrée : un lien « Gérer les campagnes » dans `/me`, à côté de « Accéder à l'administration », chacun affiché selon son propre droit ; pas de raccourci sur la carte. Deux onglets (`?tab=results` pour le second) :
 
-- **Liens** : bouton « Créer un lien » (formulaire replié par défaut), puis la liste des liens actifs, filtrable par campagne et par émetteur ; les liens désactivés s'affichent sur demande. Chaque lien montre son adresse courte, sa description, son nombre de scans et trois actions : copier le lien, QR code, modifier (destination, activer / désactiver). Le QR code (copie de l'image, SVG, PNG haute résolution) se déplie sous son lien, un seul à la fois dans toute la page, pour qu'un téléphone ne puisse pas scanner le mauvais. Chaque panneau déplié (QR code, modification) porte son propre bouton « Fermer ».
+- **Liens** : bouton « Créer un lien » (formulaire replié par défaut ; l'émetteur se choisit dans la liste ou se crée avec « Nouvel émetteur… » : nom libre, aperçu de l'identifiant, confirmation avant la création, effectuée au moment de « Créer le lien »), puis la liste des liens actifs, filtrable par campagne et par émetteur ; les liens désactivés s'affichent sur demande. Chaque lien montre son adresse courte, sa description, son nombre de scans et trois actions : copier le lien, QR code, modifier (destination, activer / désactiver). Le QR code (copie de l'image, SVG, PNG haute résolution) se déplie sous son lien, un seul à la fois dans toute la page, pour qu'un téléphone ne puisse pas scanner le mauvais. Chaque panneau déplié (QR code, modification) porte son propre bouton « Fermer ».
 - **Résultats** (lecture seule) : scans → inscriptions → installations → klashs (signalements des comptes venus du canal, hors rejetés et doublons) et taux de conversion, avec le nombre de klashs par inscription, en tableaux par émetteur, par campagne et par lien, attribués au premier ou au dernier contact.
 
 ### 6.7 Export

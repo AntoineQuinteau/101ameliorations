@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createCampaignLink,
+  createCampaignSource,
   fetchCampaignSources,
   fetchCampaignStats,
   updateCampaignLink,
@@ -20,6 +21,14 @@ export function useCampaignSources() {
     queryKey: campaignKeys.sources(),
     queryFn: fetchCampaignSources,
     staleTime: 10 * 60_000,
+  })
+}
+
+export function useCreateCampaignSource() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: createCampaignSource,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: campaignKeys.all }),
   })
 }
 
