@@ -1,6 +1,6 @@
 import { fr } from '../../i18n/fr'
 import type { CampaignStat } from '../../types/campaign'
-import { sourceLabel } from './campaignLabels'
+import { useSourceLabel } from './campaignLabels'
 import type { LinkFilters } from './linkFilters'
 
 const fieldClass =
@@ -16,6 +16,7 @@ export function CampaignLinkFilters({
   value: LinkFilters
   onChange: (next: LinkFilters) => void
 }) {
+  const labelOf = useSourceLabel()
   const campaigns = [...new Set(links.map((row) => row.campaign))]
   const sources = [...new Set(links.map((row) => row.source))]
 
@@ -46,7 +47,7 @@ export function CampaignLinkFilters({
           <option value="">{fr.campaigns.filters.allSources}</option>
           {sources.map((source) => (
             <option key={source} value={source}>
-              {sourceLabel(source)}
+              {labelOf(source)}
             </option>
           ))}
         </select>
