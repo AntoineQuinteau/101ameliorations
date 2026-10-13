@@ -14,9 +14,10 @@ import {
 import { matchesLinkFilters, noLinkFilters, type LinkFilters } from './linkFilters'
 import { useCampaignStats } from './useCampaigns'
 
-/** `/campaigns` "Résultats" tab, read-only: scans → sign-ups → installs → klashes and
- * the conversion rates and klashes per sign-up, per emitter, per campaign and per link. The first
- * two include the attributions that match no link (direct, referral...). */
+/** `/campaigns` "Résultats" tab, read-only: scans → sign-ups → installs → klashes,
+ * the two conversion rates and klashes per sign-up, in three tables: per emitter,
+ * per campaign and per link. The per-emitter and per-campaign tables include the
+ * attributions that match no link (direct, referral...). */
 export function CampaignResultsTab() {
   const [touch, setTouch] = useState<AttributionTouch>('first')
   const [filters, setFilters] = useState<LinkFilters>(noLinkFilters)
