@@ -4,13 +4,20 @@ import { fr } from '../../i18n/fr'
 import type { AttributionTouch } from '../../types/campaign'
 import { linkDescription, useSourceLabel } from './campaignLabels'
 import { CampaignLinkFilters } from './CampaignLinkFilters'
-import { conversionRate, formatRate, groupStats, type StatTotals } from './campaignTokens'
+import {
+  conversionRate,
+  formatAverage,
+  formatRate,
+  groupStats,
+  type StatTotals,
+} from './campaignTokens'
 import { matchesLinkFilters, noLinkFilters, type LinkFilters } from './linkFilters'
 import { useCampaignStats } from './useCampaigns'
 
-/** `/campaigns` "Résultats" tab, read-only: scans → sign-ups → installs and
- * the two conversion rates, per emitter, per campaign and per link. The first
- * two include the attributions that match no link (direct, referral...). */
+/** `/campaigns` "Résultats" tab, read-only: scans → sign-ups → installs → klashes,
+ * the two conversion rates and klashes per sign-up, in three tables: per emitter,
+ * per campaign and per link. The per-emitter and per-campaign tables include the
+ * attributions that match no link (direct, referral...). */
 export function CampaignResultsTab() {
   const [touch, setTouch] = useState<AttributionTouch>('first')
   const [filters, setFilters] = useState<LinkFilters>(noLinkFilters)
@@ -35,6 +42,7 @@ export function CampaignResultsTab() {
           </select>
         </label>
         <p className="text-xs text-neutral-500">{fr.campaigns.touch.hint}</p>
+        <p className="text-xs text-neutral-500">{fr.campaigns.results.klashesHint}</p>
       </div>
 
       {stats.isPending && <Spinner />}
@@ -73,6 +81,7 @@ export function CampaignResultsTab() {
                 scans: row.scans,
                 signups: row.signups,
                 installs: row.installs,
+                klashes: row.klashes,
               }))}
           >
             <CampaignLinkFilters links={links} value={filters} onChange={setFilters} />
@@ -110,7 +119,7 @@ function StatsTable({
         <p className="text-sm text-neutral-500">{fr.campaigns.results.empty}</p>
       ) : (
         <div className="overflow-x-auto rounded-md border border-neutral-200">
-          <table className="w-full min-w-xl text-sm">
+          <table className="w-full min-w-3xl text-sm">
             <thead className="bg-neutral-50 text-xs text-neutral-600">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left font-medium">
@@ -119,8 +128,10 @@ function StatsTable({
                 <NumberHeader>{fr.campaigns.stats.scans}</NumberHeader>
                 <NumberHeader>{fr.campaigns.stats.signups}</NumberHeader>
                 <NumberHeader>{fr.campaigns.stats.installs}</NumberHeader>
+                <NumberHeader>{fr.campaigns.stats.klashes}</NumberHeader>
                 <NumberHeader>{fr.campaigns.stats.scansToSignups}</NumberHeader>
                 <NumberHeader>{fr.campaigns.stats.signupsToInstalls}</NumberHeader>
+                <NumberHeader>{fr.campaigns.stats.klashesPerSignup}</NumberHeader>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-200">
@@ -137,8 +148,10 @@ function StatsTable({
                   <NumberCell>{row.scans}</NumberCell>
                   <NumberCell>{row.signups}</NumberCell>
                   <NumberCell>{row.installs}</NumberCell>
+                  <NumberCell>{row.klashes}</NumberCell>
                   <NumberCell>{formatRate(conversionRate(row.signups, row.scans))}</NumberCell>
                   <NumberCell>{formatRate(conversionRate(row.installs, row.signups))}</NumberCell>
+                  <NumberCell>{formatAverage(conversionRate(row.klashes, row.signups))}</NumberCell>
                 </tr>
               ))}
             </tbody>

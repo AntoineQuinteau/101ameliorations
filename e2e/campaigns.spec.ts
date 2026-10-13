@@ -118,6 +118,11 @@ test.describe('campaigns', () => {
     await expect(page.getByRole('heading', { name: 'Par émetteur' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Par campagne' })).toBeVisible()
     await expect(
+      page
+        .getByRole('region', { name: 'Par émetteur' })
+        .getByRole('columnheader', { name: 'Klashs', exact: true }),
+    ).toBeVisible()
+    await expect(
       page.getByRole('region', { name: 'Par lien' }).getByRole('rowheader', {
         name: /\/r\/txdo-flyer/,
       }),

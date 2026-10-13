@@ -458,7 +458,7 @@ export const fr = {
       results: 'Résultats',
     },
     touch: {
-      label: 'Attribuer les inscriptions et installations au',
+      label: 'Attribuer les inscriptions, installations et klashs au',
       first: 'premier contact',
       last: 'dernier contact',
       hint: "Premier contact : le canal par lequel la personne a découvert l'application. Dernier contact : celui par lequel elle est arrivée la dernière fois avant de s'inscrire ou d'installer.",
@@ -558,8 +558,10 @@ export const fr = {
       scans: 'Scans',
       signups: 'Inscriptions',
       installs: 'Installations',
+      klashes: 'Klashs',
       scansToSignups: 'Scans → inscriptions',
       signupsToInstalls: 'Inscriptions → installations',
+      klashesPerSignup: 'Klashs / inscription',
     },
     results: {
       bySource: 'Par émetteur',
@@ -570,6 +572,7 @@ export const fr = {
       inactive: '(désactivé)',
       empty: 'Aucune donnée pour le moment.',
       loadError: 'Impossible de charger les statistiques.',
+      klashesHint: 'Klashs : signalements des comptes venus de ce canal, hors rejetés et doublons.',
     },
   },
   pwa: {

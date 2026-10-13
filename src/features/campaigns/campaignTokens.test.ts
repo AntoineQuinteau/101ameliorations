@@ -4,6 +4,7 @@ import {
   buildCampaignKey,
   conversionRate,
   findExistingSource,
+  formatAverage,
   formatRate,
   groupStats,
   normalizeCampaignToken,
@@ -57,6 +58,13 @@ describe('rates and grouping', () => {
     expect(formatRate(null)).toBe('—')
   })
 
+  it('formats an average with a French comma', () => {
+    expect(formatAverage(1.5)).toBe('1,5')
+    expect(formatAverage(2)).toBe('2')
+    expect(formatAverage(0.26)).toBe('0,3')
+    expect(formatAverage(null)).toBe('—')
+  })
+
   it('groups rows and sums the counters', () => {
     const row = (
       source: string,
@@ -64,11 +72,16 @@ describe('rates and grouping', () => {
       scans: number,
       signups: number,
       installs: number,
-    ) => ({ source, campaign, scans, signups, installs }) as CampaignStat
-    const rows = [row('cpam', 'a', 10, 2, 1), row('txdo', 'a', 5, 1, 0), row('cpam', 'b', 1, 0, 0)]
+      klashes = 0,
+    ) => ({ source, campaign, scans, signups, installs, klashes }) as CampaignStat
+    const rows = [
+      row('cpam', 'a', 10, 2, 1, 4),
+      row('txdo', 'a', 5, 1, 0, 1),
+      row('cpam', 'b', 1, 0, 0, 2),
+    ]
     expect(groupStats(rows, (r) => r.source)).toEqual([
-      { key: 'cpam', scans: 11, signups: 2, installs: 1 },
-      { key: 'txdo', scans: 5, signups: 1, installs: 0 },
+      { key: 'cpam', scans: 11, signups: 2, installs: 1, klashes: 6 },
+      { key: 'txdo', scans: 5, signups: 1, installs: 0, klashes: 1 },
     ])
   })
 })
