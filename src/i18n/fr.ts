@@ -70,7 +70,7 @@ export const fr = {
           ? '1 confirmation'
           : `${count} confirmations`,
     reportHere: 'Signaler ici',
-    reportWhereIAm: 'Signaler à ma position',
+    reportWhereIAm: 'Signaler là où je suis',
     draftInProgress: 'Déclaration en cours — reprendre',
     longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
     resultsCount: (count: number) =>
@@ -583,7 +583,7 @@ export const fr = {
     howToReportTitle: 'Comment signaler',
     // Takes the on-screen button labels (fr.map.*) so a rename follows.
     howToReport: (whereIAmLabel: string, hereLabel: string) =>
-      `Touchez « ${whereIAmLabel} » pour signaler là où vous êtes, ou maintenez appuyé sur la carte (sur ordinateur : cliquez sur la carte) pour choisir un point précis, puis touchez « ${hereLabel} ».`,
+      `Touchez « ${whereIAmLabel} » si vous êtes sur place, ou maintenez appuyé sur la carte (sur ordinateur : cliquez sur la carte) pour choisir un point précis, puis touchez « ${hereLabel} ».`,
     accountTitle: 'Un compte pour signaler',
     account:
       'Pour envoyer un signalement, il faut un compte : une adresse email et un code reçu par email suffisent, sans mot de passe.',
