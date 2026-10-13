@@ -5,7 +5,7 @@
 -- Self-contained, like the other files here: own fixtures, UUID range
 -- cccccccc-... (disjoint from the other tests and the seed).
 begin;
-select plan(33);
+select plan(52);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -69,6 +69,10 @@ select throws_ok($$ select * from public.campaign_link_scans $$, '42501', null,
 select throws_ok(
   $$ select public.create_campaign_link('txdo', 'print', 'x-2026-10', 'a') $$, '42501', null,
   'anon cannot create a link');
+select throws_ok($$ select * from public.campaign_sources $$, '42501', null,
+  'anon cannot read campaign_sources');
+select throws_ok($$ select public.create_campaign_source('X') $$, '42501', null,
+  'anon cannot create a campaign source');
 reset role;
 
 -- Plain user and moderator: nothing visible, cannot create.
@@ -81,6 +85,13 @@ select throws_ok(
   $$ select public.create_campaign_link('txdo', 'print', 'x-2026-10', 'a') $$,
   'only a campaign manager can create a campaign link',
   'a plain user cannot create a link');
+select is((select count(*)::int from public.campaign_sources), 0,
+  'a plain user sees no campaign source');
+select throws_ok($$ select public.create_campaign_source('X') $$,
+  'only a campaign manager can create a campaign source',
+  'a plain user cannot create a campaign source');
+select throws_ok($$ insert into public.campaign_sources (source) values ('x') $$,
+  '42501', null, 'a plain user cannot insert a campaign source directly');
 select throws_ok(
   $$ update public.profiles set can_manage_campaigns = true
       where id = 'cccccccc-0000-4000-8000-000000000001' $$,
@@ -97,6 +108,13 @@ select throws_ok(
   $$ select public.create_campaign_link('txdo', 'print', 'x-2026-10', 'a') $$,
   'only a campaign manager can create a campaign link',
   'a moderator without the right cannot create a link');
+select is((select count(*)::int from public.campaign_sources), 0,
+  'a moderator without the right sees no campaign source');
+select throws_ok($$ select public.create_campaign_source('X') $$,
+  'only a campaign manager can create a campaign source',
+  'a moderator without the right cannot create a campaign source');
+select throws_ok($$ insert into public.campaign_sources (source) values ('x') $$,
+  '42501', null, 'a moderator cannot insert a campaign source directly');
 reset role;
 
 -- Manager (flag): full access.
@@ -156,6 +174,36 @@ select is(
   'cpam-' || repeat('a', 57) || '-2',
   'a truncated slug gets its suffix within 64 characters, without a double hyphen');
 
+-- ---------- campaign source creation ----------
+select is(
+  (select source || '|' || label
+     from public.create_campaign_source('  Office de  Tourisme ')),
+  'office-de-tourisme|Office de Tourisme',
+  'a source key is normalized from the label, the label is tidied');
+select is(
+  (select source || '|' || label
+     from public.create_campaign_source('OFFICE DE TOURISME')),
+  'office-de-tourisme|Office de Tourisme',
+  'creating the same source again returns it, label unchanged');
+select is((select count(*)::int from public.campaign_sources
+            where source = 'office-de-tourisme'), 1,
+  'no duplicate source');
+select throws_ok($$ select public.create_campaign_source('   ') $$,
+  'a campaign source name is required', 'an empty source name is rejected');
+select throws_ok($$ select public.create_campaign_source('Direct') $$,
+  'reserved campaign source', 'a reserved source name is rejected');
+select throws_ok($$ insert into public.campaign_sources (source) values ('x') $$,
+  '42501', null, 'a manager cannot insert a source directly');
+select throws_ok($$ update public.campaign_sources set label = 'x' $$,
+  '42501', null, 'a manager cannot update a source directly');
+select throws_ok($$ delete from public.campaign_sources $$,
+  '42501', null, 'a manager cannot delete a source directly');
+select is(
+  (select slug from public.create_campaign_link(
+    'office-de-tourisme', 'print', 'x-2026-10', 'flyer')),
+  'office-de-tourisme-flyer',
+  'a link can use a freshly created source');
+
 -- ---------- immutability ----------
 select throws_ok(
   $$ update public.campaign_links set slug = 'other' where slug = 'cpam-mail' $$,
@@ -171,10 +219,22 @@ select throws_ok(
   'a campaign link cannot be deleted, only deactivated',
   'a link cannot be deleted');
 
+select throws_ok(
+  $$ insert into public.campaign_sources (source) values ('referral') $$,
+  '23514', null, 'the reserved source keys are refused by a constraint');
+
 -- Deleting the account that created a link keeps the link (author cleared).
 select lives_ok(
   $$ delete from auth.users where id = 'cccccccc-0000-4000-8000-000000000003' $$,
   'the creator of a link can be deleted');
+
+-- An admin without the campaign flag can manage campaigns too.
+select set_config('request.jwt.claims',
+  '{"sub":"cccccccc-0000-4000-8000-000000000004","role":"authenticated"}', true);
+set local role authenticated;
+select lives_ok($$ select public.create_campaign_source('Admin Source') $$,
+  'an admin can create a campaign source');
+reset role;
 
 -- ---------- resolution ----------
 select is(

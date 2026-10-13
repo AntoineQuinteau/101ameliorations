@@ -164,13 +164,16 @@ export type Database = {
       }
       campaign_sources: {
         Row: {
+          label: string | null
           source: string
         }
         ComputedFields: never
         Insert: {
+          label?: string | null
           source: string
         }
         Update: {
+          label?: string | null
           source?: string
         }
         Relationships: []
@@ -732,6 +735,19 @@ export type Database = {
         SetofOptions: {
           from: '*'
           to: 'campaign_links'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_campaign_source: {
+        Args: { p_label: string }
+        Returns: {
+          label: string | null
+          source: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'campaign_sources'
           isOneToOne: true
           isSetofReturn: false
         }
