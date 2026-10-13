@@ -1,26 +1,19 @@
+import { useId } from 'react'
 import { Link } from 'react-router-dom'
 import { fr } from '../../i18n/fr'
 import type { KlashCategory, KlashStatus, KlashImportance } from '../../types/klash'
 import {
   ALL_CATEGORIES,
-  ALL_STATUSES,
   ALL_IMPORTANCES,
+  ALL_PERIODS,
+  MAP_STATUSES,
   defaultFilters,
+  isDefaultFilters,
   type KlashFilters,
+  type KlashPeriod,
 } from './klashFilters'
 
-const PERIOD_PRESETS: { label: string; days: number | null }[] = [
-  { label: fr.map.filters.periodAny, days: null },
-  { label: fr.map.filters.periodLast7Days, days: 7 },
-  { label: fr.map.filters.periodLast30Days, days: 30 },
-  { label: fr.map.filters.periodLast90Days, days: 90 },
-]
-
-function daysAgoIsoDate(days: number): string {
-  const date = new Date()
-  date.setUTCDate(date.getUTCDate() - days)
-  return date.toISOString().slice(0, 10)
-}
+const PERIOD_OPTIONS: (KlashPeriod | null)[] = [null, ...ALL_PERIODS]
 
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
@@ -39,7 +32,9 @@ function toggleButtonClass(active: boolean): string {
  * other floating cards (KlashPreviewCard, PinConfirmCard), not a full-height
  * docked panel, so it never takes more room than its own content and the map
  * stays visible around and beneath it. Filters apply live, same as mobile —
- * there's nothing to "apply", so no button for it.
+ * there's nothing to "apply", so no button for it. In each chip group an
+ * empty selection shows everything (see `KlashFilters`), so the reset button
+ * is only enabled once something is actually narrowed.
  *
  * Always mounted (unlike the mobile sheet, which only exists while open):
  * `isOpen` drives an opacity/scale transition instead of a mount/unmount, so
@@ -57,6 +52,7 @@ export function DesktopFiltersCard({
   resultsCount: number
   onChange: (filters: KlashFilters) => void
 }) {
+  const id = useId()
   return (
     <div
       inert={!isOpen}
@@ -71,21 +67,29 @@ export function DesktopFiltersCard({
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-neutral-700">{fr.map.resultsCount(resultsCount)}</p>
+        <p role="status" className="text-sm font-medium text-neutral-700">
+          {fr.map.resultsCount(resultsCount)}
+        </p>
         <button
           type="button"
           onClick={() => onChange(defaultFilters)}
-          className="shrink-0 text-xs font-medium text-teal-700 hover:underline"
+          disabled={isDefaultFilters(filters)}
+          className="shrink-0 text-xs font-medium text-teal-700 hover:underline disabled:cursor-default disabled:text-neutral-400 disabled:no-underline"
         >
           {fr.map.filters.reset}
         </button>
       </div>
 
       <div className="mt-2 flex flex-col gap-2">
-        <div>
-          <span className="text-xs font-medium text-neutral-500">
-            {fr.map.filters.categoryLabel}
-          </span>
+        <div role="group" aria-labelledby={`${id}-category`}>
+          <div className="flex items-baseline justify-between gap-2">
+            <span id={`${id}-category`} className="text-xs font-medium text-neutral-500">
+              {fr.map.filters.categoryLabel}
+            </span>
+            {filters.categories.length === 0 && (
+              <span className="text-xs text-neutral-500">{fr.map.filters.anyCategory}</span>
+            )}
+          </div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {ALL_CATEGORIES.map((option: KlashCategory) => (
               <button
@@ -103,10 +107,15 @@ export function DesktopFiltersCard({
           </div>
         </div>
 
-        <div>
-          <span className="text-xs font-medium text-neutral-500">
-            {fr.map.filters.importanceLabel}
-          </span>
+        <div role="group" aria-labelledby={`${id}-importance`}>
+          <div className="flex items-baseline justify-between gap-2">
+            <span id={`${id}-importance`} className="text-xs font-medium text-neutral-500">
+              {fr.map.filters.importanceLabel}
+            </span>
+            {filters.importances.length === 0 && (
+              <span className="text-xs text-neutral-500">{fr.map.filters.anyImportance}</span>
+            )}
+          </div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {ALL_IMPORTANCES.map((option: KlashImportance) => (
               <button
@@ -124,10 +133,17 @@ export function DesktopFiltersCard({
           </div>
         </div>
 
-        <div>
-          <span className="text-xs font-medium text-neutral-500">{fr.map.filters.statusLabel}</span>
+        <div role="group" aria-labelledby={`${id}-status`}>
+          <div className="flex items-baseline justify-between gap-2">
+            <span id={`${id}-status`} className="text-xs font-medium text-neutral-500">
+              {fr.map.filters.statusLabel}
+            </span>
+            {filters.statuses.length === 0 && (
+              <span className="text-xs text-neutral-500">{fr.map.filters.anyStatus}</span>
+            )}
+          </div>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {ALL_STATUSES.map((option: KlashStatus) => (
+            {MAP_STATUSES.map((option: KlashStatus) => (
               <button
                 key={option}
                 type="button"
@@ -141,24 +157,22 @@ export function DesktopFiltersCard({
           </div>
         </div>
 
-        <div>
-          <span className="text-xs font-medium text-neutral-500">{fr.map.filters.periodLabel}</span>
+        <div role="group" aria-labelledby={`${id}-period`}>
+          <span id={`${id}-period`} className="text-xs font-medium text-neutral-500">
+            {fr.map.filters.periodLabel}
+          </span>
           <div className="mt-1 flex flex-wrap gap-1.5">
-            {PERIOD_PRESETS.map((preset) => {
-              const value = preset.days === null ? null : daysAgoIsoDate(preset.days)
-              const active = filters.createdAfter === value
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => onChange({ ...filters, createdAfter: value })}
-                  aria-pressed={active}
-                  className={toggleButtonClass(active)}
-                >
-                  {preset.label}
-                </button>
-              )
-            })}
+            {PERIOD_OPTIONS.map((option) => (
+              <button
+                key={option ?? 'any'}
+                type="button"
+                onClick={() => onChange({ ...filters, period: option })}
+                aria-pressed={filters.period === option}
+                className={toggleButtonClass(filters.period === option)}
+              >
+                {option === null ? fr.map.filters.periodAny : fr.map.filters.period[option]}
+              </button>
+            ))}
           </div>
         </div>
       </div>

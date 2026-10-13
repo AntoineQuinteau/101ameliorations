@@ -90,13 +90,26 @@ export const fr = {
       categoryLabel: 'Catégorie',
       importanceLabel: 'Importance',
       statusLabel: 'Statut',
+      // Shown next to a group's label while none of its chips is selected:
+      // an empty selection shows everything, not nothing.
+      anyCategory: 'Toutes',
+      anyImportance: 'Toutes',
+      anyStatus: 'Tous',
       periodLabel: 'Période',
       periodAny: 'Toute période',
-      periodLast7Days: '7 derniers jours',
-      periodLast30Days: '30 derniers jours',
-      periodLast90Days: '90 derniers jours',
+      period: {
+        '7d': '7 derniers jours',
+        '30d': '30 derniers jours',
+        '90d': '90 derniers jours',
+      },
       reset: 'Réinitialiser',
-      viewOnMap: 'Voir sur la carte',
+      viewResults: (count: number) =>
+        count === 0
+          ? 'Voir la carte'
+          : count === 1
+            ? 'Voir le signalement'
+            : `Voir les ${count} signalements`,
+      emptyWithFilters: 'Aucun signalement avec ces filtres',
       exportLink: 'Télécharger toutes les données',
     },
     layer: {
