@@ -1,7 +1,7 @@
 -- Tests for campaign_stats() (20261009120000_campaign_stats.sql): access
 -- control and the scans / sign-ups / installs counts. UUID range eeeeeeee-...
 begin;
-select plan(9);
+select plan(13);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -40,6 +40,22 @@ alter table public.profiles disable trigger profiles_guard_role;
 update public.profiles set can_manage_campaigns = true
  where id = 'eeeeeeee-0000-4000-8000-000000000001';
 alter table public.profiles enable trigger profiles_guard_role;
+
+-- Klashes: s1 (first cpam-papillon, last txdo-facebook) has two counted ones
+-- and a rejected and a duplicate one (excluded); s2 has one; s3 (unconfirmed
+-- email) has one, which must not count.
+insert into public.klashes (id, author_id, location, category, importance, title, status)
+select ('eeeeeeee-2222-4000-8000-0000000000' || lpad(n::text, 2, '0'))::uuid, a,
+       extensions.st_setsrid(extensions.st_makepoint(-1.47, 43.49), 4326)::extensions.geography,
+       'category_1', 'medium', 'Stats klash ' || n, st::public.klash_status
+from (values
+  (1, 'eeeeeeee-0000-4000-8000-000000000003'::uuid, 'new'),
+  (2, 'eeeeeeee-0000-4000-8000-000000000003'::uuid, 'resolved'),
+  (3, 'eeeeeeee-0000-4000-8000-000000000003'::uuid, 'rejected'),
+  (4, 'eeeeeeee-0000-4000-8000-000000000003'::uuid, 'duplicate'),
+  (5, 'eeeeeeee-0000-4000-8000-000000000004'::uuid, 'new'),
+  (6, 'eeeeeeee-0000-4000-8000-000000000005'::uuid, 'new')
+) as v (n, a, st);
 
 reset role;
 
@@ -91,6 +107,20 @@ select is(
 select is(
   (select signups from public.campaign_stats('last') where slug = 'cpam-papillon'), 1::bigint,
   'last touch: the sign-up without explicit last touch falls back to its first');
+
+-- Klashes: rejected, duplicate and unconfirmed-account ones are not counted.
+select is(
+  (select klashes from public.campaign_stats('first') where slug = 'cpam-papillon'), 3::bigint,
+  'first touch: 3 klashes (rejected, duplicate and unconfirmed-account ones excluded)');
+select is(
+  (select klashes from public.campaign_stats('first') where slug = 'txdo-facebook'), 0::bigint,
+  'first touch: a link whose channel brought no author has 0 klashes');
+select is(
+  (select klashes from public.campaign_stats('last') where slug = 'txdo-facebook'), 2::bigint,
+  'last touch: the klashes follow the author''s last channel');
+select is(
+  (select klashes from public.campaign_stats('last') where slug = 'cpam-papillon'), 1::bigint,
+  'last touch: the author without explicit last touch falls back to the first');
 
 -- A deactivated link keeps showing, with no counted scan.
 select is(

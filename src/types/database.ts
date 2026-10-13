@@ -660,6 +660,7 @@ export type Database = {
           destination: string
           installs: number
           is_active: boolean
+          klashes: number
           medium: string
           scans: number
           signups: number
