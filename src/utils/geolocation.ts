@@ -1,6 +1,6 @@
 /** Shared shape for a one-shot browser geolocation fix — used by
  * `useGeolocation` (position-step auto-fill), `MapZoomLocateControls`
- * ("Me localiser") and `MapPage`'s "Signaler à ma position", so all three
+ * ("Me localiser") and `MapPage`'s "Signaler là où je suis", so all three
  * describe the same result instead of each writing out `{ lat; lng;
  * accuracyM }` inline. */
 export interface GeolocationResult {
