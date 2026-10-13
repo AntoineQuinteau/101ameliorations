@@ -464,7 +464,7 @@ export const fr = {
       hint: "Premier contact : le canal par lequel la personne a découvert l'application. Dernier contact : celui par lequel elle est arrivée la dernière fois avant de s'inscrire ou d'installer.",
     },
     source: {
-      txdo: 'Association',
+      txdo: 'Txirrindola',
       presse: 'Presse',
       cpam: 'CPAM',
       direct: 'Accès direct',
