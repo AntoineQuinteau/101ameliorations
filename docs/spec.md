@@ -19,20 +19,20 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
-| --------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
-| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
-| Créer un klash, ajouter des photos                                          |            | ✓          | ✓                  | ✓                   | ✓       |
-| Confirmer (+1) un klash                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
-| Commenter                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |            | ✓                  |                     | ✓       |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |            | ✓                  |                     | ✓       |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |            |                    | ✓                   | ✓       |
-| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |            | ✓                  | ✓                   | ✓       |
-| Export CSV / GeoJSON                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
-| Gérer les rôles                                                             |            |            |                    |                     | ✓       |
-| Créer un émetteur, créer / désactiver des liens de campagne, voir leurs statistiques (§6.8)    |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
+| Action                                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
+| ------------------------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                                          |            | ✓          | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
+| Commenter                                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires                            |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire                 |            |            | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                                    |            |            | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`                           |            |            |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                                   |            |            | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                                             |            |            |                    |                     | ✓       |
+| Créer un émetteur, créer / désactiver des liens de campagne, voir leurs statistiques (§6.8) |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
 
 ¹ Droit séparé `profiles.can_manage_campaigns`, attribué par un `admin` et cumulable avec n'importe quel rôle.
 
