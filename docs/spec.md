@@ -258,7 +258,7 @@ Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Con
 Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin`) et indépendante de `/admin` — un gestionnaire de campagnes sans rôle de modération n'accède pas à `/admin`, un modérateur sans le droit n'accède pas à `/campaigns`. Point d'entrée : un lien « Gérer les campagnes » dans `/me`, à côté de « Accéder à l'administration », chacun affiché selon son propre droit ; pas de raccourci sur la carte. Deux onglets (`?tab=results` pour le second) :
 
 - **Liens** : bouton « Créer un lien » (formulaire replié par défaut), puis la liste des liens actifs, filtrable par campagne et par émetteur ; les liens désactivés s'affichent sur demande. Chaque lien montre son adresse courte, sa description, son nombre de scans et trois actions : copier le lien, QR code, modifier (destination, activer / désactiver). Le QR code (copie de l'image, SVG, PNG haute résolution) se déplie sous son lien, un seul à la fois dans toute la page, pour qu'un téléphone ne puisse pas scanner le mauvais. Chaque panneau déplié (QR code, modification) porte son propre bouton « Fermer ».
-- **Résultats** (lecture seule) : scans → inscriptions → installations et taux de conversion, en tableaux par émetteur, par campagne et par lien, attribués au premier ou au dernier contact.
+- **Résultats** (lecture seule) : scans → inscriptions → installations → klashs (signalements des comptes venus du canal, hors rejetés et doublons) et taux de conversion, avec le nombre de klashs par inscription, en tableaux par émetteur, par campagne et par lien, attribués au premier ou au dernier contact.
 
 ### 6.7 Export
 

@@ -81,9 +81,11 @@ l'officielle : n'imprimez que des QR créés depuis `101ameliorations.org`.
    Sur iOS le stockage de l'app installée est séparé de celui de Safari : le Worker sert
    un manifest dont le `start_url` embarque l'attribution validée, restaurée uniquement
    si le stockage de l'app est vide.
-5. Onglet Résultats : scans → inscriptions → installations et taux de conversion, par
-   lien, par émetteur et par campagne, attribués au premier ou au dernier contact.
-   Une inscription compte quand l'email est confirmé.
+5. Onglet Résultats : scans → inscriptions → installations → klashs, taux de conversion et
+   klashs par inscription, par lien, par émetteur et par campagne, attribués au premier ou
+   au dernier contact. Une inscription compte quand l'email est confirmé. Les klashs sont
+   ceux des comptes venus du canal, hors rejetés et doublons ; à la suppression d'un compte,
+   ses klashs passent au profil anonyme et sortent du compteur avec l'inscription.
 
 ## Données stockées et où
 
