@@ -42,10 +42,11 @@ import { requestCurrentPosition, type GeolocationResult } from '../../utils/geol
 import { hasStoredDraft } from '../newKlash/draftStorage'
 import type { AppOutletContext } from '../../App'
 import { useAuth } from '../auth/useAuth'
+import { KLASH_OVERLAY_STATE } from '../klash/klashOverlay'
 import { WelcomeDialog } from '../welcome/WelcomeDialog'
 import { readWelcomeSeen, shouldAutoShowWelcome, writeWelcomeSeen } from '../welcome/welcomeStorage'
 
-export function MapPage() {
+export function MapPage({ isKlashOverlayOpen }: { isKlashOverlayOpen: boolean }) {
   const navigate = useNavigate()
   const hasHover = useHasHover()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -78,13 +79,14 @@ export function MapPage() {
   // visitor who hasn't seen it. A signed-in user never needs it, so it counts
   // as seen for them (it would otherwise pop up after a later sign-out).
   useEffect(() => {
+    if (isKlashOverlayOpen) return
     if (shouldAutoShowWelcome({ seen: welcomeSeen, isInitializing, isSignedIn: user !== null })) {
       setIsWelcomeOpen(true)
     } else if (!welcomeSeen && !isInitializing && user) {
       writeWelcomeSeen()
       setWelcomeSeen(true)
     }
-  }, [welcomeSeen, isInitializing, user])
+  }, [welcomeSeen, isInitializing, user, isKlashOverlayOpen])
 
   // The install banner waits while the dialog is open or still due (including
   // while auth initializes), so the two never stack or flash in sequence.
@@ -162,11 +164,13 @@ export function MapPage() {
   function handleMarkerSelect(klash: Klash) {
     if (isAboutOpen) closeAbout()
     // On a fine-pointer device, hover already previews the klash (see
-    // onHover below) — a click there goes straight to the detail page,
-    // skipping the extra "voir le détail" tap that only makes sense as a
-    // second step on touch, where there's no hover to preview with first.
+    // onHover below) — a click there goes straight to the detail, opened in
+    // a modal over this still-mounted map (spec §6.3), skipping the extra
+    // "voir le détail" tap that only makes sense as a second step on touch,
+    // where there's no hover to preview with first.
     if (hasHover) {
-      navigate(`/k/${klash.id}`)
+      setSelectedKlash(null)
+      navigate(`/k/${klash.id}`, { state: KLASH_OVERLAY_STATE })
     } else {
       setSelectedKlash(klash)
     }
@@ -193,6 +197,10 @@ export function MapPage() {
   // have left the map meanwhile (a klash's detail page, the profile button):
   // navigating to /new once it lands would pull them off wherever they went.
   const isMountedRef = useRef(false)
+  const isKlashOverlayOpenRef = useRef(isKlashOverlayOpen)
+  useEffect(() => {
+    isKlashOverlayOpenRef.current = isKlashOverlayOpen
+  }, [isKlashOverlayOpen])
   useEffect(() => {
     isMountedRef.current = true
     return () => {
@@ -203,11 +211,11 @@ export function MapPage() {
   function handleReportHereButton() {
     requestCurrentPosition({ enableHighAccuracy: true, timeout: 5_000 }).then(
       (result) => {
-        if (!isMountedRef.current) return
+        if (!isMountedRef.current || isKlashOverlayOpenRef.current) return
         goToNewKlash(result.lat, result.lng, result.accuracyM)
       },
       () => {
-        if (!isMountedRef.current) return
+        if (!isMountedRef.current || isKlashOverlayOpenRef.current) return
         // No geolocation API, permission denied, or timed out — all fall
         // back the same way, to the centre of what's currently on screen.
         const center = viewportCenter()
@@ -225,7 +233,7 @@ export function MapPage() {
   const filtersActive = !isDefaultFilters(filters)
 
   return (
-    <div className="relative h-dvh w-full">
+    <div className="relative h-dvh w-full" inert={isKlashOverlayOpen}>
       <MapContainer
         ref={setMap}
         center={INITIAL_MAP_CENTER}
@@ -390,7 +398,7 @@ export function MapPage() {
         />
       )}
 
-      {!isFiltersOpen && !isAboutOpen && selectedKlash && (
+      {!isFiltersOpen && !isAboutOpen && !isKlashOverlayOpen && selectedKlash && (
         <KlashPreviewCard
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}
