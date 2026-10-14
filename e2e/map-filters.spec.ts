@@ -105,6 +105,39 @@ test('the desktop card closes with its close button or Escape', async ({ page, i
   await expect(filtersButton).toBeFocused()
 })
 
+// Escape closes one layer at a time (see `useEscapeKey`): the klash detail modal
+// opened over the map first, then the filters card left open under it.
+test('Escape closes the klash modal before the desktop card under it', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'the klash modal and the filters card are desktop only')
+
+  const row = stubKlashRow(LAT, LNG)
+  // Photos, comments, status history… all empty; registered first so the more
+  // specific routes below win.
+  await page.route('**/rest/v1/**', (route) => route.fulfill({ json: [] }))
+  await stubKlashes(page, [row])
+  await page.route('**/rest/v1/klashes_public*', (route) => route.fulfill({ json: row }))
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  const filtersButton = page.getByRole('button', { name: 'Filtres' })
+  await filtersButton.click()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'true')
+
+  await page.locator('.leaflet-marker-icon.leaflet-interactive').first().click()
+  const modal = page.getByRole('dialog', { name: 'Détail du signalement' })
+  await expect(modal).toBeVisible()
+
+  await page.keyboard.press('Escape')
+  await expect(modal).toBeHidden()
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'true')
+
+  await page.keyboard.press('Escape')
+  await expect(filtersButton).toHaveAttribute('aria-pressed', 'false')
+})
+
 test('hovering a marker still previews it while the desktop card is open', async ({
   page,
   isMobile,

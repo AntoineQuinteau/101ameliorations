@@ -66,10 +66,8 @@ export function DesktopFiltersCard({
   onClose: () => void
 }) {
   const id = useId()
-  // The card is always mounted, so the listener is too: only act while open.
-  useEscapeKey(() => {
-    if (isOpen) onClose()
-  })
+  // The card is always mounted: it only listens for Escape while open.
+  useEscapeKey(onClose, isOpen)
   return (
     <div
       inert={!isOpen}
