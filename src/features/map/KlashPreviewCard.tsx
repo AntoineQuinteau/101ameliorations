@@ -13,7 +13,7 @@ import { X } from 'lucide-react'
  *
  * `interactive={false}` is for the desktop hover preview: it closes on its own once the
  * pointer leaves the marker (see `ClusteredKlashMarkers`'s `onHover`), and a click on the
- * marker itself already navigates straight to the detail page — so neither a close
+ * marker itself already opens the detail modal — so neither a close
  * button nor a "voir le détail" link serves a purpose there. Mobile's tap-to-open card
  * keeps both (`interactive` defaults to true).
  *

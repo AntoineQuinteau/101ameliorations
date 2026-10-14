@@ -1,4 +1,4 @@
-import { useEscapeKey } from '../../hooks/useEscapeKey'
+import { Modal } from '../../components/Modal'
 import { fr } from '../../i18n/fr'
 
 /** Confirmation shown when cancelling a report that has something worth
@@ -19,39 +19,30 @@ export function CancelDraftSheet({
    * dismissing this sheet must land the user back on the form, not on the map. */
   onDismiss: () => void
 }) {
-  useEscapeKey(onDismiss)
-
   return (
-    <div
-      className="fixed inset-0 z-[2000] flex items-end justify-center bg-black/50 p-4 sm:items-center"
-      onClick={onDismiss}
+    <Modal
+      ariaLabel={fr.newKlash.draft.cancelTitle}
+      onClose={onDismiss}
+      contentClassName="flex flex-col gap-2 p-4"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={fr.newKlash.draft.cancelTitle}
-        onClick={(event) => event.stopPropagation()}
-        className="flex w-full max-w-sm flex-col gap-2 rounded-xl bg-white p-4 shadow-lg"
+      <h2 className="text-center text-sm font-medium text-neutral-700">
+        {fr.newKlash.draft.cancelTitle}
+      </h2>
+      <p className="text-center text-sm text-neutral-600">{fr.newKlash.draft.cancelBody}</p>
+      <button
+        type="button"
+        onClick={onKeep}
+        className="mt-1 inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
       >
-        <h2 className="text-center text-sm font-medium text-neutral-700">
-          {fr.newKlash.draft.cancelTitle}
-        </h2>
-        <p className="text-center text-sm text-neutral-600">{fr.newKlash.draft.cancelBody}</p>
-        <button
-          type="button"
-          onClick={onKeep}
-          className="mt-1 inline-flex min-h-11 items-center justify-center rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
-        >
-          {fr.newKlash.draft.cancelKeep}
-        </button>
-        <button
-          type="button"
-          onClick={onDiscard}
-          className="inline-flex min-h-11 items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-        >
-          {fr.newKlash.draft.cancelDiscard}
-        </button>
-      </div>
-    </div>
+        {fr.newKlash.draft.cancelKeep}
+      </button>
+      <button
+        type="button"
+        onClick={onDiscard}
+        className="inline-flex min-h-11 items-center justify-center rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+      >
+        {fr.newKlash.draft.cancelDiscard}
+      </button>
+    </Modal>
   )
 }
