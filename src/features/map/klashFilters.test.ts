@@ -55,19 +55,33 @@ describe('applyFilters', () => {
   it('filters by status', () => {
     const klashes = [
       makeKlash({ id: 'k1', status: 'new' }),
-      makeKlash({ id: 'k2', status: 'rejected' }),
+      makeKlash({ id: 'k2', status: 'resolved' }),
     ]
     const filters: KlashFilters = { ...defaultFilters, statuses: ['new'] }
     expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1'])
   })
 
-  it('filters by period (createdAfter)', () => {
+  it('filters by period, as a window rolling back from now', () => {
     const klashes = [
-      makeKlash({ id: 'k1', createdAt: '2026-01-01T00:00:00.000Z' }),
+      makeKlash({ id: 'k1', createdAt: '2026-05-20T00:00:00.000Z' }),
       makeKlash({ id: 'k2', createdAt: '2026-06-01T00:00:00.000Z' }),
     ]
-    const filters: KlashFilters = { ...defaultFilters, createdAfter: '2026-03-01' }
-    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k2'])
+    const filters: KlashFilters = { ...defaultFilters, period: '7d' }
+    const now = new Date('2026-06-05T12:00:00.000Z')
+    expect(applyFilters(klashes, filters, now).map((k) => k.id)).toEqual(['k2'])
+    // The same filters a month later: the window has moved on past both.
+    const later = new Date('2026-07-05T12:00:00.000Z')
+    expect(applyFilters(klashes, filters, later)).toEqual([])
+  })
+
+  it('treats several values in one dimension as "any of"', () => {
+    const klashes = [
+      makeKlash({ id: 'k1', category: 'category_1' }),
+      makeKlash({ id: 'k2', category: 'category_2' }),
+      makeKlash({ id: 'k3', category: 'category_3' }),
+    ]
+    const filters: KlashFilters = { ...defaultFilters, categories: ['category_1', 'category_3'] }
+    expect(applyFilters(klashes, filters).map((k) => k.id)).toEqual(['k1', 'k3'])
   })
 
   it('cumulates multiple active filters', () => {
@@ -97,12 +111,7 @@ describe('isDefaultFilters', () => {
   })
 
   it('is true for an equivalent filters object built independently', () => {
-    const filters: KlashFilters = {
-      categories: [...defaultFilters.categories].reverse(),
-      importances: [...defaultFilters.importances],
-      statuses: [...defaultFilters.statuses],
-      createdAfter: null,
-    }
+    const filters: KlashFilters = { categories: [], importances: [], statuses: [], period: null }
     expect(isDefaultFilters(filters)).toBe(true)
   })
 
@@ -110,6 +119,6 @@ describe('isDefaultFilters', () => {
     expect(isDefaultFilters({ ...defaultFilters, categories: ['category_1'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, importances: ['high'] })).toBe(false)
     expect(isDefaultFilters({ ...defaultFilters, statuses: ['new'] })).toBe(false)
-    expect(isDefaultFilters({ ...defaultFilters, createdAfter: '2026-01-01' })).toBe(false)
+    expect(isDefaultFilters({ ...defaultFilters, period: '30d' })).toBe(false)
   })
 })

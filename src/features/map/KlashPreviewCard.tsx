@@ -15,18 +15,26 @@ import { X } from 'lucide-react'
  * pointer leaves the marker (see `ClusteredKlashMarkers`'s `onHover`), and a click on the
  * marker itself already opens the detail modal — so neither a close
  * button nor a "voir le détail" link serves a purpose there. Mobile's tap-to-open card
- * keeps both (`interactive` defaults to true). */
+ * keeps both (`interactive` defaults to true).
+ *
+ * The hover preview also lets the pointer through to the map. It opens at the bottom of
+ * the screen, so for a marker down there it opens right under the pointer: if it took
+ * the pointer, the marker would lose its hover, the preview would close, the marker
+ * would be hovered again, and the two would flicker for as long as the pointer stayed. */
 export function KlashPreviewCard({
   klash,
   onClose,
   interactive = true,
+  clearOfFiltersCard = false,
 }: {
   klash: Klash
   onClose: () => void
   interactive?: boolean
+  /** See `BottomSheet`. */
+  clearOfFiltersCard?: boolean
 }) {
   return (
-    <BottomSheet>
+    <BottomSheet clearOfFiltersCard={clearOfFiltersCard} passThrough={!interactive}>
       <div className="flex flex-col gap-2">
         <div className="flex items-start justify-between gap-2">
           <h2 className="text-sm font-semibold text-neutral-900">{klash.title}</h2>

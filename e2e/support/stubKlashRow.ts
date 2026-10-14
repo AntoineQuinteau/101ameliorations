@@ -1,5 +1,7 @@
-/** One `klashes_in_bbox` row, enough for `klashFromRow` to render a marker. */
-export function stubKlashRow(lat: number, lng: number) {
+/** One `klashes_in_bbox` row, enough for `klashFromRow` to render a marker.
+ * For specs that stub the RPC so the map holds known klashs whatever the
+ * seed data (or another spec running in parallel) put in the database. */
+export function stubKlashRow(lat: number, lng: number, overrides: Record<string, unknown> = {}) {
   return {
     id: '00000000-0000-4000-8000-000000000001',
     author_id: '00000000-0000-4000-8000-000000000002',
@@ -21,5 +23,6 @@ export function stubKlashRow(lat: number, lng: number) {
     author_display_name: null,
     author_organization: null,
     author_role: 'user',
+    ...overrides,
   }
 }

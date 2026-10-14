@@ -23,12 +23,19 @@ export function pushEscapeHandler(handler: () => void): () => void {
  * mounted and no overlay mounted after it is also listening (see `pushEscapeHandler`).
  * For sheets and overlays that have no other keyboard way out. `onEscape` may change
  * identity on every render without cost: the registered handler always calls the
- * latest one but is only (re)registered once. */
-export function useEscapeKey(onEscape: () => void): void {
+ * latest one but is only (re)registered once.
+ *
+ * `enabled` is for an overlay that stays mounted while closed: it takes its place on
+ * the stack when it opens, like one that mounts then, and leaves it when it closes —
+ * a handler left registered while closed would swallow Escape for whatever is under it. */
+export function useEscapeKey(onEscape: () => void, enabled = true): void {
   const latestOnEscape = useRef(onEscape)
   useEffect(() => {
     latestOnEscape.current = onEscape
   })
 
-  useEffect(() => pushEscapeHandler(() => latestOnEscape.current()), [])
+  useEffect(() => {
+    if (!enabled) return
+    return pushEscapeHandler(() => latestOnEscape.current())
+  }, [enabled])
 }
