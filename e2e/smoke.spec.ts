@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { INITIAL_MAP_CENTER } from '../src/config/serviceArea'
 import { dismissInstallBanner } from './support/dismissInstallBanner'
+import { stubKlashRow } from './support/stubKlashRow'
 
 // Throwaway: only exists to prove the configured browser executable
 // actually launches before building the real specs. Safe to keep — cheap
@@ -142,4 +144,45 @@ test('clicking the map with the About sheet open only closes it', async ({ page,
   // The next click is a normal pick again.
   await page.mouse.click(640, 300)
   await expect(reportHere).toBeVisible()
+})
+
+// The hover preview opens at the bottom of the screen, so for a marker down
+// there it opens right under the pointer. It must not take the pointer from
+// the marker: the marker would lose its hover, the preview would close, and
+// the two would flicker for as long as the pointer stayed.
+test('the hover preview does not take the pointer from the marker under it', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'no hover on touch')
+
+  // About 0.001° of latitude per pixel at the initial zoom: this puts the
+  // marker some 280px below the centre, where the preview opens.
+  const [lat, lng] = INITIAL_MAP_CENTER
+  await page.route('**/rest/v1/rpc/klashes_in_bbox*', (route) =>
+    route.fulfill({ json: [stubKlashRow(lat - 0.28, lng)] }),
+  )
+  await page.goto('/')
+  await dismissInstallBanner(page)
+
+  const marker = page.locator('.leaflet-marker-icon.leaflet-interactive').first()
+  await marker.hover()
+  const previewTitle = page.getByRole('heading', { name: 'Klash de test' })
+  await expect(previewTitle).toBeVisible()
+
+  const markerBox = await marker.boundingBox()
+  const titleBox = await previewTitle.boundingBox()
+  if (!markerBox || !titleBox) throw new Error('marker or preview not laid out')
+  const x = markerBox.x + markerBox.width / 2
+  const y = markerBox.y + markerBox.height / 2
+  // Guards the test itself: the marker has to be under the preview.
+  expect(y).toBeGreaterThan(titleBox.y)
+
+  const hitsMarker = await page.evaluate(
+    ([px, py]) =>
+      document.elementFromPoint(px, py)?.closest('.leaflet-marker-icon.leaflet-interactive') !=
+      null,
+    [x, y],
+  )
+  expect(hitsMarker).toBe(true)
 })

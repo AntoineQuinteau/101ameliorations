@@ -17,21 +17,26 @@
  * centred sheet already starts right of the card, and under 768px there isn't
  * room beside it for a usable sheet. That upper bound is written in rem
  * (72rem) like Tailwind's own breakpoints: in px, Tailwind can't order it
- * against `md` and the `md` rule wins at every width. */
+ * against `md` and the `md` rule wins at every width.
+ *
+ * `passThrough` lets the pointer through to the map underneath, for a sheet
+ * that is display-only (see `KlashPreviewCard`). */
 export function BottomSheet({
   children,
   scrollable = false,
   clearOfFiltersCard = false,
+  passThrough = false,
 }: {
   children: React.ReactNode
   scrollable?: boolean
   clearOfFiltersCard?: boolean
+  passThrough?: boolean
 }) {
   return (
     <div
       className={`absolute inset-x-0 bottom-0 z-[1000] mx-auto w-full max-w-md p-3 sm:bottom-4 ${
         clearOfFiltersCard ? 'md:left-88 md:w-auto min-[72rem]:left-0 min-[72rem]:w-full' : ''
-      }`}
+      } ${passThrough ? 'pointer-events-none' : ''}`}
     >
       <div
         className={`rounded-xl bg-white p-4 shadow-lg ring-1 ring-black/5 ${
