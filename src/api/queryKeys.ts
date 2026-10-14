@@ -3,7 +3,8 @@ import { bboxKey } from '../utils/bbox'
 
 export const klashKeys = {
   all: ['klashes'] as const,
-  bbox: (bbox: Bbox) => [...klashKeys.all, 'bbox', bboxKey(bbox)] as const,
+  bboxes: () => [...klashKeys.all, 'bbox'] as const,
+  bbox: (bbox: Bbox) => [...klashKeys.bboxes(), bboxKey(bbox)] as const,
   detail: (id: string) => [...klashKeys.all, 'detail', id] as const,
   byAuthor: (authorId: string) => [...klashKeys.all, 'byAuthor', authorId] as const,
   nearby: (lat: number, lng: number, radiusM: number) =>

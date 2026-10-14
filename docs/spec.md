@@ -184,17 +184,17 @@ Anti-abus :
 
 Une seule application responsive. Routes :
 
-| Route        | Contenu                                                                               |
-| ------------ | ------------------------------------------------------------------------------------- |
-| `/`          | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
-| `/k/:id`     | Détail d'un klash                                                                     |
-| `/new`       | Création (feuille/modale par-dessus la carte)                                         |
-| `/login`     | Saisie email → saisie du code OTP                                                     |
-| `/me`        | Mes klashs, mon pseudo                                                                |
-| `/admin`     | Modération et traitement (rôles ≥ moderator)                                          |
-| `/campaigns` | Liens de campagne et leurs résultats (droit `can_manage_campaigns`, §6.8)             |
+| Route        | Contenu                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| `/`          | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile)      |
+| `/k/:id`     | Détail d'un klash (page ; modale par-dessus la carte depuis la carte sur ordinateur, §6.3) |
+| `/new`       | Création (feuille/modale par-dessus la carte)                                              |
+| `/login`     | Saisie email → saisie du code OTP                                                          |
+| `/me`        | Mes klashs, mon pseudo                                                                     |
+| `/admin`     | Modération et traitement (rôles ≥ moderator)                                               |
+| `/campaigns` | Liens de campagne et leurs résultats (droit `can_manage_campaigns`, §6.8)                  |
 
-Les pages secondaires (détail, connexion, `/me`, `/admin`, `/campaigns`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
+Les pages secondaires (détail, connexion, `/me`, `/admin`, `/campaigns`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte. Le détail ouvert en modale (§6.3) porte à la place un bouton de fermeture.
 
 ### 6.1 Carte (`/`)
 
@@ -203,7 +203,7 @@ Les pages secondaires (détail, connexion, `/me`, `/admin`, `/campaigns`, export
 - Marqueurs colorés par importance, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
 - Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
-- **Modale de première visite**, affichée uniquement sur la carte (`/`, jamais sur `/k/:id`, `/login`, `/new` ni les pages légales) à un visiteur non connecté qui ne l'a pas encore vue. Contenu court : à quoi sert le site ; comment signaler (« Signaler là où je suis », appui long sur mobile ou clic sur ordinateur puis « Signaler ici ») ; pour envoyer un signalement il faut un compte, créé avec une adresse email et un code reçu par email, sans mot de passe ; pourquoi, en une ligne (crédibilité et responsabilité des signalements, possibilité d'être recontacté pour un complément d'information — l'email n'est jamais affiché publiquement, cf. §2). Deux actions : « Voir la carte » (principale) et un lien vers `/login`. Pas de case à cocher : toute fermeture (bouton, lien, Échap, clic sur le fond) mémorise « vu » en `localStorage` (accès protégé, la page fonctionne sans). Un utilisateur déjà connecté ne la voit pas. Elle ne s'empile pas avec le bandeau d'installation (§7), retenu tant qu'elle est ouverte ou attendue. Rouvrable depuis la feuille « À propos » (« Comment ça marche ? »).
+- **Modale de première visite**, affichée uniquement sur la carte (`/`, jamais sur `/k/:id` — y compris quand le détail est ouvert en modale par-dessus la carte —, `/login`, `/new` ni les pages légales) à un visiteur non connecté qui ne l'a pas encore vue. Contenu court : à quoi sert le site ; comment signaler (« Signaler là où je suis », appui long sur mobile ou clic sur ordinateur puis « Signaler ici ») ; pour envoyer un signalement il faut un compte, créé avec une adresse email et un code reçu par email, sans mot de passe ; pourquoi, en une ligne (crédibilité et responsabilité des signalements, possibilité d'être recontacté pour un complément d'information — l'email n'est jamais affiché publiquement, cf. §2). Deux actions : « Voir la carte » (principale) et un lien vers `/login`. Pas de case à cocher : toute fermeture (bouton, lien, Échap, clic sur le fond) mémorise « vu » en `localStorage` (accès protégé, la page fonctionne sans). Un utilisateur déjà connecté ne la voit pas. Elle ne s'empile pas avec le bandeau d'installation (§7), retenu tant qu'elle est ouverte ou attendue. Rouvrable depuis la feuille « À propos » (« Comment ça marche ? »).
 - Mobile : bouton flottant **« Signaler ici »** (utilise la géoloc) + tap long sur la carte pour signaler à un point précis. Desktop : clic sur la carte → pin → « Signaler ici ».
 - Contrôles flottants façon maps.me, communs à la carte et à la création (§6.2) : bouton de type de carte (icône calques) en haut à gauche, filtres (icône entonnoir, avec pastille si des filtres sont actifs) juste en dessous, « À propos » (icône ⓘ) juste en dessous du bouton de filtres, profil (icône silhouette) en haut à droite, zoom (+/−) et « Ma position » (icône cible, géoloc — sur tous les appareils, pas seulement mobile) en colonne à droite. Le bouton « À propos » ouvre une feuille qui regroupe la réouverture de la modale de première visite (« Comment ça marche ? ») et les liens secondaires : export des données (§6.7), mentions légales et politique de confidentialité — ils ne sont plus affichés en permanence au bas de la carte. Pour les rôles `moderator`, `authority` et `admin`, un bouton « Administration » (icône bouclier) s'ajoute sous le bouton profil, avec en pastille le nombre de klashs « à trier » (§6.6) ; affiché sur tous les appareils, sauf quand la fenêtre fait moins de 400 px de haut (téléphone en paysage), où la colonne zoom/position le recouvrirait — le lien de `/me` reste alors disponible.
 
@@ -229,6 +229,7 @@ Hors v1 : file d'attente hors-ligne des signalements (Background Sync) — voir 
 - Commentaires chronologiques, formulaire pour les connectés. Édition/suppression de ses propres commentaires.
 - Actions contextuelles selon rôle : Modifier / Supprimer (auteur si `new`, moderator, admin) ; Changer le statut (authority, moderator selon §3) avec note ; Masquer un commentaire (moderator, admin).
 - Bouton de partage (Web Share API, fallback copie de lien). Balises Open Graph pour l'aperçu.
+- **Ouverture en modale (ordinateur)** : sur un appareil à pointeur fin, un clic sur un marqueur de la carte ouvre le détail dans une modale par-dessus la carte, qui reste montée (position, zoom et filtres conservés). L'URL est `/k/:id`, identique à celle de la page : elle reste partageable et atteignable directement. La modale se ferme par une croix, Échap, un clic sur le fond ou le bouton Précédent du navigateur, et revient à `/`. Échap ne ferme qu'une couche à la fois (visionneuse photo, puis modale). Dans tous les autres cas (lien direct ou partagé, nouvel onglet, mobile, accès depuis `/me`, `/admin` ou `/new`), c'est la page complète. Un rechargement avec la modale ouverte la rouvre, sur la carte en vue initiale.
 
 ### 6.4 Connexion (`/login`)
 

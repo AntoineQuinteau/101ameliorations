@@ -118,6 +118,7 @@ export const fr = {
     },
   },
   detail: {
+    dialogLabel: 'Détail du signalement',
     notFoundTitle: 'Signalement introuvable',
     notFoundBody: "Ce klash n'existe pas ou n'est plus visible.",
     loadError: 'Impossible de charger ce signalement.',

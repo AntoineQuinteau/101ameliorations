@@ -9,10 +9,9 @@ import { RequireCampaignManager } from './features/auth/RequireCampaignManager'
 import { RequireRole } from './features/auth/RequireRole'
 import { CampaignsPage } from './features/campaigns/CampaignsPage'
 import { ExportPage } from './features/export/ExportPage'
-import { KlashDetailPage } from './features/klash/KlashDetailPage'
 import { LegalNoticePage } from './features/legal/LegalNoticePage'
 import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage'
-import { MapPage } from './features/map/MapPage'
+import { MapRoute } from './features/map/MapRoute'
 import { MePage } from './features/me/MePage'
 import { NewKlashPage } from './features/newKlash/NewKlashPage'
 import { ADMIN_ROLES } from './lib/klashPermissions'
@@ -23,8 +22,7 @@ export const router = createBrowserRouter([
     element: <App />,
     errorElement: <AppErrorPage />,
     children: [
-      { index: true, element: <MapPage /> },
-      { path: 'k/:id', element: <KlashDetailPage /> },
+      { element: <MapRoute />, children: [{ index: true }, { path: 'k/:id' }] },
       { path: 'new', element: <NewKlashPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'export', element: <ExportPage /> },

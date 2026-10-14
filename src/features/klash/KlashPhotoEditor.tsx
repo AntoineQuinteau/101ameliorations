@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchKlashPhotos, klashPhotoPublicUrl } from '../../api/klashPhotos'
-import { klashKeys } from '../../api/queryKeys'
+import { klashPhotoPublicUrl } from '../../api/klashPhotos'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { Spinner } from '../../components/Spinner'
 import { MAX_PHOTOS_PER_KLASH } from '../../config/photos'
@@ -10,6 +9,7 @@ import { mapWithConcurrency } from '../../utils/mapWithConcurrency'
 import { compressPhoto } from '../../utils/photoCompression'
 import { useHasHover } from '../../hooks/useHasHover'
 import { PhotoSourceSheet } from '../newKlash/PhotoSourceSheet'
+import { klashPhotosQuery } from './klashPhotosQuery'
 import { useAddKlashPhotos, useDeleteKlashPhoto } from './useKlashPhotoMutations'
 import { X } from 'lucide-react'
 
@@ -31,15 +31,7 @@ export function KlashPhotoEditor({ klashId }: { klashId: string }) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
-  const {
-    data: photos = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery({
-    queryKey: klashKeys.photos(klashId),
-    queryFn: () => fetchKlashPhotos(klashId),
-  })
+  const { data: photos = [], isLoading, isError, refetch } = useQuery(klashPhotosQuery(klashId))
 
   const addPhotos = useAddKlashPhotos(klashId)
   const deletePhoto = useDeleteKlashPhoto(klashId)
