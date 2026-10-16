@@ -15,6 +15,12 @@ row_counts() {
 # rclone remotes are configured from the environment, never from a config
 # file, so no credential is ever written to disk.
 
+# No whole-operation retry: rclone would rerun a failed copy, find the file
+# already there and report success, as it did with the R2 error described in
+# install-tools.sh. Transient HTTP errors are still retried, request by
+# request (--low-level-retries, 10 by default).
+export RCLONE_RETRIES=1
+
 # r2: the backup bucket (Cloudflare R2, EU jurisdiction endpoint).
 use_r2_remote() {
   : "${R2_ACCOUNT_ID:?}" "${R2_ACCESS_KEY_ID:?}" "${R2_SECRET_ACCESS_KEY:?}"

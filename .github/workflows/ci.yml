@@ -328,7 +328,7 @@ jobs:
             echo "No pending migration: no pre-migration backup."
             exit 0
           fi
-          sudo apt-get update -qq && sudo apt-get install -y -qq age rclone
+          scripts/backup/install-tools.sh
           scripts/backup/dump.sh "$SUPABASE_DB_URL" "$RUNNER_TEMP/dump"
           scripts/backup/upload.sh "$RUNNER_TEMP/dump" db/pre-migration
       - name: supabase db push (production)

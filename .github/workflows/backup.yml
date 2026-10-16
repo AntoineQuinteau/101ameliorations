@@ -45,6 +45,10 @@ jobs:
       - name: Put the pinned Supabase CLI on PATH
         run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - run: shellcheck -x scripts/backup/*.sh
+      # Not needed by the round trip itself: checks that the pinned rclone
+      # download and its checksum still work before production relies on it.
+      - name: Install age and rclone
+        run: scripts/backup/install-tools.sh
       # The seeded local database stands in for production: same dump, same
       # restore into an empty stack, same checks as the nightly job — only
       # the upload and the photos, which need the production secrets, are
@@ -89,7 +93,7 @@ jobs:
       - name: Put the pinned Supabase CLI on PATH
         run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
       - name: Install age and rclone
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq age rclone
+        run: scripts/backup/install-tools.sh
       - name: Dump the database
         env:
           # Session pooler connection string — see ci.yml, migrate-staging.
