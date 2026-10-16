@@ -7,6 +7,10 @@ function makeKlash(overrides: Partial<ExportKlash> = {}): ExportKlash {
     id: 'k1',
     lat: 43.49,
     lng: -1.47,
+    inseeCode: '64102',
+    communeName: 'Bayonne',
+    epciSiren: '200067106',
+    epciName: 'CA du Pays Basque',
     category: 'category_1',
     importance: 'medium',
     status: 'new',
@@ -31,7 +35,7 @@ describe('toCsv', () => {
   it('writes a snake_case header even with no rows', () => {
     const csv = toCsv([])
     expect(csv.slice(1)).toBe(
-      'id,lat,lng,category,importance,status,title,description,duplicate_of,confirmations_count,comments_count,created_at,updated_at,resolved_at',
+      'id,lat,lng,insee_code,commune,epci_siren,epci,category,importance,status,title,description,duplicate_of,confirmations_count,comments_count,created_at,updated_at,resolved_at',
     )
   })
 
@@ -59,7 +63,31 @@ describe('toCsv', () => {
   it('renders null as an empty field', () => {
     const csv = toCsv([makeKlash({ description: null })])
     const [, dataLine] = csv.split('\r\n')
-    expect(dataLine.split(',')[7]).toBe('')
+    expect(dataLine.split(',')[11]).toBe('')
+  })
+
+  it('writes the administrative area right after the coordinates', () => {
+    const [, dataLine] = toCsv([makeKlash()]).split('\r\n')
+    expect(dataLine.split(',').slice(1, 7)).toEqual([
+      '43.49',
+      '-1.47',
+      '64102',
+      'Bayonne',
+      '200067106',
+      'CA du Pays Basque',
+    ])
+  })
+
+  it('keeps a leading zero in the INSEE code (an Ardèche or Ain commune)', () => {
+    const [, dataLine] = toCsv([makeKlash({ inseeCode: '01001' })]).split('\r\n')
+    expect(dataLine.split(',')[3]).toBe('01001')
+  })
+
+  it('renders a klash outside every commune with empty area fields', () => {
+    const [, dataLine] = toCsv([
+      makeKlash({ inseeCode: null, communeName: null, epciSiren: null, epciName: null }),
+    ]).split('\r\n')
+    expect(dataLine.split(',').slice(3, 7)).toEqual(['', '', '', ''])
   })
 
   it('separates rows with CRLF', () => {
