@@ -40,6 +40,23 @@ export function campaignLinkFromRow(row: unknown): CampaignLink {
   }
 }
 
+/** An emitter. `label` is null for the historical ones, whose French label
+ * lives in src/i18n/fr.ts. */
+export interface CampaignSource {
+  source: string
+  label: string | null
+}
+
+const campaignSourceRowSchema = z.object({
+  source: z.string(),
+  label: z.string().nullable(),
+})
+
+export function campaignSourceFromRow(row: unknown): CampaignSource {
+  const r = campaignSourceRowSchema.parse(row)
+  return { source: r.source, label: r.label }
+}
+
 /** One row of campaign_stats(). `slug` is null for attributions that match no
  * link (direct, referral, an unknown campaign): they still count in the
  * per-source / per-campaign summary. `campaign` and `content` are '' when
@@ -56,6 +73,7 @@ export interface CampaignStat {
   scans: number
   signups: number
   installs: number
+  klashes: number
 }
 
 const campaignStatRowSchema = z.object({
@@ -70,6 +88,7 @@ const campaignStatRowSchema = z.object({
   scans: z.number(),
   signups: z.number(),
   installs: z.number(),
+  klashes: z.number(),
 })
 
 export function campaignStatFromRow(row: unknown): CampaignStat {
@@ -86,6 +105,7 @@ export function campaignStatFromRow(row: unknown): CampaignStat {
     scans: r.scans,
     signups: r.signups,
     installs: r.installs,
+    klashes: r.klashes,
   }
 }
 

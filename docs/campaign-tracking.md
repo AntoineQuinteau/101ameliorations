@@ -1,6 +1,6 @@
 # Suivi des campagnes et attribution
 
-101améliorations est diffusée par plusieurs canaux (l'association, la presse, la CPAM).
+101améliorations est diffusée par plusieurs canaux (Txirrind'Ola, la presse, la CPAM).
 Ce document décrit comment on sait par quel canal arrive un visiteur, comment créer un
 lien de campagne, et quelles données sont stockées (utile pour la politique de
 confidentialité, déjà à jour dans `src/i18n/fr.ts`).
@@ -17,29 +17,50 @@ confidentialité, déjà à jour dans `src/i18n/fr.ts`).
 Toutes les valeurs : minuscules, sans accents, sans espaces, mots séparés par des
 tirets (`^[a-z0-9]+(-[a-z0-9]+)*$`, 64 caractères au plus). La règle est vérifiée **en
 base** (`is_campaign_token()`), jamais seulement dans le navigateur. Dans la page
-d'administration on ne saisit jamais de `utm_*` : les champs « précision » et « nom de
+Campagnes on ne saisit jamais de `utm_*` : les champs « précision » et « nom de
 campagne » sont du texte libre, normalisé automatiquement.
 
-Ajouter un émetteur (une nouvelle source) demande une migration
-(`insert into campaign_sources`) et son libellé dans `fr.campaigns.source`.
+Un émetteur (une source) se crée directement dans le formulaire « Créer un lien »,
+sans migration ni déploiement : voir ci-dessous. Les noms `direct` et `referral` sont
+réservés (ce sont les sources de l'attribution sans lien) et refusés.
+
+La clé d'un émetteur (ex. `office-tourisme`) est définitive dès qu'un lien l'utilise :
+la base interdit de la modifier, même par migration. Seul son **libellé** (ce que
+l'on voit dans les listes) peut se corriger, par une migration
+(`update campaign_sources set label = …`).
 
 ## Créer une campagne et un lien
 
 Réservé aux comptes qui ont le droit « Peut créer et suivre les liens de campagne »
 (`profiles.can_manage_campaigns`) et aux administrateurs. Ce droit est distinct des
 rôles : un administrateur le donne dans **Administration → Rôles** (recherche par email,
-case à cocher). Il se cumule avec n'importe quel rôle ; un compte qui n'a que ce droit ne
-voit que l'onglet Campagnes.
+case à cocher). Il se cumule avec n'importe quel rôle, et il est indépendant de
+l'administration : un compte qui n'a que ce droit n'accède pas à `/admin`, un modérateur
+qui ne l'a pas n'accède pas aux campagnes.
 
-1. **Administration → Campagnes → Créer un lien.**
+La page s'ouvre depuis **Mon espace → Gérer les campagnes** (`/campaigns`). Elle a deux
+onglets : **Liens** (créer, retrouver, copier) et **Résultats** (les chiffres).
+
+1. **Onglet Liens → Créer un lien.**
 2. Choisir l'émetteur, le type de support et saisir la précision (ex. « papillon vélo »).
+   Pour un nouvel émetteur, choisir « Nouvel émetteur… » en bas de la liste et saisir son
+   nom (ex. « Office de tourisme ») : l'identifiant qui en découle (`office-de-tourisme`)
+   s'affiche et apparaîtra dans l'adresse courte. Si le nom correspond à un émetteur
+   existant (« Association » → `txdo`), celui-ci est utilisé. L'émetteur n'est créé qu'à
+   l'étape 4, après une confirmation.
 3. Campagne : en choisir une existante, ou « Nouvelle campagne… » (nom + mois, ex.
    « lancement » + octobre 2026 → `lancement-2026-10`).
 4. **Créer le lien.** L'écran affiche l'adresse courte (`https://101ameliorations.org/r/<slug>`)
-   à copier et le QR code, téléchargeable en SVG (impression) et en PNG haute résolution.
-   Le QR encode l'adresse **courte** : la destination peut changer sans réimprimer.
+   à copier et le QR code : image à copier, ou à télécharger en SVG (impression) et en PNG
+   haute résolution. Le QR encode l'adresse **courte** : la destination peut changer sans
+   réimprimer.
 5. Taille d'impression : au moins 2 cm de côté pour un papillon ; pour une affiche,
    environ un dixième de la distance de lecture.
+
+Pour retrouver un lien plus tard : l'onglet Liens liste les liens actifs (filtres par
+campagne et par émetteur ; case « Afficher les liens désactivés »). Sur chaque ligne,
+**Copier le lien**, **QR code** (se déplie sous la ligne, un seul à la fois pour ne pas
+scanner le mauvais) et **Modifier** (destination, désactiver / réactiver).
 
 Le slug est généré (`source` + premier mot de la précision, sinon précision complète,
 sinon suffixe `-2`, `-3`…), unique, immuable et jamais réutilisé. **Un lien ne se
@@ -71,9 +92,11 @@ l'officielle : n'imprimez que des QR créés depuis `101ameliorations.org`.
    Sur iOS le stockage de l'app installée est séparé de celui de Safari : le Worker sert
    un manifest dont le `start_url` embarque l'attribution validée, restaurée uniquement
    si le stockage de l'app est vide.
-5. Onglet Campagnes : scans → inscriptions → installations et taux de conversion, par
-   lien, par émetteur et par campagne, attribués au premier ou au dernier contact.
-   Une inscription compte quand l'email est confirmé.
+5. Onglet Résultats : scans → inscriptions → installations → klashs, taux de conversion et
+   klashs par inscription, par lien, par émetteur et par campagne, attribués au premier ou
+   au dernier contact. Une inscription compte quand l'email est confirmé. Les klashs sont
+   ceux des comptes venus du canal, hors rejetés et doublons ; à la suppression d'un compte,
+   ses klashs passent au profil anonyme et sortent du compteur avec l'inscription.
 
 ## Données stockées et où
 

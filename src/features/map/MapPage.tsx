@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { MapContainer } from 'react-leaflet'
 import type L from 'leaflet'
 import { AboutSheet } from './AboutSheet'
@@ -10,7 +11,7 @@ import { ClusteredKlashMarkers } from './ClusteredKlashMarkers'
 import { DesktopFiltersCard } from './DesktopFiltersCard'
 import { DraftInProgressChip } from './DraftInProgressChip'
 import { filtersFromSearchParams, filtersToSearchParams } from './filterParams'
-import { applyFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
+import { applyFilters, defaultFilters, isDefaultFilters, type KlashFilters } from './klashFilters'
 import { KlashPreviewCard } from './KlashPreviewCard'
 import { MapClickToReport } from './MapClickToReport'
 import { MapControlButton } from './MapControlButton'
@@ -37,16 +38,19 @@ import {
 import { useServiceArea } from '../../config/useServiceArea'
 import { fr } from '../../i18n/fr'
 import type { Klash } from '../../types/klash'
-import type { Bbox } from '../../utils/bbox'
+import { isPointInBbox, type Bbox } from '../../utils/bbox'
 import { requestCurrentPosition, type GeolocationResult } from '../../utils/geolocation'
 import { hasStoredDraft } from '../newKlash/draftStorage'
 import type { AppOutletContext } from '../../App'
 import { useAuth } from '../auth/useAuth'
+import { KLASH_OVERLAY_STATE } from '../klash/klashOverlay'
+import { klashPhotosQuery } from '../klash/klashPhotosQuery'
 import { WelcomeDialog } from '../welcome/WelcomeDialog'
 import { readWelcomeSeen, shouldAutoShowWelcome, writeWelcomeSeen } from '../welcome/welcomeStorage'
 
-export function MapPage() {
+export function MapPage({ isKlashOverlayOpen }: { isKlashOverlayOpen: boolean }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const hasHover = useHasHover()
   const [searchParams, setSearchParams] = useSearchParams()
   const [viewportBbox, setViewportBbox] = useState<Bbox | null>(null)
@@ -55,6 +59,8 @@ export function MapPage() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const aboutButtonRef = useRef<HTMLButtonElement>(null)
+  const filtersButtonRef = useRef<HTMLButtonElement>(null)
+  const refocusFiltersButton = useRef(false)
   const { user, isInitializing } = useAuth()
   const { setInstallPromptSuppressed } = useOutletContext<AppOutletContext>()
   const [welcomeSeen, setWelcomeSeen] = useState(readWelcomeSeen)
@@ -78,13 +84,14 @@ export function MapPage() {
   // visitor who hasn't seen it. A signed-in user never needs it, so it counts
   // as seen for them (it would otherwise pop up after a later sign-out).
   useEffect(() => {
+    if (isKlashOverlayOpen) return
     if (shouldAutoShowWelcome({ seen: welcomeSeen, isInitializing, isSignedIn: user !== null })) {
       setIsWelcomeOpen(true)
     } else if (!welcomeSeen && !isInitializing && user) {
       writeWelcomeSeen()
       setWelcomeSeen(true)
     }
-  }, [welcomeSeen, isInitializing, user])
+  }, [welcomeSeen, isInitializing, user, isKlashOverlayOpen])
 
   // The install banner waits while the dialog is open or still due (including
   // while auth initializes), so the two never stack or flash in sequence.
@@ -120,6 +127,21 @@ export function MapPage() {
 
   const visibleKlashes = useMemo(() => applyFilters(klashes, filters), [klashes, filters])
 
+  // `klashes` covers a padded viewport (see useKlashesInBbox), so what the
+  // user is told about — the results count, and whether the filters are
+  // hiding everything — is narrowed to what is actually on screen.
+  const klashesInView = useMemo(
+    () =>
+      viewportBbox
+        ? klashes.filter((klash) => isPointInBbox(klash.lat, klash.lng, viewportBbox))
+        : [],
+    [klashes, viewportBbox],
+  )
+  const resultsCount = useMemo(
+    () => applyFilters(klashesInView, filters).length,
+    [klashesInView, filters],
+  )
+
   // Applies live and writes the URL on every change, so a shared link
   // reopens the same view (spec §6.1). `replace: true` avoids stacking a
   // browser history entry per chip toggle — only the map's own navigations
@@ -148,6 +170,22 @@ export function MapPage() {
     setIsFiltersOpen((open) => !open)
   }
 
+  // Closing the filters panel from inside it (close button, Escape, the
+  // mobile sheet's main button) puts focus back on the filters button. On
+  // mobile that button is unmounted while the sheet is open (see
+  // `showFloatingControls`), so focus can only go back to it once it has
+  // rendered again — hence an effect rather than a call right after closing,
+  // as `AboutSheet` does with its always-mounted button.
+  function closeFilters() {
+    refocusFiltersButton.current = true
+    setIsFiltersOpen(false)
+  }
+  useEffect(() => {
+    if (isFiltersOpen || !refocusFiltersButton.current) return
+    refocusFiltersButton.current = false
+    filtersButtonRef.current?.focus()
+  }, [isFiltersOpen])
+
   function toggleAbout() {
     if (isAboutOpen) {
       closeAbout()
@@ -159,14 +197,25 @@ export function MapPage() {
     setIsAboutOpen(true)
   }
 
+  // Desktop hover preview. Also warms the klash's photos: a click usually
+  // follows, and the detail modal then opens with its gallery already in
+  // place instead of having it push the rest of the content down a moment
+  // later. One small read per hovered klash, cached like any other query.
+  function handleMarkerHover(klash: Klash | null) {
+    setSelectedKlash(klash)
+    if (klash) void queryClient.prefetchQuery(klashPhotosQuery(klash.id))
+  }
+
   function handleMarkerSelect(klash: Klash) {
     if (isAboutOpen) closeAbout()
     // On a fine-pointer device, hover already previews the klash (see
-    // onHover below) — a click there goes straight to the detail page,
-    // skipping the extra "voir le détail" tap that only makes sense as a
-    // second step on touch, where there's no hover to preview with first.
+    // onHover below) — a click there goes straight to the detail, opened in
+    // a modal over this still-mounted map (spec §6.3), skipping the extra
+    // "voir le détail" tap that only makes sense as a second step on touch,
+    // where there's no hover to preview with first.
     if (hasHover) {
-      navigate(`/k/${klash.id}`)
+      setSelectedKlash(null)
+      navigate(`/k/${klash.id}`, { state: KLASH_OVERLAY_STATE })
     } else {
       setSelectedKlash(klash)
     }
@@ -193,6 +242,10 @@ export function MapPage() {
   // have left the map meanwhile (a klash's detail page, the profile button):
   // navigating to /new once it lands would pull them off wherever they went.
   const isMountedRef = useRef(false)
+  const isKlashOverlayOpenRef = useRef(isKlashOverlayOpen)
+  useEffect(() => {
+    isKlashOverlayOpenRef.current = isKlashOverlayOpen
+  }, [isKlashOverlayOpen])
   useEffect(() => {
     isMountedRef.current = true
     return () => {
@@ -203,11 +256,11 @@ export function MapPage() {
   function handleReportHereButton() {
     requestCurrentPosition({ enableHighAccuracy: true, timeout: 5_000 }).then(
       (result) => {
-        if (!isMountedRef.current) return
+        if (!isMountedRef.current || isKlashOverlayOpenRef.current) return
         goToNewKlash(result.lat, result.lng, result.accuracyM)
       },
       () => {
-        if (!isMountedRef.current) return
+        if (!isMountedRef.current || isKlashOverlayOpenRef.current) return
         // No geolocation API, permission denied, or timed out — all fall
         // back the same way, to the centre of what's currently on screen.
         const center = viewportCenter()
@@ -222,10 +275,16 @@ export function MapPage() {
   // isFiltersOpen; on mobile the filters sheet takes over the whole screen,
   // so they hide while it's open.
   const showFloatingControls = hasHover || !isFiltersOpen
+  // The desktop filters card is open: the bottom sheets shift out from under
+  // it where the window is narrow enough for them to meet (see BottomSheet).
+  const isDesktopFiltersCardOpen = hasHover && isFiltersOpen
   const filtersActive = !isDefaultFilters(filters)
+  // Only when resetting would bring something back: an area with no klash
+  // at all is empty whatever the filters.
+  const filtersHideEverything = filtersActive && klashesInView.length > 0 && resultsCount === 0
 
   return (
-    <div className="relative h-dvh w-full">
+    <div className="relative h-dvh w-full" inert={isKlashOverlayOpen}>
       <MapContainer
         ref={setMap}
         center={INITIAL_MAP_CENTER}
@@ -247,7 +306,7 @@ export function MapPage() {
         <ClusteredKlashMarkers
           klashes={visibleKlashes}
           onSelect={handleMarkerSelect}
-          onHover={hasHover ? setSelectedKlash : undefined}
+          onHover={hasHover ? handleMarkerHover : undefined}
         />
         <MapClickToReport
           onPick={(lat, lng) => {
@@ -279,6 +338,7 @@ export function MapPage() {
           would never reach screen readers. */}
       {showFloatingControls && (
         <MapControlButton
+          ref={filtersButtonRef}
           label={filtersActive ? fr.map.filters.openActive : fr.map.filters.open}
           onClick={toggleFilters}
           pressed={isFiltersOpen}
@@ -332,6 +392,7 @@ export function MapPage() {
         <PinConfirmCard
           onConfirm={() => goToNewKlash(pendingPin.lat, pendingPin.lng)}
           onCancel={() => setPendingPin(null)}
+          clearOfFiltersCard={isDesktopFiltersCardOpen}
         />
       )}
 
@@ -357,20 +418,43 @@ export function MapPage() {
         </div>
       )}
 
+      {/* Without this, a map emptied by its filters only says so through the
+          dot on the filters button. Same band and side margins as the error
+          card above, and never shown with it. Hidden while a filters panel
+          is open: that panel has its own count and reset button. */}
+      {filtersHideEverything && !isError && !isFiltersOpen && !isAboutOpen && (
+        <div className="pointer-events-none absolute inset-x-0 top-44 z-[1000] px-16 py-3">
+          <div
+            role="status"
+            className="pointer-events-auto mx-auto flex w-fit max-w-md flex-wrap items-center justify-center gap-x-2 rounded-xl bg-white px-4 py-1 text-sm text-neutral-700 shadow-lg ring-1 ring-black/5"
+          >
+            <span className="py-1">{fr.map.filters.emptyWithFilters}</span>
+            <button
+              type="button"
+              onClick={() => updateFilters(defaultFilters)}
+              className="inline-flex min-h-11 items-center rounded-md px-1 font-medium text-teal-700 hover:text-teal-800 hover:underline"
+            >
+              {fr.map.filters.reset}
+            </button>
+          </div>
+        </div>
+      )}
+
       {hasHover ? (
         <DesktopFiltersCard
           isOpen={isFiltersOpen}
           filters={filters}
-          resultsCount={visibleKlashes.length}
+          resultsCount={resultsCount}
           onChange={updateFilters}
+          onClose={closeFilters}
         />
       ) : (
         isFiltersOpen && (
           <MobileFiltersSheet
             filters={filters}
-            resultsCount={visibleKlashes.length}
+            resultsCount={resultsCount}
             onChange={updateFilters}
-            onClose={() => setIsFiltersOpen(false)}
+            onClose={closeFilters}
           />
         )
       )}
@@ -390,11 +474,15 @@ export function MapPage() {
         />
       )}
 
-      {!isFiltersOpen && !isAboutOpen && selectedKlash && (
+      {/* `showFloatingControls`, not `!isFiltersOpen`: only the mobile filters
+          sheet covers the screen. The desktop card is a corner overlay, and
+          hovering the markers a filter left is what it is kept open for. */}
+      {showFloatingControls && !isAboutOpen && !isKlashOverlayOpen && selectedKlash && (
         <KlashPreviewCard
           klash={selectedKlash}
           onClose={() => setSelectedKlash(null)}
           interactive={!hasHover}
+          clearOfFiltersCard={isDesktopFiltersCardOpen}
         />
       )}
     </div>

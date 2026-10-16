@@ -19,20 +19,20 @@ Convention : toute la spec est en français, **tout le code, le schéma, les ide
 
 Un utilisateur = un email vérifié. Pas de mot de passe (OTP par email). Les rôles sont stockés dans `profiles.role` et attribués par un admin. Pas de compte partagé : chaque membre de l'asso a son propre compte, un admin lui donne le rôle `moderator`. C'est plus simple qu'un compte partagé (rien à partager puisqu'il n'y a pas de mot de passe) et traçable.
 
-| Action                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
-| --------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
-| Voir carte, klashs, photos, commentaires                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
-| Créer un klash, ajouter des photos                                          |            | ✓          | ✓                  | ✓                   | ✓       |
-| Confirmer (+1) un klash                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
-| Commenter                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer **son** klash, ses photos, ses commentaires            |            | ✓          | ✓                  | ✓                   | ✓       |
-| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire |            |            | ✓                  |                     | ✓       |
-| Statuts de tri : `rejected`, `duplicate`, retour à `new`                    |            |            | ✓                  |                     | ✓       |
-| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`           |            |            |                    | ✓                   | ✓       |
-| Voir l'email de l'auteur d'un klash (pour le recontacter)                   |            |            | ✓                  | ✓                   | ✓       |
-| Export CSV / GeoJSON                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
-| Gérer les rôles                                                             |            |            |                    |                     | ✓       |
-| Créer / désactiver des liens de campagne, voir leurs statistiques (§6.8)    |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
+| Action                                                                                      | anonyme    | `user`     | `moderator` (asso) | `authority` (agglo) | `admin` |
+| ------------------------------------------------------------------------------------------- | ---------- | ---------- | ------------------ | ------------------- | ------- |
+| Voir carte, klashs, photos, commentaires                                                    | ✓          | ✓          | ✓                  | ✓                   | ✓       |
+| Créer un klash, ajouter des photos                                                          |            | ✓          | ✓                  | ✓                   | ✓       |
+| Confirmer (+1) un klash                                                                     |            | ✓          | ✓                  | ✓                   | ✓       |
+| Commenter                                                                                   |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer **son** klash, ses photos, ses commentaires                            |            | ✓          | ✓                  | ✓                   | ✓       |
+| Modifier / supprimer / masquer **n'importe quel** klash, photo, commentaire                 |            |            | ✓                  |                     | ✓       |
+| Statuts de tri : `rejected`, `duplicate`, retour à `new`                                    |            |            | ✓                  |                     | ✓       |
+| Statuts de traitement : `acknowledged`, `in_progress`, `resolved`                           |            |            |                    | ✓                   | ✓       |
+| Voir l'email de l'auteur d'un klash (pour le recontacter)                                   |            |            | ✓                  | ✓                   | ✓       |
+| Export CSV / GeoJSON                                                                        | ✓ (public) | ✓          | ✓                  | ✓                   | ✓       |
+| Gérer les rôles                                                                             |            |            |                    |                     | ✓       |
+| Créer un émetteur, créer / désactiver des liens de campagne, voir leurs statistiques (§6.8) |            | (drapeau)¹ | (drapeau)¹         | (drapeau)¹          | ✓       |
 
 ¹ Droit séparé `profiles.can_manage_campaigns`, attribué par un `admin` et cumulable avec n'importe quel rôle.
 
@@ -145,7 +145,7 @@ create table status_changes (
 );
 ```
 
-Suivi des campagnes (§6.8), migration `20261009090000_campaign_links.sql` : `profiles.can_manage_campaigns` (booléen, modifiable par un `admin` seulement, comme `role`), tables `campaign_sources`, `campaign_links` (slug, source, medium, campaign, content, destination, is_active ; seuls `destination` et `is_active` sont modifiables, jamais de suppression) et `campaign_link_scans` (slug + horodatage, aucune donnée personnelle, aucun accès client). Les valeurs source/campaign/content respectent la convention `^[a-z0-9]+(-[a-z0-9]+)*$` (≤ 64), vérifiée en base par `is_campaign_token()`. Création par la RPC `create_campaign_link()` ; résolution publique par `resolve_campaign_link(slug, count)`.
+Suivi des campagnes (§6.8), migration `20261009090000_campaign_links.sql` : `profiles.can_manage_campaigns` (booléen, modifiable par un `admin` seulement, comme `role`), tables `campaign_sources`, `campaign_links` (slug, source, medium, campaign, content, destination, is_active ; seuls `destination` et `is_active` sont modifiables, jamais de suppression) et `campaign_link_scans` (slug + horodatage, aucune donnée personnelle, aucun accès client). Les valeurs source/campaign/content respectent la convention `^[a-z0-9]+(-[a-z0-9]+)*$` (≤ 64), vérifiée en base par `is_campaign_token()`. Création par la RPC `create_campaign_link()` ; résolution publique par `resolve_campaign_link(slug, count)`. Migration `20261013090000_campaign_source_creation.sql` : `campaign_sources.label` (libellé saisi, null pour les émetteurs historiques dont le libellé reste dans `fr.ts`), clés réservées `direct` et `referral` (refusées par contrainte : ce sont les sources synthétiques de l'attribution) et RPC `create_campaign_source(label)`, seul chemin d'écriture, qui normalise la clé à partir du libellé et renvoie l'émetteur existant si la clé est déjà prise (libellé inchangé). La clé d'un émetteur utilisé par un lien est définitive (`guard_campaign_links`) ; seul le libellé peut être corrigé, par migration.
 
 Triggers et fonctions :
 
@@ -184,16 +184,17 @@ Anti-abus :
 
 Une seule application responsive. Routes :
 
-| Route    | Contenu                                                                               |
-| -------- | ------------------------------------------------------------------------------------- |
-| `/`      | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile) |
-| `/k/:id` | Détail d'un klash                                                                     |
-| `/new`   | Création (feuille/modale par-dessus la carte)                                         |
-| `/login` | Saisie email → saisie du code OTP                                                     |
-| `/me`    | Mes klashs, mon pseudo                                                                |
-| `/admin` | Modération et traitement (rôles ≥ moderator)                                          |
+| Route        | Contenu                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| `/`          | Carte plein écran + liste (panneau latéral sur desktop, feuille glissante sur mobile)      |
+| `/k/:id`     | Détail d'un klash (page ; modale par-dessus la carte depuis la carte sur ordinateur, §6.3) |
+| `/new`       | Création (feuille/modale par-dessus la carte)                                              |
+| `/login`     | Saisie email → saisie du code OTP                                                          |
+| `/me`        | Mes klashs, mon pseudo                                                                     |
+| `/admin`     | Modération et traitement (rôles ≥ moderator)                                               |
+| `/campaigns` | Liens de campagne et leurs résultats (droit `can_manage_campaigns`, §6.8)                  |
 
-Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte.
+Les pages secondaires (détail, connexion, `/me`, `/admin`, `/campaigns`, export, mentions légales, confidentialité, 404) portent un lien « Retour » : il revient à la page précédente de l'app quand il y en a une, sinon (première page de l'onglet, ex. lien direct, y compris quand il a été redirigé vers `/login`) à la carte. Le détail ouvert en modale (§6.3) porte à la place un bouton de fermeture.
 
 ### 6.1 Carte (`/`)
 
@@ -201,8 +202,8 @@ Les pages secondaires (détail, connexion, `/me`, `/admin`, export, mentions lé
 - Couche satellite en alternative au plan (tuiles MapTiler `satellite-v2`), bascule directe via un bouton flottant icône (pas de modale de choix — un tap suffit pour deux couches), dernier choix mémorisé en local sur l'appareil.
 - Marqueurs colorés par importance, icône par catégorie, style atténué pour `resolved`. Clustering (`leaflet.markercluster`) au-delà de ~50 marqueurs visibles.
 - Chargement des klashs par bbox à chaque déplacement (debounce 300 ms), via `klashes_in_bbox`.
-- Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, par défaut tout sauf `rejected`/`duplicate`, et `resolved` masqués après 90 jours — toujours présents dans l'export), période. Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
-- **Modale de première visite**, affichée uniquement sur la carte (`/`, jamais sur `/k/:id`, `/login`, `/new` ni les pages légales) à un visiteur non connecté qui ne l'a pas encore vue. Contenu court : à quoi sert le site ; comment signaler (« Signaler à ma position », appui long sur mobile ou clic sur ordinateur puis « Signaler ici ») ; pour envoyer un signalement il faut un compte, créé avec une adresse email et un code reçu par email, sans mot de passe ; pourquoi, en une ligne (crédibilité et responsabilité des signalements, possibilité d'être recontacté pour un complément d'information — l'email n'est jamais affiché publiquement, cf. §2). Deux actions : « Voir la carte » (principale) et un lien vers `/login`. Pas de case à cocher : toute fermeture (bouton, lien, Échap, clic sur le fond) mémorise « vu » en `localStorage` (accès protégé, la page fonctionne sans). Un utilisateur déjà connecté ne la voit pas. Elle ne s'empile pas avec le bandeau d'installation (§7), retenu tant qu'elle est ouverte ou attendue. Rouvrable depuis la feuille « À propos » (« Comment ça marche ? »).
+- Filtres (panneau latéral desktop / feuille mobile) : catégorie (multi), importance (multi), statut (multi, parmi les statuts que la carte affiche : `new`, `acknowledged`, `in_progress`, `resolved`), période (7, 30 ou 90 derniers jours, fenêtre glissante). Dans chaque groupe, aucune sélection = tout afficher (c'est le défaut) ; sélectionner une ou plusieurs valeurs restreint la carte à celles-ci. Les klashs `rejected`/`duplicate` ne sont jamais sur la carte et les `resolved` en disparaissent après 90 jours — tous restent présents dans l'export. Les filtres s'appliquent en direct, avec le nombre de signalements de la zone visible ; « Réinitialiser » n'est actif que si un filtre l'est (sur mobile, en pied de feuille à côté du bouton principal « Voir les N signalements »). Quand les filtres masquent tous les klashs de la zone visible, la carte l'indique avec un bouton « Réinitialiser ». Tri : plus récent, plus confirmé. Case « uniquement la zone visible ». Filtres reflétés dans l'URL (partageables).
+- **Modale de première visite**, affichée uniquement sur la carte (`/`, jamais sur `/k/:id` — y compris quand le détail est ouvert en modale par-dessus la carte —, `/login`, `/new` ni les pages légales) à un visiteur non connecté qui ne l'a pas encore vue. Contenu court : à quoi sert le site ; comment signaler (« Signaler là où je suis », appui long sur mobile ou clic sur ordinateur puis « Signaler ici ») ; pour envoyer un signalement il faut un compte, créé avec une adresse email et un code reçu par email, sans mot de passe ; pourquoi, en une ligne (crédibilité et responsabilité des signalements, possibilité d'être recontacté pour un complément d'information — l'email n'est jamais affiché publiquement, cf. §2). Deux actions : « Voir la carte » (principale) et un lien vers `/login`. Pas de case à cocher : toute fermeture (bouton, lien, Échap, clic sur le fond) mémorise « vu » en `localStorage` (accès protégé, la page fonctionne sans). Un utilisateur déjà connecté ne la voit pas. Elle ne s'empile pas avec le bandeau d'installation (§7), retenu tant qu'elle est ouverte ou attendue. Rouvrable depuis la feuille « À propos » (« Comment ça marche ? »).
 - Mobile : bouton flottant **« Signaler ici »** (utilise la géoloc) + tap long sur la carte pour signaler à un point précis. Desktop : clic sur la carte → pin → « Signaler ici ».
 - Contrôles flottants façon maps.me, communs à la carte et à la création (§6.2) : bouton de type de carte (icône calques) en haut à gauche, filtres (icône entonnoir, avec pastille si des filtres sont actifs) juste en dessous, « À propos » (icône ⓘ) juste en dessous du bouton de filtres, profil (icône silhouette) en haut à droite, zoom (+/−) et « Ma position » (icône cible, géoloc — sur tous les appareils, pas seulement mobile) en colonne à droite. Le bouton « À propos » ouvre une feuille qui regroupe la réouverture de la modale de première visite (« Comment ça marche ? ») et les liens secondaires : export des données (§6.7), mentions légales et politique de confidentialité — ils ne sont plus affichés en permanence au bas de la carte. Pour les rôles `moderator`, `authority` et `admin`, un bouton « Administration » (icône bouclier) s'ajoute sous le bouton profil, avec en pastille le nombre de klashs « à trier » (§6.6) ; affiché sur tous les appareils, sauf quand la fenêtre fait moins de 400 px de haut (téléphone en paysage), où la colonne zoom/position le recouvrirait — le lien de `/me` reste alors disponible.
 
@@ -228,6 +229,7 @@ Hors v1 : file d'attente hors-ligne des signalements (Background Sync) — voir 
 - Commentaires chronologiques, formulaire pour les connectés. Édition/suppression de ses propres commentaires.
 - Actions contextuelles selon rôle : Modifier / Supprimer (auteur si `new`, moderator, admin) ; Changer le statut (authority, moderator selon §3) avec note ; Masquer un commentaire (moderator, admin).
 - Bouton de partage (Web Share API, fallback copie de lien). Balises Open Graph pour l'aperçu.
+- **Ouverture en modale (ordinateur)** : sur un appareil à pointeur fin, un clic sur un marqueur de la carte ouvre le détail dans une modale par-dessus la carte, qui reste montée (position, zoom et filtres conservés). L'URL est `/k/:id`, identique à celle de la page : elle reste partageable et atteignable directement. La modale se ferme par une croix, Échap, un clic sur le fond ou le bouton Précédent du navigateur, et revient à `/`. Échap ne ferme qu'une couche à la fois (visionneuse photo, puis modale). Dans tous les autres cas (lien direct ou partagé, nouvel onglet, mobile, accès depuis `/me`, `/admin` ou `/new`), c'est la page complète. Un rechargement avec la modale ouverte la rouvre, sur la carte en vue initiale.
 
 ### 6.4 Connexion (`/login`)
 
@@ -252,15 +254,21 @@ Points d'entrée (rôles ≥ moderator uniquement, jamais affichés aux autres) 
 
 ### 6.8 Liens de campagne (`/r/:slug`)
 
-Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Création, QR codes et statistiques : onglet « Campagnes » de `/admin`, réservé à `can_manage_campaigns`. Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
+Lien court `https://101ameliorations.org/r/<slug>` : redirection 302 (`Cache-Control: no-store`) vers la destination du lien (chemin interne, `/` par défaut) avec `utm_source`, `utm_medium`, `utm_campaign` et `utm_content` (omis s'il est vide). Slug inconnu ou lien désactivé : redirection vers `/` sans paramètres. Chaque passage est enregistré (slug + horodatage). Convention de nommage et données stockées : `docs/campaign-tracking.md`. Côté client, `src/features/attribution/` lit les `utm_*` à l'arrivée, mémorise `first_touch` (écrit une seule fois) et `last_touch`, puis nettoie l'URL ; l'attribution est transmise à l'inscription et stockée dans la table privée `profile_attributions` (immuable, jamais lisible par les clients), les installations dans `install_events`. Mesure des visites : Umami (§8).
+
+Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin`) et indépendante de `/admin` — un gestionnaire de campagnes sans rôle de modération n'accède pas à `/admin`, un modérateur sans le droit n'accède pas à `/campaigns`. Point d'entrée : un lien « Gérer les campagnes » dans `/me`, à côté de « Accéder à l'administration », chacun affiché selon son propre droit ; pas de raccourci sur la carte. Deux onglets (`?tab=results` pour le second) :
+
+- **Liens** : bouton « Créer un lien » (formulaire replié par défaut ; l'émetteur se choisit dans la liste ou se crée avec « Nouvel émetteur… » : nom libre, aperçu de l'identifiant, confirmation avant la création, effectuée au moment de « Créer le lien »), puis la liste des liens actifs, filtrable par campagne et par émetteur ; les liens désactivés s'affichent sur demande. Chaque lien montre son adresse courte, sa description, son nombre de scans et trois actions : copier le lien, QR code, modifier (destination, activer / désactiver). Le QR code (copie de l'image, SVG, PNG haute résolution) se déplie sous son lien, un seul à la fois dans toute la page, pour qu'un téléphone ne puisse pas scanner le mauvais. Chaque panneau déplié (QR code, modification) porte son propre bouton « Fermer ».
+- **Résultats** (lecture seule) : scans → inscriptions → installations → klashs (signalements des comptes venus du canal, hors rejetés et doublons) et taux de conversion, avec le nombre de klashs par inscription, en tableaux par émetteur, par campagne et par lien, attribués au premier ou au dernier contact.
 
 ### 6.7 Export
 
-Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte).
+Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et, sur desktop uniquement, depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte). La feuille de filtres mobile ne porte pas ce lien : « À propos » y suffit.
 
 ## 7. PWA
 
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
+- Mise à jour sans rechargement imposé : la nouvelle version s'installe en arrière-plan et prend effet au prochain changement de page dans l'app (sauf ouverture ou fermeture de la fiche en modale sur la carte, qui garde la carte montée) ou au prochain chargement. L'app vérifie aussi s'il existe une mise à jour quand elle revient au premier plan.
 - Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
 - `start_url` = `/?launch=pwa` (le paramètre `launch` ne modifie jamais l'attribution). Les routes `/r/*` ne passent jamais par le cache du service worker, dont la correspondance ignore les paramètres d'URL. Une installation est comptée via `appinstalled`, et sur iOS au premier lancement en mode standalone. Sur iOS, le stockage de l'app installée étant séparé de celui de Safari, le Worker sert `/ios-manifest.webmanifest` dont le `start_url` embarque l'attribution (valeurs validées), restaurée seulement dans un stockage vide.

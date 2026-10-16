@@ -70,7 +70,7 @@ export const fr = {
           ? '1 confirmation'
           : `${count} confirmations`,
     reportHere: 'Signaler ici',
-    reportWhereIAm: 'Signaler à ma position',
+    reportWhereIAm: 'Signaler là où je suis',
     draftInProgress: 'Déclaration en cours — reprendre',
     longPressHint: 'Astuce : maintenez appuyé sur la carte pour signaler à un point précis.',
     resultsCount: (count: number) =>
@@ -90,13 +90,26 @@ export const fr = {
       categoryLabel: 'Catégorie',
       importanceLabel: 'Importance',
       statusLabel: 'Statut',
+      // Shown next to a group's label while none of its chips is selected:
+      // an empty selection shows everything, not nothing.
+      anyCategory: 'Toutes',
+      anyImportance: 'Toutes',
+      anyStatus: 'Tous',
       periodLabel: 'Période',
       periodAny: 'Toute période',
-      periodLast7Days: '7 derniers jours',
-      periodLast30Days: '30 derniers jours',
-      periodLast90Days: '90 derniers jours',
+      period: {
+        '7d': '7 derniers jours',
+        '30d': '30 derniers jours',
+        '90d': '90 derniers jours',
+      },
       reset: 'Réinitialiser',
-      viewOnMap: 'Voir sur la carte',
+      viewResults: (count: number) =>
+        count === 0
+          ? 'Voir la carte'
+          : count === 1
+            ? 'Voir le signalement'
+            : `Voir les ${count} signalements`,
+      emptyWithFilters: 'Aucun signalement avec ces filtres',
       exportLink: 'Télécharger toutes les données',
     },
     layer: {
@@ -118,6 +131,7 @@ export const fr = {
     },
   },
   detail: {
+    dialogLabel: 'Détail du signalement',
     notFoundTitle: 'Signalement introuvable',
     notFoundBody: "Ce klash n'existe pas ou n'est plus visible.",
     loadError: 'Impossible de charger ce signalement.',
@@ -266,6 +280,7 @@ export const fr = {
     loadError: 'Impossible de charger vos signalements.',
     roleLabel: 'Rôle',
     adminLink: "Accéder à l'administration",
+    campaignsLink: 'Gérer les campagnes',
     organizationLabel: 'Organisation',
     pseudoLabel: 'Pseudo',
     pseudoSave: 'Enregistrer',
@@ -385,7 +400,6 @@ export const fr = {
       klashes: 'Signalements',
       triage: 'À trier',
       roles: 'Rôles',
-      campaigns: 'Campagnes',
     },
     table: {
       loadError: 'Impossible de charger les signalements.',
@@ -394,6 +408,8 @@ export const fr = {
       searchLabel: 'Recherche',
       statusLabel: 'Statut',
       categoryLabel: 'Catégorie',
+      statusAny: 'Tout statut',
+      categoryAny: 'Toute catégorie',
       periodLabel: 'Période',
       periodAny: 'Toute période',
       periodLast7Days: '7 derniers jours',
@@ -452,13 +468,19 @@ export const fr = {
     },
   },
   campaigns: {
+    title: 'Campagnes',
+    tabs: {
+      links: 'Liens',
+      results: 'Résultats',
+    },
     touch: {
-      label: 'Attribuer les inscriptions et installations au',
+      label: 'Attribuer les inscriptions, installations et klashs au',
       first: 'premier contact',
       last: 'dernier contact',
+      hint: "Premier contact : le canal par lequel la personne a découvert l'application. Dernier contact : celui par lequel elle est arrivée la dernière fois avant de s'inscrire ou d'installer.",
     },
     source: {
-      txdo: 'Association',
+      txdo: "Txirrind'Ola",
       presse: 'Presse',
       cpam: 'CPAM',
       direct: 'Accès direct',
@@ -473,6 +495,15 @@ export const fr = {
     form: {
       title: 'Créer un lien',
       source: 'Émetteur',
+      sourceNew: 'Nouvel émetteur…',
+      sourceName: 'Nom du nouvel émetteur',
+      sourceNameHint: "Il apparaît dans l'adresse courte et ne pourra plus être modifié.",
+      sourceKey: 'Identifiant :',
+      sourceExists: 'Cet émetteur existe déjà, il sera utilisé.',
+      sourceReserved: 'Ce nom est réservé, choisissez-en un autre.',
+      sourceNewConfirm: (label: string, key: string) =>
+        `Créer l'émetteur « ${label} » (identifiant : ${key}) ? Son identifiant ne pourra plus être modifié.`,
+      sourceError: "Impossible de créer l'émetteur.",
       medium: 'Type de support',
       content: 'Précision',
       contentHint: 'Texte libre, ex. : papillon vélo. Il est converti automatiquement :',
@@ -485,6 +516,7 @@ export const fr = {
       campaignKey: 'Identifiant de campagne :',
       submit: 'Créer le lien',
       submitting: 'Création…',
+      close: 'Fermer',
       duplicate:
         'Un lien existe déjà pour cet émetteur, ce support, cette campagne et cette précision.',
       error: 'Impossible de créer le lien.',
@@ -494,31 +526,44 @@ export const fr = {
       shortUrl: 'Adresse courte',
       copy: 'Copier',
       copied: 'Copié',
-      qrAlt: (url: string) => `QR code de ${url}`,
+      close: 'Fermer',
+    },
+    qr: {
+      alt: (url: string) => `QR code de ${url}`,
+      copyImage: "Copier l'image",
+      imageCopied: 'Image copiée',
+      copyImageError: "Impossible de copier l'image. Téléchargez-la à la place.",
       downloadSvg: 'Télécharger en SVG',
       downloadPng: 'Télécharger en PNG',
       pngError: 'Impossible de générer le PNG.',
-      close: 'Fermer',
       testOrigin: (origin: string) =>
         `Attention : cette adresse commence par ${origin}, pas par l'adresse officielle. N'imprimez pas ce QR code.`,
       sizeReminder:
         "Taille minimale : 2 cm de côté pour un papillon ; pour une affiche, environ un dixième de la distance de lecture (2 m de distance, 20 cm de côté). Laissez un blanc d'au moins 4 modules autour, sur fond clair.",
     },
+    filters: {
+      campaign: 'Campagne',
+      source: 'Émetteur',
+      allCampaigns: 'Toutes',
+      allSources: 'Tous',
+    },
     list: {
       title: 'Liens',
-      loadError: 'Impossible de charger les statistiques.',
+      loadError: 'Impossible de charger les liens.',
       empty: 'Aucun lien ne correspond à ces critères.',
-      filterCampaign: 'Campagne',
-      filterSource: 'Émetteur',
-      all: 'Toutes',
-      allSources: 'Tous',
-      active: 'Actif',
+      showInactive: (count: number) => `Afficher les liens désactivés (${count})`,
       inactive: 'Désactivé',
+      scans: (count: number) => `${count} scan${count > 1 ? 's' : ''}`,
+      copyLink: 'Copier le lien',
+      linkCopied: 'Lien copié',
+      showQr: 'QR code',
+      edit: 'Modifier',
+      editTitle: 'Modifier le lien',
+      close: 'Fermer',
       deactivate: 'Désactiver',
       activate: 'Réactiver',
       deactivateConfirm:
         'Désactiver ce lien ? Les QR codes déjà imprimés redirigeront vers l’accueil.',
-      showQr: 'QR code',
       destination: 'Destination',
       saveDestination: 'Enregistrer',
       destinationInvalid: 'Une adresse interne commençant par « / » (ex. : / ou /new).',
@@ -529,14 +574,21 @@ export const fr = {
       scans: 'Scans',
       signups: 'Inscriptions',
       installs: 'Installations',
+      klashes: 'Klashs',
       scansToSignups: 'Scans → inscriptions',
       signupsToInstalls: 'Inscriptions → installations',
+      klashesPerSignup: 'Klashs / inscription',
     },
-    summary: {
-      title: 'Synthèse',
+    results: {
       bySource: 'Par émetteur',
       byCampaign: 'Par campagne',
+      byLink: 'Par lien',
+      linkColumn: 'Lien',
       noCampaign: '(sans campagne)',
+      inactive: '(désactivé)',
+      empty: 'Aucune donnée pour le moment.',
+      loadError: 'Impossible de charger les statistiques.',
+      klashesHint: 'Klashs : signalements des comptes venus de ce canal, hors rejetés et doublons.',
     },
   },
   pwa: {
@@ -559,7 +611,7 @@ export const fr = {
     howToReportTitle: 'Comment signaler',
     // Takes the on-screen button labels (fr.map.*) so a rename follows.
     howToReport: (whereIAmLabel: string, hereLabel: string) =>
-      `Touchez « ${whereIAmLabel} » pour signaler là où vous êtes, ou maintenez appuyé sur la carte (sur ordinateur : cliquez sur la carte) pour choisir un point précis, puis touchez « ${hereLabel} ».`,
+      `Touchez « ${whereIAmLabel} » si vous êtes sur place, ou maintenez appuyé sur la carte (sur ordinateur : cliquez sur la carte) pour choisir un point précis, puis touchez « ${hereLabel} ».`,
     accountTitle: 'Un compte pour signaler',
     account:
       'Pour envoyer un signalement, il faut un compte : une adresse email et un code reçu par email suffisent, sans mot de passe.',
@@ -582,12 +634,13 @@ export const fr = {
         heading: 'Éditeur du site',
         body: [
           'Le site 101ameliorations.org est édité par :',
-          "Association Atelier Vélo Txirrind'Ola** (Association loi 1901).",
-          'Adresse du siège social :** 56 allées Marines, 64100 Bayonne, France.',
+          "Association Atelier Vélo Txirrind'Ola (Association loi 1901).",
+          'Adresse du siège social : 56 allées Marines, 64100 Bayonne, France.',
           'Téléphone : 07 81 50 72 73.',
-          'E-mail de contact : contact@txirrindola.org.',
           'Numéro SIRET : 789 375 433 00016',
         ],
+        contactLabel: 'E-mail de contact :',
+        contactEmail: 'contact@txirrindola.org',
       },
       publicationDirector: {
         heading: 'Directeur de la publication',

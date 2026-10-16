@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { fr } from '../i18n/fr'
+import { hasPreviousInAppEntry } from '../utils/inAppHistory'
 
 /** "Retour" link shared by every secondary page, so the icon, spacing and label stay
  * identical everywhere. Goes back to the previous in-app page when there is one, so
@@ -30,15 +31,4 @@ export function BackLink({ className = '' }: { className?: string }) {
       {fr.common.back}
     </Link>
   )
-}
-
-/** React Router's browser history numbers its entries in `history.state.idx`, starting
- * at 0 on the first page the app loaded. Unlike `location.key !== 'default'`, this
- * stays 0 after a `<Navigate replace>` redirect (e.g. RequireAuth sending a deep link
- * to `/login`) or a `replace: true` search-param update, where going back would leave
- * the app. */
-function hasPreviousInAppEntry(): boolean {
-  const state: unknown = window.history.state
-  if (typeof state !== 'object' || state === null || !('idx' in state)) return false
-  return typeof state.idx === 'number' && state.idx > 0
 }

@@ -8,7 +8,7 @@ describe('filtersToSearchParams', () => {
     expect(params.toString()).toBe('')
   })
 
-  it('writes only the dimensions that differ from the default', () => {
+  it('writes only the dimensions that narrow something', () => {
     const filters: KlashFilters = { ...defaultFilters, categories: ['category_1'] }
     const params = filtersToSearchParams(filters)
     expect(params.get('category')).toBe('category_1')
@@ -28,7 +28,7 @@ describe('filtersFromSearchParams', () => {
       categories: ['category_1', 'category_3'],
       importances: ['high'],
       statuses: ['new', 'in_progress'],
-      createdAfter: '2026-01-01',
+      period: '30d',
     }
     const params = filtersToSearchParams(original)
     const filters = filtersFromSearchParams(params)
@@ -42,18 +42,30 @@ describe('filtersFromSearchParams', () => {
     expect(filters.categories).toEqual(['category_1'])
   })
 
-  it('falls back to the default category list when every value is unknown', () => {
+  it('falls back to no category restriction when every value is unknown', () => {
     const filters = filtersFromSearchParams(new URLSearchParams('category=bogus'))
-    expect(filters.categories).toEqual(defaultFilters.categories)
+    expect(filters.categories).toEqual([])
   })
 
-  it('ignores a malformed since date', () => {
-    const filters = filtersFromSearchParams(new URLSearchParams('since=not-a-date'))
-    expect(filters.createdAfter).toBeNull()
+  it('drops the statuses the map never shows', () => {
+    const filters = filtersFromSearchParams(
+      new URLSearchParams('status=new,rejected,duplicate,resolved'),
+    )
+    expect(filters.statuses).toEqual(['new', 'resolved'])
   })
 
-  it('accepts a well-formed since date', () => {
+  it('ignores an unknown period', () => {
+    const filters = filtersFromSearchParams(new URLSearchParams('since=12d'))
+    expect(filters.period).toBeNull()
+  })
+
+  it('ignores a since in the legacy absolute-date form', () => {
     const filters = filtersFromSearchParams(new URLSearchParams('since=2026-03-15'))
-    expect(filters.createdAfter).toBe('2026-03-15')
+    expect(filters.period).toBeNull()
+  })
+
+  it('accepts a period preset', () => {
+    const filters = filtersFromSearchParams(new URLSearchParams('since=7d'))
+    expect(filters.period).toBe('7d')
   })
 })

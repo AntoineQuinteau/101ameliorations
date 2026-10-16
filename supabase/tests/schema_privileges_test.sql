@@ -21,7 +21,7 @@
 -- guard: it would fail if a future change ever re-opened one of these
 -- SECURITY DEFINER functions via a blanket `grant ... on all functions`.
 begin;
-select plan(14);
+select plan(15);
 
 -- ---------- schema usage ----------
 select ok(
@@ -76,6 +76,10 @@ select ok(
 select ok(
   not has_function_privilege('anon', 'public.create_campaign_link(text, public.campaign_medium, text, text, text)', 'EXECUTE'),
   'anon cannot execute create_campaign_link'
+);
+select ok(
+  not has_function_privilege('anon', 'public.create_campaign_source(text)', 'EXECUTE'),
+  'anon cannot execute create_campaign_source'
 );
 select ok(
   not has_function_privilege('anon', 'public.current_user_can_manage_campaigns()', 'EXECUTE'),

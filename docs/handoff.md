@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-10-14 — Détail d'un klash en modale sur ordinateur (post-v1, PR #77)
+
+Hors plan de construction : sur ordinateur, un clic sur un marqueur ouvre le
+détail en modale par-dessus la carte, à la même URL `/k/:id` (spec §6.3).
+
+### Dettes connues
+
+| Dette                                                                                        | Gravité                | Où                                                    |
+| -------------------------------------------------------------------------------------------- | ---------------------- | ----------------------------------------------------- |
+| Le lien « doublon de » dans la modale n'a jamais été vérifié : il est inatteignable par l'UI | Fonctionnelle, latente | `KlashDetail.tsx` (`inOverlay` → `state` + `replace`) |
+
+Détail : c'est la conséquence de la dette de l'étape 7, toujours ouverte (rien
+ne renseigne `duplicate_of` dans l'app). Deux verrous se cumulent : la carte
+n'affiche jamais un klash `duplicate` (`klashes_in_bbox` les exclut), et le lien
+ne s'affiche que si `duplicate_of` est renseigné. Le jour où la désignation de
+l'original est ajoutée (spec §6.6, « marquer doublon (sélection de
+l'original) »), vérifier à la main que le lien remplace le contenu de la modale
+sans basculer sur la page complète, et qu'un seul Précédent ramène à la carte.
+
+---
+
 ## 2026-09-18 — Étape 9 (durcissement) terminée
 
 **État** : branche `step-9-hardening`, pas encore mergée. C'était la

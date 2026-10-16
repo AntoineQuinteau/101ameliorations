@@ -3,10 +3,39 @@
 @import 'leaflet.markercluster/dist/MarkerCluster.css';
 @import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
+/* Entrance of `Modal` (src/components/Modal.tsx): the backdrop fades in, taking the
+   panel with it, and the panel rises a few pixels. Applied under `motion-safe:` only. */
+@theme {
+  --animate-modal-backdrop: modal-backdrop-in 150ms ease-out;
+  --animate-modal-panel: modal-panel-in 150ms ease-out;
+
+  @keyframes modal-backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes modal-panel-in {
+    from {
+      transform: translateY(0.5rem) scale(0.98);
+    }
+  }
+}
+
 html,
 body,
 #root {
   height: 100%;
+}
+
+/* Tailwind v4 leaves buttons with the browser's default arrow cursor (v3 gave
+   them the hand). Many buttons here look like plain text or a lone icon, so
+   every enabled one gets the hand, like links; a disabled one keeps the arrow. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 .klash-marker-dot {
