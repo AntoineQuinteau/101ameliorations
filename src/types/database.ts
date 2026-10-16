@@ -231,6 +231,34 @@ export type Database = {
           },
         ]
       }
+      communes: {
+        Row: {
+          cog_year: number
+          epci_name: string | null
+          epci_siren: string | null
+          geom: unknown
+          insee_code: string
+          name: string
+        }
+        ComputedFields: never
+        Insert: {
+          cog_year: number
+          epci_name?: string | null
+          epci_siren?: string | null
+          geom: unknown
+          insee_code: string
+          name: string
+        }
+        Update: {
+          cog_year?: number
+          epci_name?: string | null
+          epci_siren?: string | null
+          geom?: unknown
+          insee_code?: string
+          name?: string
+        }
+        Relationships: []
+      }
       confirmations: {
         Row: {
           created_at: string
@@ -374,12 +402,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category']
           category_other: string | null
           comments_count: number
+          commune_name: string | null
           confirmations_count: number
           created_at: string
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string
           importance: Database['public']['Enums']['klash_importance']
+          insee_code: string | null
           location: unknown
           proposed_solution: string | null
           resolved_at: string | null
@@ -393,12 +425,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category']
           category_other?: string | null
           comments_count?: number
+          commune_name?: string | null
           confirmations_count?: number
           created_at?: string
           description?: string | null
           duplicate_of?: string | null
+          epci_name?: string | null
+          epci_siren?: string | null
           id?: string
           importance?: Database['public']['Enums']['klash_importance']
+          insee_code?: string | null
           location: unknown
           proposed_solution?: string | null
           resolved_at?: string | null
@@ -411,12 +447,16 @@ export type Database = {
           category?: Database['public']['Enums']['klash_category']
           category_other?: string | null
           comments_count?: number
+          commune_name?: string | null
           confirmations_count?: number
           created_at?: string
           description?: string | null
           duplicate_of?: string | null
+          epci_name?: string | null
+          epci_siren?: string | null
           id?: string
           importance?: Database['public']['Enums']['klash_importance']
+          insee_code?: string | null
           location?: unknown
           proposed_solution?: string | null
           resolved_at?: string | null
@@ -613,12 +653,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category'] | null
           category_other: string | null
           comments_count: number | null
+          commune_name: string | null
           confirmations_count: number | null
           created_at: string | null
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string | null
           importance: Database['public']['Enums']['klash_importance'] | null
+          insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -693,12 +737,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category'] | null
           category_other: string | null
           comments_count: number | null
+          commune_name: string | null
           confirmations_count: number | null
           created_at: string | null
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string | null
           importance: Database['public']['Enums']['klash_importance'] | null
+          insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -772,12 +820,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category'] | null
           category_other: string | null
           comments_count: number | null
+          commune_name: string | null
           confirmations_count: number | null
           created_at: string | null
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string | null
           importance: Database['public']['Enums']['klash_importance'] | null
+          insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -799,6 +851,15 @@ export type Database = {
         Returns: Database['public']['Enums']['user_role']
       }
       delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined }
+      find_commune: {
+        Args: { point: unknown }
+        Returns: {
+          epci_name: string
+          epci_siren: string
+          insee_code: string
+          name: string
+        }[]
+      }
       find_profile_by_email: {
         Args: { email: string }
         Returns: {
@@ -821,12 +882,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category'] | null
           category_other: string | null
           comments_count: number | null
+          commune_name: string | null
           confirmations_count: number | null
           created_at: string | null
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string | null
           importance: Database['public']['Enums']['klash_importance'] | null
+          insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -852,12 +917,16 @@ export type Database = {
           category: Database['public']['Enums']['klash_category'] | null
           category_other: string | null
           comments_count: number | null
+          commune_name: string | null
           confirmations_count: number | null
           created_at: string | null
           description: string | null
           duplicate_of: string | null
+          epci_name: string | null
+          epci_siren: string | null
           id: string | null
           importance: Database['public']['Enums']['klash_importance'] | null
+          insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
@@ -879,6 +948,7 @@ export type Database = {
         Args: { p_first_touch?: Json; p_last_touch?: Json; p_platform: string }
         Returns: undefined
       }
+      refresh_klash_admin_areas: { Args: Record<PropertyKey, never>; Returns: undefined }
       resolve_campaign_link: {
         Args: { p_count?: boolean; p_slug: string }
         Returns: {
