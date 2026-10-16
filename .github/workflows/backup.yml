@@ -1,0 +1,135 @@
+name: Backup
+
+# Nightly backup of production (database + photos) to the R2 bucket, and its
+# restore check. See README, "Sauvegardes et restauration", and
+# docs/plans/database-backups.md.
+on:
+  schedule:
+    # 01:23 UTC, every day. GitHub may start scheduled runs late; the
+    # healthchecks.io check allows 6 hours of grace.
+    - cron: '23 1 * * *'
+  workflow_dispatch:
+    inputs:
+      max_photo_deletions:
+        description: >-
+          Photos allowed to disappear from Storage in this run (raise it only
+          after checking that a large deletion is legitimate)
+        default: '100'
+  # The round trip below, on the PRs that could break it: the backup scripts,
+  # the schema they dump, and the pinned Supabase CLI that dumps it.
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - .github/workflows/backup.yml
+      - scripts/backup/**
+      - supabase/migrations/**
+      - supabase/config.toml
+      - package-lock.json
+
+permissions:
+  contents: read
+
+jobs:
+  round-trip:
+    name: Backup round trip (local)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+      - run: shellcheck -x scripts/backup/*.sh
+      # The seeded local database stands in for production: same dump, same
+      # restore into an empty stack, same checks as the nightly job — only
+      # the upload and the photos, which need the production secrets, are
+      # left out.
+      - name: Start local Supabase (migrations + seed)
+        run: >-
+          supabase start
+          -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,postgrest
+      - name: Dump
+        run: >-
+          scripts/backup/dump.sh
+          postgresql://postgres:postgres@127.0.0.1:54322/postgres "$RUNNER_TEMP/dump"
+      - name: Stop local Supabase
+        run: supabase stop --no-backup
+      - name: Restore into an empty stack and verify
+        run: scripts/backup/restore-check.sh "$RUNNER_TEMP/dump"
+
+  backup:
+    name: Back up production
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Holds production's SUPABASE_DB_URL and the backup credentials. Restricted
+    # to `main`, which is the only branch scheduled runs use.
+    environment: production
+    concurrency:
+      group: backup
+      cancel-in-progress: false
+    env:
+      HEALTHCHECK_URL: ${{ secrets.BACKUP_HEALTHCHECK_URL }}
+    steps:
+      # A ping that fails must not fail the backup: healthchecks.io notices
+      # the missing pings on its own.
+      - name: Signal start
+        run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_URL/start" || echo "::warning::start ping failed"
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Put the pinned Supabase CLI on PATH
+        run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Install age and rclone
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq age rclone
+      - name: Dump the database
+        env:
+          # Session pooler connection string — see ci.yml, migrate-staging.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: scripts/backup/dump.sh "$SUPABASE_DB_URL" "$RUNNER_TEMP/dump"
+      - name: Encrypt and upload the dump
+        env:
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BACKUP_R2_BUCKET: ${{ vars.BACKUP_R2_BUCKET }}
+          R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        # Rotation 7/4/6: every dump goes to db/daily, Sunday's also to
+        # db/weekly, the 1st of the month's also to db/monthly; the bucket's
+        # lifecycle rules expire each prefix (7, 28 and 185 days).
+        run: |
+          prefixes=(db/daily)
+          if [ "$(date -u +%u)" = 7 ]; then prefixes+=(db/weekly); fi
+          if [ "$(date -u +%d)" = 01 ]; then prefixes+=(db/monthly); fi
+          scripts/backup/upload.sh "$RUNNER_TEMP/dump" "${prefixes[@]}"
+      - name: Mirror the photos
+        env:
+          BACKUP_R2_BUCKET: ${{ vars.BACKUP_R2_BUCKET }}
+          BACKUP_MAX_PHOTO_DELETIONS: ${{ inputs.max_photo_deletions || '100' }}
+          R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          SUPABASE_S3_ENDPOINT: ${{ vars.SUPABASE_S3_ENDPOINT }}
+          SUPABASE_S3_REGION: ${{ vars.SUPABASE_S3_REGION }}
+          SUPABASE_S3_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+          SUPABASE_S3_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+        run: scripts/backup/sync-photos.sh
+      # After the upload, so a failing check never costs the night's backup.
+      # It checks the plaintext dump: the archive itself can only be
+      # decrypted with the private key, which never reaches CI.
+      - name: Restore into an empty stack and verify
+        run: scripts/backup/restore-check.sh "$RUNNER_TEMP/dump"
+      - name: Signal success
+        if: success()
+        run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_URL" || echo "::warning::success ping failed"
+      - name: Signal failure
+        if: failure()
+        run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_URL/fail" || echo "::warning::failure ping failed"
