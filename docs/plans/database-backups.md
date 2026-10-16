@@ -104,9 +104,17 @@ production), pas au niveau du dépôt : ils restent ainsi réservés à `main`.
   | `db/pre-migration/` | 30 jours        |
   | `photos-deleted/`   | 30 jours        |
 
-- [ ] R2 → **Manage API tokens** → créer un jeton **Object Read & Write**, limité au
-      seul bucket `101ameliorations-backups`. Noter l'_Access Key ID_ et le _Secret
-      Access Key_ : le secret n'est affiché qu'une fois.
+- [ ] R2 → **Manage API tokens** → **Account API Tokens** → _Create Account API token_
+      (un jeton de compte reste valide si l'utilisateur quitte l'organisation) :
+  - **Permissions** : **Object Read & Write**. Le choix du bucket n'apparaît qu'avec
+    une permission « Object » ; « Admin » s'applique toujours à tous les buckets.
+  - **Specify bucket(s)** : _Apply to specific buckets only_ →
+    `101ameliorations-backups`.
+  - **TTL** : _Forever_. **Client IP Address Filtering** : vide (les runners GitHub
+    n'ont pas d'adresse fixe).
+- [ ] Noter l'_Access Key ID_ et le _Secret Access Key_ : le secret n'est affiché
+      qu'une fois. La _Token value_ n'est pas utilisée. Vérifier que l'endpoint S3
+      affiché contient `.eu.` (juridiction UE).
 - [ ] Les enregistrer :
 
   ```bash
