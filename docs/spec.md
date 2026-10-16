@@ -268,6 +268,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 ## 7. PWA
 
 - `vite-plugin-pwa` : manifest (nom, icônes, `display: standalone`, thème), service worker en `autoUpdate`.
+- Mise à jour sans rechargement imposé : la nouvelle version s'installe en arrière-plan et prend effet au prochain changement de page dans l'app (sauf ouverture ou fermeture de la fiche en modale sur la carte, qui garde la carte montée) ou au prochain chargement. L'app vérifie aussi s'il existe une mise à jour quand elle revient au premier plan.
 - Cache : coquille applicative + tuiles récentes (`CacheFirst`, limite 2000 entrées, 30 jours). Données Supabase en `NetworkFirst`.
 - Bandeau « Installer l'application » discret (événement `beforeinstallprompt`) ; instructions manuelles pour iOS.
 - `start_url` = `/?launch=pwa` (le paramètre `launch` ne modifie jamais l'attribution). Les routes `/r/*` ne passent jamais par le cache du service worker, dont la correspondance ignore les paramètres d'URL. Une installation est comptée via `appinstalled`, et sur iOS au premier lancement en mode standalone. Sur iOS, le stockage de l'app installée étant séparé de celui de Safari, le Worker sert `/ios-manifest.webmanifest` dont le `start_url` embarque l'attribution (valeurs validées), restaurée seulement dans un stockage vide.
