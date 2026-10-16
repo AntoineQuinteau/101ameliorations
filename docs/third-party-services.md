@@ -6,15 +6,17 @@ d'installation restent dans le [`README.md`](../README.md) ; ce document sert de
 
 Légende des emplacements :
 
-| Abréviation       | Où                                                                                      |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| **GH var**        | GitHub → Settings → Secrets and variables → Actions → _Variables_ (niveau dépôt)        |
-| **GH secret**     | GitHub → Settings → Secrets and variables → Actions → _Secrets_ (niveau dépôt)          |
-| **GH env secret** | GitHub → Settings → Environments → `staging` / `production` → secret d'environnement    |
-| **Worker var**    | Variable d'exécution du Worker Cloudflare, injectée par la CI via `wrangler --var`      |
-| **Dashboard X**   | Réglé à la main dans le dashboard du service X (pas versionné)                          |
-| **`.env.local`**  | Fichier local non versionné (modèle : [`.env.example`](../.env.example))                |
-| **`config.toml`** | [`supabase/config.toml`](../supabase/config.toml) — Supabase **local et CI uniquement** |
+| Abréviation       | Où                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------- |
+| **GH var**        | GitHub → Settings → Secrets and variables → Actions → _Variables_ (niveau dépôt)               |
+| **GH secret**     | GitHub → Settings → Secrets and variables → Actions → _Secrets_ (niveau dépôt)                 |
+| **GH env secret** | GitHub → Settings → Environments → `staging` / `production` → secret d'environnement           |
+| **GH env var**    | GitHub → Settings → Environments → `production` → variable d'environnement                     |
+| **Hors ligne**    | Gardé par Antoine (gestionnaire de mots de passe + copie hors ligne), jamais en ligne ni en CI |
+| **Worker var**    | Variable d'exécution du Worker Cloudflare, injectée par la CI via `wrangler --var`             |
+| **Dashboard X**   | Réglé à la main dans le dashboard du service X (pas versionné)                                 |
+| **`.env.local`**  | Fichier local non versionné (modèle : [`.env.example`](../.env.example))                       |
+| **`config.toml`** | [`supabase/config.toml`](../supabase/config.toml) — Supabase **local et CI uniquement**        |
 
 > Les `VITE_*` sont inlinées dans le bundle JS au build : elles sont **publiques par
 > nature** et donc stockées en _variables_ GitHub, pas en secrets (voir README,
@@ -24,18 +26,24 @@ Légende des emplacements :
 
 ## Vue d'ensemble
 
-| Service                   | Rôle                                                       | Obligatoire ?           |
-| ------------------------- | ---------------------------------------------------------- | ----------------------- |
-| Supabase (prod + STAGING) | Base Postgres/PostGIS, Auth OTP email, Storage photos, RLS | Oui                     |
-| Fournisseur SMTP          | Envoi des emails OTP de Supabase Auth (Resend, Postmark…)  | Oui en prod             |
-| Cloudflare Workers        | Hébergement du front statique + Worker `/k/*`, `/r/*`      | Oui                     |
-| Cloudflare Turnstile      | Captcha invisible à la connexion                           | Oui en prod (build)     |
-| Cloudflare Worker QR      | Génère le QR code des previews de PR                       | CI uniquement           |
-| MapTiler                  | Tuiles de fond de carte                                    | Oui (sauf proxy de dev) |
-| Sentry                    | Remontée d'erreurs front                                   | Non                     |
-| Umami Cloud               | Mesure d'audience sans cookie (prod uniquement)            | Non                     |
-| GitHub Actions            | CI : lint, tests, migrations, previews, déploiement        | Oui                     |
-| OpenStreetMap             | Données cartographiques (via MapTiler) — attribution seule | — (aucune clé)          |
+| Service                   | Rôle                                                             | Obligatoire ?           |
+| ------------------------- | ---------------------------------------------------------------- | ----------------------- |
+| Supabase (prod + STAGING) | Base Postgres/PostGIS, Auth OTP email, Storage photos, RLS       | Oui                     |
+| Fournisseur SMTP          | Envoi des emails OTP de Supabase Auth (Resend, Postmark…)        | Oui en prod             |
+| Cloudflare Workers        | Hébergement du front statique + Worker `/k/*`, `/r/*`            | Oui                     |
+| Cloudflare Turnstile      | Captcha invisible à la connexion                                 | Oui en prod (build)     |
+| Cloudflare Worker QR      | Génère le QR code des previews de PR                             | CI uniquement           |
+| MapTiler                  | Tuiles de fond de carte                                          | Oui (sauf proxy de dev) |
+| Sentry                    | Remontée d'erreurs front                                         | Non                     |
+| Umami Cloud               | Mesure d'audience sans cookie (prod uniquement)                  | Non                     |
+| Cloudflare R2             | Stockage des sauvegardes chiffrées (base + photos), UE           | Oui (sauvegardes)       |
+| healthchecks.io           | Alerte email si la sauvegarde nocturne échoue ou ne tourne plus  | Oui (sauvegardes)       |
+| GitHub Actions            | CI : lint, tests, migrations, previews, déploiement, sauvegardes | Oui                     |
+| OpenStreetMap             | Données cartographiques (via MapTiler) — attribution seule       | — (aucune clé)          |
+
+Outils open source utilisés par les sauvegardes, sans compte : `age` (chiffrement des
+dumps) et `rclone` (copie vers R2, version épinglée et vérifiée par SHA-256 dans
+`scripts/backup/install-tools.sh`, téléchargée depuis les releases GitHub de rclone).
 
 ---
 
@@ -65,7 +73,22 @@ Réglages **hors repo**, à faire à la main dans le **Dashboard Supabase** de c
 - Authentication → Providers → Email (OTP length 6, expiry 3600) ;
 - Authentication → **Rate Limits** ;
 - Authentication → **Attack Protection** → captcha Turnstile + **secret key Turnstile**
-  (voir section Turnstile).
+  (voir section Turnstile) ;
+- Storage → Settings → **S3 connection** (projet de **production** uniquement) : accès
+  S3 activé et clé d'accès créée pour la copie des photos par les sauvegardes.
+
+Accès S3 au Storage de production, utilisés par la sauvegarde des photos
+(`scripts/backup/sync-photos.sh`, `restore-photos.sh`) :
+
+| Variable / secret                   | Usage                                     | Défini où                      |
+| ----------------------------------- | ----------------------------------------- | ------------------------------ |
+| `SUPABASE_S3_ENDPOINT`              | Endpoint S3 du Storage                    | GH env var `production`        |
+| `SUPABASE_S3_REGION`                | Région S3 (`eu-west-3`)                   | GH env var `production`        |
+| **`SUPABASE_S3_ACCESS_KEY_ID`**     | Identifiant de la clé d'accès S3          | **GH env secret** `production` |
+| **`SUPABASE_S3_SECRET_ACCESS_KEY`** | Clé secrète S3 (accès à tous les buckets) | **GH env secret** `production` |
+
+`SUPABASE_DB_URL` (environnement `production`) sert aussi au dump de la sauvegarde
+nocturne et au dump pris avant chaque migration de production.
 
 ## Fournisseur SMTP (Resend, Postmark…)
 
@@ -110,6 +133,38 @@ La clé de site est côté front, la clé secrète côté Supabase.
 | **Clé secrète Turnstile**         | Vérification du jeton par Supabase Auth                                                                                          | **Dashboard Supabase** → Auth → Attack Protection (prod et STAGING) ; en local/CI : clé de test dans `config.toml` (`[auth.captcha]`) |
 
 Widgets créés dans **Dashboard Cloudflare** → Turnstile (domaines autorisés à y déclarer).
+
+## Cloudflare R2 (sauvegardes)
+
+**Rôle** : stocker les sauvegardes, dans le bucket `101ameliorations-backups` (juridiction
+UE). Le plan gratuit Supabase n'en fait aucune : `.github/workflows/backup.yml` dumpe la
+base chaque nuit (01:23 UTC), la chiffre avec `age` et l'envoie dans R2, puis copie les
+photos du Storage avec `rclone`. `deploy-production` (`ci.yml`) y dépose aussi un dump
+avant d'appliquer des migrations. Rotation et durées de conservation : règles
+d'expiration du bucket (dashboard Cloudflare), pas le code. Détails : README,
+« Sauvegardes et restauration », et
+[`docs/plans/database-backups.md`](plans/database-backups.md).
+
+| Variable / secret            | Usage                                                      | Défini où                                                                                                  |
+| ---------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `BACKUP_R2_BUCKET`           | Nom du bucket (`101ameliorations-backups`)                 | GH env var `production`                                                                                    |
+| **`R2_ACCESS_KEY_ID`**       | Identifiant du jeton R2 limité au bucket                   | **GH env secret** `production` · créé dans Dashboard Cloudflare → R2 → Manage API tokens (jeton de compte) |
+| **`R2_SECRET_ACCESS_KEY`**   | Clé secrète du même jeton                                  | **GH env secret** `production`                                                                             |
+| `R2_ACCOUNT_ID`              | Compte R2 (sert à construire l'endpoint)                   | Pas de valeur propre : la CI y passe `CLOUDFLARE_ACCOUNT_ID`                                               |
+| `BACKUP_AGE_RECIPIENT`       | Clé(s) publique(s) `age` (`age1…`) qui chiffrent les dumps | GH env var `production` (publique, pas un secret)                                                          |
+| **Clé privée `age`**         | Seule à pouvoir déchiffrer un dump                         | **Hors ligne** — jamais dans GitHub ni dans R2                                                             |
+| `BACKUP_MAX_PHOTO_DELETIONS` | Garde-fou : photos supprimables par run (défaut 100)       | Entrée du lancement manuel du workflow `Backup`                                                            |
+
+## healthchecks.io
+
+**Rôle** : surveiller la sauvegarde nocturne. Le job envoie un ping au début, au succès et
+à l'échec ; healthchecks.io envoie un email si un ping d'échec arrive ou si aucun ping
+n'arrive (délai de grâce de 6 h) — par exemple quand GitHub désactive les workflows
+planifiés d'un dépôt après 60 jours sans activité.
+
+| Secret                       | Usage                                  | Défini où                                                        |
+| ---------------------------- | -------------------------------------- | ---------------------------------------------------------------- |
+| **`BACKUP_HEALTHCHECK_URL`** | URL de ping du check (contient son id) | **GH env secret** `production` · check créé dans healthchecks.io |
 
 ## Worker QR (previews)
 
@@ -157,14 +212,17 @@ chargée uniquement dans le build de **production**. Détails :
 
 **Rôle** : CI/CD ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) — lint,
 typecheck, tests, migrations + tests RLS sur base jetable, e2e Playwright, `db push`
-STAGING puis prod, previews Cloudflare, déploiement production.
+STAGING puis prod, previews Cloudflare, déploiement production. Sauvegardes
+([`.github/workflows/backup.yml`](../.github/workflows/backup.yml)) — sauvegarde
+nocturne de la prod et aller-retour dump/restauration sur les PR concernées.
 
 | Variable / secret | Usage                                      | Défini où                       |
 | ----------------- | ------------------------------------------ | ------------------------------- |
 | `GITHUB_TOKEN`    | Commentaire de PR avec URL + QR de preview | Automatique (fourni par GitHub) |
 
 Environnements GitHub : `staging` (sans restriction de branche) et `production`
-(restreint à `main`), chacun portant son `SUPABASE_DB_URL`.
+(restreint à `main`), chacun portant son `SUPABASE_DB_URL`. `production` porte en plus
+tous les accès des sauvegardes (R2, S3 Supabase, healthchecks.io).
 
 ## OpenStreetMap
 
@@ -182,15 +240,24 @@ l'attribution « © OpenStreetMap contributors » est affichée sur la carte.
 
 **GitHub — secrets de dépôt** : `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 
-**GitHub — secrets d'environnement** : `SUPABASE_DB_URL` dans `staging` et dans
-`production`.
+**GitHub — environnement `staging`** : secret `SUPABASE_DB_URL`.
+
+**GitHub — environnement `production`** : secrets `SUPABASE_DB_URL`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`,
+`BACKUP_HEALTHCHECK_URL` ; variables `BACKUP_R2_BUCKET`, `BACKUP_AGE_RECIPIENT`,
+`SUPABASE_S3_ENDPOINT`, `SUPABASE_S3_REGION`.
 
 **Cloudflare** : variables d'exécution du Worker `SUPABASE_URL` /
 `SUPABASE_PUBLISHABLE_KEY` (poussées par la CI à chaque déploiement, rien à saisir) ;
-widgets Turnstile ; domaine personnalisé ; jeton API.
+widgets Turnstile ; domaine personnalisé ; jeton API ; bucket R2 des sauvegardes, ses
+règles d'expiration et son jeton d'accès.
 
 **Supabase (dashboard, par projet)** : identifiants SMTP, clé secrète Turnstile, templates
-d'email, URLs de redirection, rate limits.
+d'email, URLs de redirection, rate limits ; accès S3 au Storage (production).
+
+**healthchecks.io** : le check de la sauvegarde et ses alertes email.
+
+**Hors ligne** : clé privée `age` de déchiffrement des sauvegardes.
 
 **Local (`.env.local`)** : toutes les `VITE_*` utiles en dev, plus `MAPTILER_KEY` et
 `SUPABASE_SECRET_KEY`. **`config.toml`** : clé secrète Turnstile de test (local/CI
