@@ -101,11 +101,31 @@ create table klashes (
   comments_count      integer not null default 0,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
-  resolved_at         timestamptz
+  resolved_at         timestamptz,
+  -- Administrative area, derived from `location` by trigger (never written by
+  -- a client); null outside the communes table (e.g. the Spanish side of the
+  -- service area).
+  insee_code          char(5),
+  commune_name        text,
+  epci_siren          char(9),            -- intercommunalité (EPCI)
+  epci_name           text
 );
 create index klashes_location_idx on klashes using gist (location);
 create index klashes_created_at_idx on klashes (created_at desc);
 create index klashes_status_idx on klashes (status);
+
+-- Reference table of French communes (INSEE code, name, EPCI, boundary) used to
+-- fill the klashes' administrative area. Read-only for clients; rewritten only
+-- by a migration, once per COG year (see scripts/build-communes-migration.mjs).
+create table communes (
+  insee_code  char(5) primary key,
+  name        text not null,
+  epci_siren  char(9),
+  epci_name   text,
+  cog_year    smallint not null,
+  geom        geometry(MultiPolygon, 4326) not null
+);
+create index communes_geom_idx on communes using gist (geom);
 
 create table klash_photos (
   id            uuid primary key default gen_random_uuid(),
@@ -156,6 +176,7 @@ Triggers et fonctions :
 - `enforce_status_transition()` : vérifie que la transition est autorisée pour le rôle courant, insère la ligne dans `status_changes`, renseigne `resolved_at`.
 - `enforce_rate_limit()` : max 250 klashs / 24 h et 50 commentaires / 24 h par utilisateur.
 - `enforce_photo_limit()` : max 12 photos par klash.
+- `set_klash_admin_area()` : à chaque création ou changement de position, renseigne `insee_code`, `commune_name`, `epci_siren` et `epci_name` d'après la table `communes` (commune qui contient le point, sinon la plus proche à moins de ~100 m, pour absorber la simplification des contours et le trait de côte ; sinon `null`). Sur toute autre modification, ces colonnes sont restaurées : aucune valeur envoyée par un client n'est conservée. Elles sont figées au moment du signalement (une fusion de communes ultérieure ne réécrit pas l'historique) ; `refresh_klash_admin_areas()` les recalcule à la demande (appelée par la migration qui charge un nouveau millésime de `communes`).
 - Vue publique `klashes_public` exposant `author_display_name` sans jamais joindre l'email.
 - RPC `klashes_nearby(lat, lng, radius_m)` : klashs actifs (hors `rejected`/`duplicate`/`resolved` depuis > 30 j) dans un rayon, pour la détection de doublons.
 - RPC `klashes_in_bbox(min_lat, min_lng, max_lat, max_lng, filters)` pour la carte.
@@ -263,7 +284,7 @@ Gestion : page `/campaigns`, réservée à `can_manage_campaigns` (et aux `admin
 
 ### 6.7 Export
 
-Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et, sur desktop uniquement, depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte). La feuille de filtres mobile ne porte pas ce lien : « À propos » y suffit.
+Page ou lien `/export` : CSV et GeoJSON (klashs + localisation administrative — code INSEE, commune, SIREN et nom de l'intercommunalité — + statut + compteurs, sans données personnelles), générés côté client depuis une RPC paginée, ou via une Edge Function si le volume l'exige. Public. Accessible depuis la feuille « À propos » de la carte (§6.1) et, sur desktop uniquement, depuis le bas du panneau de filtres (« Télécharger toutes les données » : l'export ignore les filtres de la carte). La feuille de filtres mobile ne porte pas ce lien : « À propos » y suffit.
 
 ## 7. PWA
 
