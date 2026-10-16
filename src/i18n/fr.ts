@@ -408,6 +408,8 @@ export const fr = {
       searchLabel: 'Recherche',
       statusLabel: 'Statut',
       categoryLabel: 'Catégorie',
+      statusAny: 'Tout statut',
+      categoryAny: 'Toute catégorie',
       periodLabel: 'Période',
       periodAny: 'Toute période',
       periodLast7Days: '7 derniers jours',
