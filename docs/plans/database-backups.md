@@ -241,6 +241,15 @@ depuis le miroir et comparées octet par octet. Écarts par rapport à la concep
 - **Restauration des photos** : Storage liste comme présentes les photos dont la ligne
   `storage.objects` a été restaurée, même sans fichier ; `restore-photos.sh` copie donc
   sans comparer avec la destination.
+- **rclone et R2** (constaté au premier lancement en production, le 16/10/2026) : le
+  rclone d'Ubuntu 24.04 (1.60) relit chaque fichier envoyé en demandant sa version
+  (`HEAD …?versionId=…`), et R2, qui ne gère pas les versions d'objets, répond par
+  une erreur 501 (« Not Implemented »). Le fichier est pourtant écrit, si bien que la
+  nouvelle tentative de rclone le trouvait présent et finissait en succès. La CI installe désormais une
+  version amont épinglée (`install-tools.sh`, 1.75.1, vérifiée par somme de contrôle,
+  testée contre le vrai bucket), et rclone ne refait plus d'opération entière
+  (`RCLONE_RETRIES=1`) : une erreur systématique fait échouer le job au lieu d'être
+  masquée.
 - **Versions** : le dump passe par l'image Postgres de la CLI épinglée, à la bonne
   version. Si les services Auth/Storage hébergés deviennent plus récents que ceux de la
   CLI, le contrôle de restauration peut échouer sur des colonnes inconnues : mettre la
