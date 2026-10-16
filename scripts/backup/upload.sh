@@ -11,7 +11,7 @@ set -euo pipefail
 dir=$1
 shift
 here=$(cd "$(dirname "$0")" && pwd)
-# shellcheck source=lib.sh
+# shellcheck source=SCRIPTDIR/lib.sh
 source "$here/lib.sh"
 : "${BACKUP_AGE_RECIPIENT:?}" "${BACKUP_R2_BUCKET:?}"
 

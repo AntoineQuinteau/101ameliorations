@@ -12,7 +12,7 @@ set -euo pipefail
 db_url=$1
 out=$2
 here=$(cd "$(dirname "$0")" && pwd)
-# shellcheck source=lib.sh
+# shellcheck source=SCRIPTDIR/lib.sh
 source "$here/lib.sh"
 
 mkdir -p "$out"
