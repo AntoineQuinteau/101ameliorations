@@ -25,10 +25,12 @@ export default defineConfig(({ command, mode }) => {
       tileProxy(env.MAPTILER_KEY),
       VitePWA({
         // The SW checks for an update on load and swaps in the new one without
-        // asking (spec §7). Preview builds share one stable alias URL for the
-        // whole PR (see .github/workflows/ci.yml) — with autoUpdate a reload
-        // after each push actually picks up the new build, which prompted mode
-        // would not do without extra UI wired to `needRefresh`.
+        // asking (spec §7); the page itself moves to it at the next page change
+        // or load, never mid-page (see src/features/pwa/ServiceWorkerRegistration.tsx).
+        // Preview builds share one stable alias URL for the whole PR (see
+        // .github/workflows/ci.yml): after a push, the first reload fetches the
+        // new build and the second one shows it — prompted mode would need
+        // extra UI wired to `needRefresh` to get there at all.
         registerType: 'autoUpdate',
         manifest: {
           // Mirrors src/i18n/fr.ts (fr.app.name / fr.app.tagline) — duplicated
