@@ -1,8 +1,10 @@
 # Plan — sauvegardes de la base et des photos
 
-> Plan établi le 2026-10-11. **Conception seulement, aucun code n'a été écrit.**
-> La partie A (comptes et secrets) est à faire à la main par Antoine ; la partie B
-> (workflow, CI, docs) fait l'objet d'une PR une fois la partie A terminée.
+> Plan établi le 2026-10-11. Partie A (comptes et secrets) faite par Antoine le
+> 2026-10-16, sans la seconde clé `age` facultative. Partie B implémentée le 2026-10-16
+> (même PR) ; reste le premier lancement en production et l'exercice de restauration,
+> en fin de partie B. Procédure d'exploitation : README, « Sauvegardes et
+> restauration ».
 
 ## Contexte
 
@@ -191,41 +193,65 @@ production), pas au niveau du dépôt : ils restent ainsi réservés à `main`.
 - [ ] Relever dans le dashboard Supabase (Settings → Usage) la taille de la base et du
       stockage, pour confirmer que le palier gratuit R2 suffit.
 
-## Partie B — implémentation (une PR, après la partie A)
+## Partie B — implémentation
 
-- [ ] `docs/spec.md` amendé en premier (§8 « Stack et outillage » et §11 « Décisions
-      prises »), puisque la spec fait autorité.
-- [ ] Nouveau workflow `.github/workflows/backup.yml` : planifié chaque nuit, plus
-      `workflow_dispatch` pour un lancement manuel.
-- [ ] Dump (rôles, schéma, données, manifeste), compression, chiffrement `age`, envoi
-      vers `db/daily/`, et vers `db/weekly/` / `db/monthly/` les jours concernés.
-- [ ] Copie des photos avec `rclone` et déplacement des fichiers disparus vers
-      `photos-deleted/`, avec garde-fou sur le nombre de suppressions.
-- [ ] Test de restauration dans une instance Supabase locale et comparaison des
-      comptages (`klashes`, `klash_photos`, `comments`, `profiles`, `auth.users`,
-      `storage.objects`).
-- [ ] Pings de début, de succès et d'échec vers le service de surveillance.
-- [ ] Étape de dump dans `deploy-production` avant `supabase db push`, exécutée
-      seulement si des migrations sont en attente, bloquante, vers `db/pre-migration/`.
-- [ ] README : section « Sauvegardes et restauration » (procédure pas à pas, liste des
-      réglages du dashboard à refaire à la main) et mise à jour de « Secrets et
-      variables requis ».
-- [ ] Politique de confidentialité (`src/i18n/fr.ts`, sections « Durée de conservation »
-      et « Hébergement et sous-traitants ») : mentionner les sauvegardes chiffrées,
-      stockées chez Cloudflare dans l'UE, et la persistance d'un compte supprimé dans
-      les sauvegardes pendant 6 mois au plus.
-- [ ] Premier lancement manuel, puis **exercice de restauration réel** par Antoine avec
-      sa clé privée, sur une instance locale : tant qu'il n'a pas réussi, la sauvegarde
-      n'est pas considérée comme en place.
+- [x] `docs/spec.md` amendé (§8 « Stack et outillage » et §11 « Décisions prises »).
+- [x] Workflow `.github/workflows/backup.yml` : job `backup` planifié chaque nuit et
+      lançable à la main, job `round-trip` sur les PR concernées.
+- [x] Scripts `scripts/backup/` : `dump.sh`, `upload.sh` (rotation par préfixes,
+      chiffrement `age`), `sync-photos.sh`, `restore.sh`, `verify.sh`,
+      `restore-check.sh`, `restore-photos.sh`.
+- [x] Test de restauration à chaque sauvegarde : nombre de lignes de chaque table et
+      empreinte du schéma (`fingerprint.sql`) comparés à la source.
+- [x] Pings de début, de succès et d'échec vers healthchecks.io.
+- [x] Dump dans `deploy-production` avant `supabase db push`, seulement si des
+      migrations sont en attente, bloquant, vers `db/pre-migration/`.
+- [x] README : section « Sauvegardes et restauration », tableaux de la section CI.
+- [x] Politique de confidentialité : sauvegardes chiffrées dans l'UE, conservation 6
+      mois au plus.
+- [ ] Après le merge : **Actions → Backup → Run workflow**, vérifier dans R2 la
+      présence de `db/daily/…` et `photos/…`, et le ping vert dans healthchecks.io.
+- [ ] **Exercice de restauration réel** par Antoine (README, « Restaurer », étapes 1 à 3) avec sa clé privée : tant qu'il n'a pas réussi, la sauvegarde n'est pas
+      considérée comme en place.
 
-## Points à vérifier pendant l'implémentation
+## Ce que l'implémentation a appris
 
-- Que `supabase db dump` inclut bien les données de `auth` et de `storage`. Le test de
-  restauration le montrera ; sinon, passer à `pg_dump` avec la liste explicite des
-  schémas.
-- La version du client Postgres sur le runner : la base est en Postgres 17, le client
-  doit être en 17 ou plus (`supabase db dump` passe par une image Docker à la bonne
-  version).
-- La durée réelle du dump, pour confirmer que l'étape d'avant migration reste courte.
-- L'endpoint S3 de R2 pour un bucket en juridiction UE
-  (`https://<account-id>.eu.r2.cloudflarestorage.com`).
+Tout a été testé en local contre des stacks Supabase jetables (CLI 2.120, Postgres 17),
+y compris un sinistre complet : base restaurée dans une stack vide, photos remises
+depuis le miroir et comparées octet par octet. Écarts par rapport à la conception :
+
+- **`supabase db dump` ignore les schémas `auth` et `storage`**, donc les objets que nos
+  migrations y posent : les 3 politiques RLS de `storage.objects` et le trigger
+  `on_auth_user_created` (qui crée le profil à l'inscription). Sans eux, un projet
+  restauré aurait semblé complet mais n'aurait plus créé de profils.
+  `platform-hooks.sql` les régénère à chaque dump, et l'empreinte de schéma détecte
+  leur absence.
+- **L'historique des migrations** (`supabase_migrations`) n'est pas dans le dump par
+  défaut : il est dumpé à part, sinon un `db push` après restauration rejouerait toutes
+  les migrations.
+- **Deux tables Storage** (`buckets_vectors`, `vector_indexes`, fonction réservée aux
+  plans payants) ne sont pas inscriptibles par le rôle `postgres` sur un projet neuf :
+  elles sont exclues du dump, et sont toujours vides ici.
+- **`roles.sql`** contient des réglages de plateforme que `postgres` ne peut pas
+  rejouer : il est appliqué en « meilleur effort », une erreur sur `log_min_messages`
+  est attendue.
+- **`--max-delete` de rclone** déplace des fichiers jusqu'au seuil avant d'échouer : un
+  bucket vidé par erreur aurait drainé le miroir de 100 photos par nuit. Le script
+  compte d'abord les disparitions et s'arrête avant tout changement.
+- **Restauration des photos** : Storage liste comme présentes les photos dont la ligne
+  `storage.objects` a été restaurée, même sans fichier ; `restore-photos.sh` copie donc
+  sans comparer avec la destination.
+- **Versions** : le dump passe par l'image Postgres de la CLI épinglée, à la bonne
+  version. Si les services Auth/Storage hébergés deviennent plus récents que ceux de la
+  CLI, le contrôle de restauration peut échouer sur des colonnes inconnues : mettre la
+  CLI à jour.
+- **Durée** : le dump de la base locale seedée (≈ 5 800 lignes) prend 6 s ; le contrôle
+  de restauration, 30 s plus le téléchargement des images Docker en CI.
+
+## Reste à vérifier au premier lancement en production
+
+- L'endpoint R2 en juridiction UE (`https://<account-id>.eu.r2.cloudflarestorage.com`)
+  et le jeton limité au bucket (pas de vérification ni de création du bucket).
+- L'accès S3 à Storage avec la région `eu-west-3`.
+- Le contrôle de restauration avec les données réelles, en particulier la
+  compatibilité des colonnes `auth` entre l'hébergé et la CLI.

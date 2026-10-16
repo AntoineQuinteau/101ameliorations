@@ -694,6 +694,7 @@ export const fr = {
           'Les signalements, y compris résolus, sont conservés indéfiniment : ils constituent une donnée collective d’intérêt général pour le suivi des infrastructures cyclables.',
           'Le journal des consultations d’email (voir ci-dessus) est conservé 12 mois, puis supprimé.',
           'Le canal d’arrivée rattaché à votre compte est supprimé avec lui. Les compteurs anonymes de campagnes (passages, installations) sont conservés tant que la campagne est analysée.',
+          'La base de données et les photos sont sauvegardées chaque jour, sous forme chiffrée, et ces sauvegardes sont conservées 6 mois au plus. Une donnée supprimée, par exemple votre email à la suppression de votre compte, peut donc y subsister jusqu’à 6 mois ; elle n’en ressort qu’en cas de restauration après un incident.',
         ],
       },
       rights: {
@@ -704,7 +705,7 @@ export const fr = {
         heading: 'Hébergement et sous-traitants',
         body: [
           'Supabase Inc. (base de données, authentification, stockage des photos) — région Union européenne.',
-          'Cloudflare, Inc. (hébergement du site, vérification anti-robot Turnstile).',
+          'Cloudflare, Inc. (hébergement du site, vérification anti-robot Turnstile, stockage des sauvegardes chiffrées) — sauvegardes stockées dans l’Union européenne.',
           'MapTiler (fond de carte).',
           'Sentry (suivi des erreurs techniques, aucune donnée personnelle transmise).',
           'Umami Software, Inc. (mesure d’audience sans cookie).',
