@@ -182,6 +182,101 @@ racine du routeur) et toute requête/mutation TanStack Query en échec
 (offre gratuite), et `sendDefaultPii: false` — les emails ne doivent jamais
 sortir de l'app (spec §2).
 
+## Sauvegardes et restauration
+
+Le plan gratuit Supabase ne fait aucune sauvegarde : `.github/workflows/backup.yml`
+s'en charge chaque nuit (01:23 UTC), avec les scripts de `scripts/backup/`. Décisions et
+mise en place des comptes : [`docs/plans/database-backups.md`](docs/plans/database-backups.md).
+
+**Ce qui est sauvegardé**, dans le bucket R2 `101ameliorations-backups` (juridiction UE) :
+
+| Préfixe             | Contenu                                                            | Conservé  |
+| ------------------- | ------------------------------------------------------------------ | --------- |
+| `db/daily/`         | Dump de la base, chiffré avec `age`                                | 7 jours   |
+| `db/weekly/`        | Le dump du dimanche                                                | 28 jours  |
+| `db/monthly/`       | Le dump du 1ᵉʳ du mois                                             | 185 jours |
+| `db/pre-migration/` | Dump pris par `deploy-production` avant d'appliquer des migrations | 30 jours  |
+| `photos/`           | Miroir du bucket Storage `klash-photos`                            | —         |
+| `photos-deleted/`   | Photos disparues de Storage, par date de disparition               | 30 jours  |
+
+La durée de conservation est appliquée par les règles d'expiration du bucket, pas par
+le code. Un dump contient les rôles, le schéma, l'historique des migrations, les données
+(y compris `auth.users` et `storage.objects`) et les politiques/triggers que nos
+migrations posent sur `auth` et `storage`, que `supabase db dump` ignore.
+
+**Vérification automatique** : après chaque sauvegarde, le job restaure le dump dans une
+stack Supabase vide sur le runner et compare le nombre de lignes de chaque table et une
+empreinte du schéma (`scripts/backup/fingerprint.sql`). Le même aller-retour tourne en
+local sur les PR qui touchent aux scripts, aux migrations ou à la CLI (job `round-trip`).
+
+**Surveillance** : healthchecks.io envoie un email si la sauvegarde échoue ou ne tourne
+plus (GitHub désactive les workflows planifiés d'un dépôt public après 60 jours sans
+activité). Si la copie des photos refuse de tourner parce que trop de photos ont
+disparu d'un coup (plus de 100), vérifier que c'est voulu, puis relancer le workflow à
+la main (**Actions → Backup → Run workflow**) avec un seuil plus élevé.
+
+Si le contrôle de restauration échoue sur des colonnes d'`auth` ou de `storage`, la
+version des services Supabase hébergés a probablement dépassé celle de la CLI épinglée :
+la mettre à jour (`npm install -D -E supabase@<version>`). Le dump, lui, a déjà été
+envoyé.
+
+### Restaurer
+
+Il faut `age`, `rclone` (`sudo dnf install age rclone`), Docker, `psql` et la clé
+privée `age` (gestionnaire de mots de passe). Toutes les commandes se lancent depuis la
+racine du dépôt, après `npm ci`, avec `node_modules/.bin` dans le `PATH`.
+
+1. **Récupérer une archive** : dashboard Cloudflare → R2 → `101ameliorations-backups`
+   → choisir un fichier dans `db/…` → _Download_.
+2. **Déchiffrer** (le fichier de clé est à supprimer ensuite) :
+
+   ```bash
+   mkdir dump
+   age -d -i ~/101ameliorations-backup.key 101ameliorations-db-….tar.gz.age | tar -xz -C dump
+   cat dump/manifest.txt   # date, dernière migration, version de Postgres
+   ```
+
+3. **Restaurer en local d'abord**, pour vérifier l'archive et explorer les données (base
+   sur le port 55322, la stack de dev n'est pas touchée) :
+
+   ```bash
+   KEEP_STACK=1 scripts/backup/restore-check.sh dump
+   ```
+
+   C'est aussi l'**exercice de restauration** à refaire de temps en temps, et après tout
+   changement de clé.
+
+4. **Pour réparer quelques données** (une migration ou une requête qui en a abîmé),
+   inutile de tout restaurer : extraire les lignes voulues de la base locale de l'étape
+   3 (`psql postgresql://postgres:postgres@127.0.0.1:55322/postgres`) et les réinjecter
+   en prod à la main.
+5. **Pour tout restaurer** sur un nouveau projet Supabase (région UE, même version
+   majeure de Postgres que dans `manifest.txt`), avec sa chaîne _Session pooler_ :
+
+   ```bash
+   scripts/backup/restore.sh dump "$NEW_DB_URL"
+   scripts/backup/verify.sh dump "$NEW_DB_URL"
+   ```
+
+   `restore.sh` exige un projet vide et fait tout dans une seule transaction : en cas
+   d'erreur, le projet reste vide.
+
+6. **Remettre les photos** : activer l'accès S3 du nouveau projet (Storage → Settings),
+   puis, avec un jeton R2 en lecture sur le bucket :
+
+   ```bash
+   BACKUP_R2_BUCKET=101ameliorations-backups R2_ACCOUNT_ID=… R2_ACCESS_KEY_ID=… \
+   R2_SECRET_ACCESS_KEY=… SUPABASE_S3_ENDPOINT=… SUPABASE_S3_REGION=… \
+   SUPABASE_S3_ACCESS_KEY_ID=… SUPABASE_S3_SECRET_ACCESS_KEY=… \
+     scripts/backup/restore-photos.sh
+   ```
+
+7. **Refaire à la main** ce qu'aucune sauvegarde ne contient : la configuration Auth du
+   dashboard (checklist de la section Auth), puis repointer la CI et le Worker sur le
+   nouveau projet (`SUPABASE_DB_URL`, `VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_S3_*`, voir « Secrets et variables
+   requis »).
+
 ## Déploiement (Cloudflare Worker + assets)
 
 Les variables `VITE_*` sont injectées dans le bundle **au build**, pas lues au
@@ -247,13 +342,20 @@ déploiement concurrent qui court-circuiterait ces garanties.
 
 **Jobs (`.github/workflows/ci.yml`)** :
 
-| Job                 | Déclencheur                           | Fait                                                                                                                                                               |
-| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `quality`           | PR + push `main`                      | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                                                |
-| `database`          | PR + push `main`                      | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                                                         |
-| `migrate-staging`   | PR (pas depuis un fork) + push `main` | Après `database` : `supabase db push` sur STAGING (environnement GitHub `staging`)                                                                                 |
-| `preview`           | PR (pas depuis un fork)               | Après `migrate-staging` : build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR)  |
-| `deploy-production` | push `main`                           | Après `e2e` et `migrate-staging` : `supabase db push` en prod (environnement GitHub `production`), puis build avec les vrais `VITE_*` et `wrangler deploy --var …` |
+| Job                 | Déclencheur                           | Fait                                                                                                                                                                                                                                                            |
+| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `quality`           | PR + push `main`                      | `lint`, `format:check`, `typecheck`, `test`, puis un build avec des `VITE_*` factices (prouve juste que ça compile)                                                                                                                                             |
+| `database`          | PR + push `main`                      | `supabase start`, `db reset --no-seed`, `supabase test db`, vérifie que `src/types/database.ts` est à jour                                                                                                                                                      |
+| `migrate-staging`   | PR (pas depuis un fork) + push `main` | Après `database` : `supabase db push` sur STAGING (environnement GitHub `staging`)                                                                                                                                                                              |
+| `preview`           | PR (pas depuis un fork)               | Après `migrate-staging` : build avec les vrais `VITE_*`, `wrangler versions upload --preview-alias pr-<N> --var …` (vars du Worker), commentaire de PR (URL + QR)                                                                                               |
+| `deploy-production` | push `main`                           | Après `e2e` et `migrate-staging` : si des migrations sont en attente, dump de la prod vers `db/pre-migration/` (bloquant), puis `supabase db push` en prod (environnement GitHub `production`), puis build avec les vrais `VITE_*` et `wrangler deploy --var …` |
+
+**Jobs (`.github/workflows/backup.yml`)**, voir « Sauvegardes et restauration » :
+
+| Job          | Déclencheur                                                            | Fait                                                                                                       |
+| ------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `round-trip` | PR touchant `scripts/backup/`, les migrations, `config.toml` ou la CLI | Dump de la base locale seedée, restauration dans une stack vide, vérification                              |
+| `backup`     | Chaque nuit (01:23 UTC) + lancement manuel                             | Dump de la prod chiffré vers R2, miroir des photos, vérification de la restauration, pings healthchecks.io |
 
 Le job `preview` est sauté sur les PR venant d'un fork (les secrets ne leur sont pas
 exposés) — dans ce cas, tester avec le workflow habituel (`wrangler versions upload` en
@@ -352,6 +454,13 @@ Une migration suit toujours le même chemin, sans `db push` manuel :
 | ------------- | ----------------- | --------------------------------------------- |
 | `staging`     | `SUPABASE_DB_URL` | aucune restriction (les PR doivent y accéder) |
 | `production`  | `SUPABASE_DB_URL` | **Selected branches → `main` uniquement**     |
+
+L'environnement `production` porte aussi les accès des sauvegardes (mise en place :
+`docs/plans/database-backups.md`, partie A) — secrets `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `SUPABASE_S3_ACCESS_KEY_ID`, `SUPABASE_S3_SECRET_ACCESS_KEY`,
+`BACKUP_HEALTHCHECK_URL` ; variables `BACKUP_R2_BUCKET`, `BACKUP_AGE_RECIPIENT` (une ou
+plusieurs clés publiques `age` séparées par des espaces), `SUPABASE_S3_ENDPOINT`,
+`SUPABASE_S3_REGION`. Le compte R2 est celui de `CLOUDFLARE_ACCOUNT_ID`.
 
 La restriction à `main` est ce qui empêche une branche de PR (qui peut modifier
 `ci.yml`) de lire l'accès à la base de prod : c'est pour ça que ces secrets vivent dans
