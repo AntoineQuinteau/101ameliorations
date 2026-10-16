@@ -177,6 +177,13 @@ describe('buildMigrationSql', () => {
     )
   })
 
+  it('repairs invalid outlines before refreshing the klashes', () => {
+    expect(sql.indexOf('st_makevalid')).toBeGreaterThan(sql.indexOf('insert into public.communes'))
+    expect(sql.indexOf('st_makevalid')).toBeLessThan(
+      sql.indexOf('select public.refresh_klash_admin_areas();'),
+    )
+  })
+
   it('doubles single quotes in names', () => {
     expect(sql).toContain("'L''Hôpital-Saint-Blaise'")
   })
