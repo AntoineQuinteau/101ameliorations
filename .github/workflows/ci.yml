@@ -308,6 +308,29 @@ jobs:
       - run: npm ci
       - name: Put the pinned Supabase CLI on PATH
         run: echo "$GITHUB_WORKSPACE/node_modules/.bin" >> "$GITHUB_PATH"
+      - name: Back up production before migrating
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BACKUP_R2_BUCKET: ${{ vars.BACKUP_R2_BUCKET }}
+          R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        # A restore point taken right before the migrations, so a migration
+        # that damages data costs nothing written since the nightly backup.
+        # Only when migrations are pending (a front-end-only deploy skips it),
+        # and blocking: no backup, no migration. Kept 30 days (db/pre-migration
+        # lifecycle rule). See backup.yml for the nightly one.
+        run: |
+          up_to_date=$(supabase db push --dry-run --agent no --output-format json \
+            --db-url "$SUPABASE_DB_URL" | jq -r .upToDate)
+          if [ "$up_to_date" = true ]; then
+            echo "No pending migration: no pre-migration backup."
+            exit 0
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq age rclone
+          scripts/backup/dump.sh "$SUPABASE_DB_URL" "$RUNNER_TEMP/dump"
+          scripts/backup/upload.sh "$RUNNER_TEMP/dump" db/pre-migration
       - name: supabase db push (production)
         env:
           # Session pooler connection string — see migrate-staging.

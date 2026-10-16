@@ -284,6 +284,7 @@ Page ou lien `/export` : CSV et GeoJSON (klashs + statut + compteurs, sans donn�
 - **Qualité** : ESLint + Prettier, tests unitaires (Vitest) sur les utilitaires (bbox, compression, transitions de statut), tests RLS en SQL (`supabase test db`), Playwright sur le parcours de création.
 - **i18n** : textes UI en français, isolés dans un fichier de messages (une seconde langue — basque — n'est pas prévue en v1 mais ne doit pas demander de refonte).
 - **Monitoring** : Sentry (front) gratuit, alertes Supabase sur quota.
+- **Sauvegardes** : le plan gratuit Supabase n'en fait aucune. Workflow GitHub Actions nocturne (`.github/workflows/backup.yml`) : dump de la base chiffré avec `age` et copie des photos vers un bucket Cloudflare R2 en juridiction UE, restauration vérifiée à chaque exécution, surveillance par healthchecks.io. Dump supplémentaire avant chaque migration de production. Détail et procédure de restauration : README, section « Sauvegardes et restauration ».
 
 ## 9. Plan de construction (pour Claude Code)
 
@@ -315,3 +316,4 @@ Chaque étape se termine par un déploiement preview testé sur téléphone rée
 3. **Tuiles** : MapTiler.
 4. **Conservation** : klashs `resolved` masqués de la carte par défaut après 90 jours, conservés en base et dans l'export.
 5. **Contact auteur** : `authority`, `moderator` et `admin` peuvent consulter l'email de l'auteur d'un klash (v1). Notifications automatiques : v2.
+6. **Sauvegardes** (11/10/2026) : un dump par jour (perte maximale acceptée : 24 h), conservé selon une rotation 7 quotidiens / 4 hebdomadaires / 6 mensuels ; dump avant migration conservé 30 jours ; photos supprimées dans l'app retirées de la copie après 30 jours. Une donnée supprimée peut donc subsister jusqu'à 6 mois dans les sauvegardes (mentionné dans la politique de confidentialité).
