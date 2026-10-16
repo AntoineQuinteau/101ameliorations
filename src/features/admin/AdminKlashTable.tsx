@@ -218,7 +218,7 @@ export function AdminKlashTable() {
             }
             className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           >
-            <option value="">{fr.admin.table.periodAny}</option>
+            <option value="">{fr.admin.table.statusAny}</option>
             {klashStatusSchema.options.map((status) => (
               <option key={status} value={status}>
                 {fr.status[status]}
@@ -238,7 +238,7 @@ export function AdminKlashTable() {
             }
             className="w-full min-w-0 rounded-md border border-neutral-300 px-3 py-2 text-sm md:w-auto focus:border-teal-700 focus:ring-1 focus:ring-teal-700 focus:outline-none"
           >
-            <option value="">{fr.admin.table.periodAny}</option>
+            <option value="">{fr.admin.table.categoryAny}</option>
             {klashCategorySchema.options.map((category) => (
               <option key={category} value={category}>
                 {fr.category[category]}
