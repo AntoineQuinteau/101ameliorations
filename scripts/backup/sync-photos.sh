@@ -25,14 +25,15 @@ mirror="r2:$BACKUP_R2_BUCKET/photos"
 # a human looks; if the deletions are legitimate, rerun the workflow by hand
 # with a higher threshold. (rclone's own --max-delete, kept below as a second
 # net, would first move files up to the threshold, then fail.)
-list() { rclone lsf -R --files-only --fast-list "$1" | sort; }
+# comm needs both lists sorted in its own collation: bytewise for both.
+list() { rclone lsf -R --files-only --fast-list "$1" | LC_ALL=C sort; }
 # Listed into variables first: a failed listing then stops the script, where
 # inside <(...) it would silently read as an empty bucket.
 in_storage=$(list supabase:klash-photos)
 # Before the first sync the mirror does not exist yet, which rclone reports as
 # "directory not found" (exit code 3): that one means empty.
 in_mirror=$(list "$mirror") || [ $? -eq 3 ]
-gone=$(comm -13 <(echo "$in_storage") <(echo "$in_mirror") | grep -c . || true)
+gone=$(LC_ALL=C comm -13 <(echo "$in_storage") <(echo "$in_mirror") | grep -c . || true)
 if [ "$gone" -gt "$max_deletions" ]; then
   echo "Refusing to sync: $gone photos gone from Storage since the last run," \
     "over the threshold of $max_deletions. Nothing was changed." >&2

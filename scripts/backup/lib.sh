@@ -4,12 +4,15 @@
 # Prints "schema.table rows" for every COPY block in the given pg_dump files,
 # counting the lines between each COPY header and its "\." terminator. COPY's
 # text format escapes newlines inside values, so one line is one row.
+# Sorted bytewise (LC_ALL=C): the list is compared across machines, and a
+# French locale, which ignores underscores when sorting, orders it differently
+# from the CI runner.
 row_counts() {
   awk '
     /^COPY / { table = $2; rows = 0; in_copy = 1; next }
     in_copy && /^\\\.$/ { gsub(/"/, "", table); print table, rows; in_copy = 0; next }
     in_copy { rows++ }
-  ' "$@" | sort
+  ' "$@" | LC_ALL=C sort
 }
 
 # rclone remotes are configured from the environment, never from a config
