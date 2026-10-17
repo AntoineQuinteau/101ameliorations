@@ -240,8 +240,13 @@ racine du dépôt, après `npm ci`, avec `node_modules/.bin` dans le `PATH`.
    sur le port 55322, la stack de dev n'est pas touchée) :
 
    ```bash
-   KEEP_STACK=1 scripts/backup/restore-check.sh dump
+   cd ~/dev/101_rayons_d_action             # la racine du dépôt
+   export PATH="$PWD/node_modules/.bin:$PATH"
+   KEEP_STACK=1 scripts/backup/restore-check.sh ~/chemin/vers/dump
+   # → « Restore verified: … » ; arrêter ensuite la stack avec la commande affichée
    ```
+
+   Puis supprimer le dossier `dump`, qui contient les données en clair.
 
    C'est aussi l'**exercice de restauration** à refaire de temps en temps, et après tout
    changement de clé.
