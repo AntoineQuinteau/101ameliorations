@@ -135,6 +135,7 @@ export default defineConfig(({ command, mode }) => {
       include: [
         'src/**/*.{test,spec}.{ts,tsx}',
         'vite-plugins/**/*.test.ts',
+        'scripts/**/*.test.ts',
         'workers/**/*.test.ts',
       ],
     },

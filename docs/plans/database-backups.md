@@ -1,10 +1,10 @@
 # Plan — sauvegardes de la base et des photos
 
 > Plan établi le 2026-10-11. Partie A (comptes et secrets) faite par Antoine le
-> 2026-10-16, sans la seconde clé `age` facultative. Partie B implémentée le 2026-10-16
-> (même PR) ; reste le premier lancement en production et l'exercice de restauration,
-> en fin de partie B. Procédure d'exploitation : README, « Sauvegardes et
-> restauration ».
+> 2026-10-16, sans la seconde clé `age` facultative. Partie B implémentée le 2026-10-16.
+> Premier lancement en production le 2026-10-16, exercice de restauration réussi le
+> 2026-10-17 : la sauvegarde est en place. Procédure d'exploitation : README,
+> « Sauvegardes et restauration ».
 
 ## Contexte
 
@@ -209,10 +209,11 @@ production), pas au niveau du dépôt : ils restent ainsi réservés à `main`.
 - [x] README : section « Sauvegardes et restauration », tableaux de la section CI.
 - [x] Politique de confidentialité : sauvegardes chiffrées dans l'UE, conservation 6
       mois au plus.
-- [ ] Après le merge : **Actions → Backup → Run workflow**, vérifier dans R2 la
-      présence de `db/daily/…` et `photos/…`, et le ping vert dans healthchecks.io.
-- [ ] **Exercice de restauration réel** par Antoine (README, « Restaurer », étapes 1 à 3) avec sa clé privée : tant qu'il n'a pas réussi, la sauvegarde n'est pas
-      considérée comme en place.
+- [x] Premier lancement en production (2026-10-16) : dump dans `db/daily/`, 42 photos
+      dans `photos/`, restauration vérifiée, ping healthchecks.io.
+- [x] Exercice de restauration par Antoine avec sa clé privée (2026-10-17) : archive
+      de la sauvegarde planifiée déchiffrée et restaurée en local, 45 tables, 540
+      lignes et 106 objets de schéma vérifiés.
 
 ## Ce que l'implémentation a appris
 
@@ -250,6 +251,10 @@ depuis le miroir et comparées octet par octet. Écarts par rapport à la concep
   testée contre le vrai bucket), et rclone ne refait plus d'opération entière
   (`RCLONE_RETRIES=1`) : une erreur systématique fait échouer le job au lieu d'être
   masquée.
+- **Tri et langue** (constaté pendant l'exercice de restauration) : `row-counts.txt`,
+  écrit par la CI, était comparé à un recomptage trié avec la langue de la machine ;
+  le tri français ignore les `_` et ordonne autrement. Les tris des scripts sont
+  désormais indépendants de la langue (`LC_ALL=C`).
 - **Versions** : le dump passe par l'image Postgres de la CLI épinglée, à la bonne
   version. Si les services Auth/Storage hébergés deviennent plus récents que ceux de la
   CLI, le contrôle de restauration peut échouer sur des colonnes inconnues : mettre la
