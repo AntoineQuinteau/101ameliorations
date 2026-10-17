@@ -36,10 +36,11 @@ Légende des emplacements :
 | MapTiler                  | Tuiles de fond de carte                                          | Oui (sauf proxy de dev) |
 | Sentry                    | Remontée d'erreurs front                                         | Non                     |
 | Umami Cloud               | Mesure d'audience sans cookie (prod uniquement)                  | Non                     |
-| Cloudflare R2             | Stockage des sauvegardes chiffrées (base + photos), UE           | Oui (sauvegardes)       |
+| Cloudflare R2             | Sauvegarde auto nocturne chiffrée (base + photos), UE            | Oui (en service)        |
 | healthchecks.io           | Alerte email si la sauvegarde nocturne échoue ou ne tourne plus  | Oui (sauvegardes)       |
 | GitHub Actions            | CI : lint, tests, migrations, previews, déploiement, sauvegardes | Oui                     |
 | OpenStreetMap             | Données cartographiques (via MapTiler) — attribution seule       | — (aucune clé)          |
+| geo.api.gouv.fr           | Référentiel des communes et EPCI (générateur annuel)             | — (aucune clé)          |
 
 Outils open source utilisés par les sauvegardes, sans compte : `age` (chiffrement des
 dumps) et `rclone` (copie vers R2, version épinglée et vérifiée par SHA-256 dans
@@ -136,14 +137,60 @@ Widgets créés dans **Dashboard Cloudflare** → Turnstile (domaines autorisés
 
 ## Cloudflare R2 (sauvegardes)
 
-**Rôle** : stocker les sauvegardes, dans le bucket `101ameliorations-backups` (juridiction
-UE). Le plan gratuit Supabase n'en fait aucune : `.github/workflows/backup.yml` dumpe la
-base chaque nuit (01:23 UTC), la chiffre avec `age` et l'envoie dans R2, puis copie les
-photos du Storage avec `rclone`. `deploy-production` (`ci.yml`) y dépose aussi un dump
-avant d'appliquer des migrations. Rotation et durées de conservation : règles
-d'expiration du bucket (dashboard Cloudflare), pas le code. Détails : README,
-« Sauvegardes et restauration », et
-[`docs/plans/database-backups.md`](plans/database-backups.md).
+**Rôle** : stocker les sauvegardes automatiques de la production, dans le bucket
+`101ameliorations-backups` (juridiction UE). Le plan gratuit Supabase n'en fait aucune.
+
+**État** : en service depuis le 2026-10-16 (premier lancement en production : dump dans
+`db/daily/`, 42 photos dans `photos/`, restauration vérifiée, ping healthchecks.io).
+Exercice de restauration réussi le 2026-10-17 avec la clé privée : archive planifiée
+déchiffrée et restaurée en local, 45 tables, 540 lignes et 106 objets de schéma vérifiés.
+
+**Fonctionnement automatique** :
+
+1. **Chaque nuit à 01:23 UTC**, le job `backup` de
+   [`.github/workflows/backup.yml`](../.github/workflows/backup.yml) (environnement
+   GitHub `production`) :
+   - dumpe la base de prod (`scripts/backup/dump.sh`, via `SUPABASE_DB_URL`) ;
+   - chiffre le dump avec `age` et l'envoie dans R2 (`upload.sh`) : toujours dans
+     `db/daily/`, le dimanche aussi dans `db/weekly/`, le 1ᵉʳ du mois aussi dans
+     `db/monthly/` ;
+   - copie les photos du Storage vers `photos/` avec `rclone` (`sync-photos.sh`) ; une
+     photo disparue de Storage part dans `photos-deleted/` au lieu d'être effacée. Si
+     plus de 100 photos ont disparu d'un coup, la copie refuse de tourner : relancer à
+     la main (**Actions → Backup → Run workflow**) avec un seuil plus élevé ;
+   - restaure le dump dans une stack Supabase vide sur le runner et compare le nombre de
+     lignes de chaque table et une empreinte du schéma (`restore-check.sh`) ;
+   - pingue healthchecks.io au début, au succès ou à l'échec.
+2. **Avant chaque migration de production**, `deploy-production`
+   ([`ci.yml`](../.github/workflows/ci.yml)) dépose un dump dans `db/pre-migration/`.
+   Le dump est bloquant (pas de sauvegarde, pas de migration) et sauté s'il n'y a aucune
+   migration en attente.
+3. **Sur les PR** qui touchent `scripts/backup/`, les migrations, `config.toml` ou la CLI,
+   le job `round-trip` fait le même aller-retour dump → restauration → vérification sur
+   la base locale seedée, sans aucun secret.
+
+**Contenu du bucket** — la conservation est appliquée par les règles d'expiration du
+bucket (Dashboard Cloudflare → R2 → bucket → Settings → Object lifecycle rules), pas par
+le code :
+
+| Préfixe             | Contenu                                 | Conservé  |
+| ------------------- | --------------------------------------- | --------- |
+| `db/daily/`         | Dump de la base chiffré avec `age`      | 7 jours   |
+| `db/weekly/`        | Dump du dimanche                        | 28 jours  |
+| `db/monthly/`       | Dump du 1ᵉʳ du mois                     | 185 jours |
+| `db/pre-migration/` | Dump pris avant des migrations de prod  | 30 jours  |
+| `photos/`           | Miroir du bucket Storage `klash-photos` | —         |
+| `photos-deleted/`   | Photos disparues de Storage, par date   | 30 jours  |
+
+Un dump contient rôles, schéma, historique des migrations, données (y compris
+`auth.users` et `storage.objects`) et les politiques/triggers posés sur `auth` et
+`storage`. **Pas sauvegardé** : la configuration Auth du dashboard Supabase (SMTP,
+templates, captcha, URLs) et les secrets ; le Worker et les assets se reconstruisent
+depuis git.
+
+**Restaurer** : nécessite `age`, `rclone`, Docker, `psql` et la clé privée `age`.
+Procédure pas à pas dans le README, « Sauvegardes et restauration → Restaurer ». Plan et
+décisions : [`docs/plans/database-backups.md`](plans/database-backups.md).
 
 | Variable / secret            | Usage                                                      | Défini où                                                                                                  |
 | ---------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -228,6 +275,16 @@ tous les accès des sauvegardes (R2, S3 Supabase, healthchecks.io).
 
 Données cartographiques sous-jacentes aux tuiles MapTiler. Aucune clé ; seule
 l'attribution « © OpenStreetMap contributors » est affichée sur la carte.
+
+## geo.api.gouv.fr (référentiel des communes)
+
+**Rôle** : source des communes (code INSEE, nom, EPCI, contours Admin Express de l'IGN,
+Licence Ouverte 2.0) qui servent à rattacher chaque klash à sa commune et à son EPCI.
+Appelée uniquement par le générateur `npm run gen:communes`
+(`scripts/build-communes-migration.ts`), à relancer une fois par an quand l'INSEE publie
+la nouvelle liste ; le résultat est commité comme une nouvelle migration
+(`supabase/migrations/*_communes_<année>.sql`). L'app et la CI ne l'appellent jamais.
+API publique, aucune clé.
 
 ---
 
