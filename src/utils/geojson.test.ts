@@ -7,6 +7,10 @@ function makeKlash(overrides: Partial<ExportKlash> = {}): ExportKlash {
     id: 'k1',
     lat: 43.49,
     lng: -1.47,
+    inseeCode: '64102',
+    communeName: 'Bayonne',
+    epciSiren: '200067106',
+    epciName: 'CA du Pays Basque',
     category: 'category_1',
     importance: 'medium',
     status: 'new',
@@ -42,6 +46,10 @@ describe('toGeoJson', () => {
     const geojson = toGeoJson([klash])
     expect(geojson.features[0].properties).toEqual({
       id: klash.id,
+      inseeCode: klash.inseeCode,
+      communeName: klash.communeName,
+      epciSiren: klash.epciSiren,
+      epciName: klash.epciName,
       category: klash.category,
       importance: klash.importance,
       status: klash.status,

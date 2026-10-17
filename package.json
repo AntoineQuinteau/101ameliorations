@@ -16,6 +16,7 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "gen:types": "supabase gen types typescript --local > src/types/database.ts && prettier --write src/types/database.ts",
+    "gen:communes": "node scripts/build-communes-migration.ts",
     "gen:icons": "pwa-assets-generator",
     "gen:og-image": "node scripts/generate-og-image.mjs",
     "db:test": "supabase test db",
