@@ -30,7 +30,7 @@ import { useKlashAuthorContact } from './useKlashAuthorContact'
 import { useMyConfirmation } from './useMyConfirmation'
 import { useShareKlash } from './useShareKlash'
 import { useUpdateKlash } from './useUpdateKlash'
-import { Check } from 'lucide-react'
+import { Check, MapPin } from 'lucide-react'
 
 /** Maps an updateKlash failure to a French message: RLS turns a forbidden
  * edit (e.g. the klash left `new` mid-edit) into a distinguishable 'klash
@@ -173,6 +173,16 @@ export function KlashDetail({
         >
           <div className="flex min-w-0 flex-col gap-4">
             <KlashMiniMap klash={klash} />
+
+            {klash.communeName && (
+              <p className="flex items-center gap-1.5 text-sm text-neutral-700">
+                <MapPin aria-hidden="true" className="h-4 w-4 shrink-0 text-neutral-500" />
+                <span>
+                  <span className="sr-only">{fr.detail.communeLabel} </span>
+                  {klash.communeName}
+                </span>
+              </p>
+            )}
 
             <KlashPhotoGallery klashId={klash.id} />
 

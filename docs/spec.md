@@ -116,7 +116,7 @@ create index klashes_status_idx on klashes (status);
 
 -- Reference table of French communes (INSEE code, name, EPCI, boundary) used to
 -- fill the klashes' administrative area. Read-only for clients; rewritten only
--- by a migration, once per COG year (see scripts/build-communes-migration.mjs).
+-- by a migration, once per COG year (see scripts/build-communes-migration.ts).
 create table communes (
   insee_code  char(5) primary key,
   name        text not null,
@@ -245,7 +245,7 @@ Hors v1 : file d'attente hors-ligne des signalements (Background Sync) — voir 
 
 ### 6.3 Détail (`/k/:id`)
 
-- Carte réduite, photos (galerie), catégorie, importance, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.
+- Carte réduite, commune du signalement sous la carte (si le point est dans une commune connue, cf. `commune_name` §4), photos (galerie), catégorie, importance, statut avec date, auteur (pseudo), compteur de confirmations, bouton « Je confirme » (toggle, désactivé pour l'auteur), proposition de solution si renseignée.
 - Historique des statuts en frise verticale : la création du signalement, puis une étape par changement (nouveau statut, date, acteur, note éventuelle — ex. « CAPB — intervention programmée semaine 38 ») ; sur écran large, les commentaires et leur formulaire passent dans une colonne à droite.
 - Commentaires chronologiques, formulaire pour les connectés. Édition/suppression de ses propres commentaires.
 - Actions contextuelles selon rôle : Modifier / Supprimer (auteur si `new`, moderator, admin) ; Changer le statut (authority, moderator selon §3) avec note ; Masquer un commentaire (moderator, admin).
