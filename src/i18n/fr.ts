@@ -138,6 +138,7 @@ export const fr = {
     reportedBy: 'Signalé par',
     badgesLabel: 'Catégorie, importance et statut',
     proposedSolutionLabel: 'Proposition de solution',
+    communeLabel: 'Commune :',
     resolvedOn: (date: string) => `Résolu le ${date}`,
     updatedOn: (date: string) => `Mis à jour le ${date}`,
     confirmations: 'Confirmations',

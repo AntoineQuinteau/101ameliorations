@@ -21,6 +21,7 @@ function makeKlash(overrides: Partial<Klash> = {}): Klash {
     createdAt: '2026-06-01T00:00:00.000Z',
     updatedAt: '2026-06-01T00:00:00.000Z',
     resolvedAt: null,
+    communeName: null,
     authorDisplayName: null,
     authorOrganization: null,
     authorRole: 'user',
