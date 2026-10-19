@@ -240,7 +240,7 @@ racine du dépôt, après `npm ci`, avec `node_modules/.bin` dans le `PATH`.
    sur le port 55322, la stack de dev n'est pas touchée) :
 
    ```bash
-   cd ~/dev/101_rayons_d_action             # la racine du dépôt
+   cd ~/dev/101ameliorations                # la racine du dépôt
    export PATH="$PWD/node_modules/.bin:$PATH"
    KEEP_STACK=1 scripts/backup/restore-check.sh ~/chemin/vers/dump
    # → « Restore verified: … » ; arrêter ensuite la stack avec la commande affichée
