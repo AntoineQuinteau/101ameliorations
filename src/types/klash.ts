@@ -1,10 +1,13 @@
 import { z } from 'zod'
+import { Constants } from './database'
 import { userRoleSchema } from './profile'
 import { fr } from '../i18n/fr'
 
-// Mirrors the database enums (src/types/database.ts, generated from
-// supabase/migrations). Kept as a separate zod source of truth so klash
-// objects coming back from Supabase can be validated, not just cast.
+// zod schemas for the database enums, so klash objects coming back from
+// Supabase can be validated, not just cast. Importance and status are built
+// from the generated enums (src/types/database.ts, generated from
+// supabase/migrations): the Postgres type is the single source of truth.
+// The category list keeps a hand-written display order, see below.
 export const klashCategorySchema = z.enum([
   'category_1',
   'category_2',
@@ -22,17 +25,10 @@ export type KlashCategory = z.infer<typeof klashCategorySchema>
 // where new categories are inserted above.
 export const CATEGORY_OTHER: KlashCategory = 'category_7'
 
-export const klashImportanceSchema = z.enum(['low', 'medium', 'high'])
+export const klashImportanceSchema = z.enum(Constants.public.Enums.klash_importance)
 export type KlashImportance = z.infer<typeof klashImportanceSchema>
 
-export const klashStatusSchema = z.enum([
-  'new',
-  'acknowledged',
-  'in_progress',
-  'resolved',
-  'rejected',
-  'duplicate',
-])
+export const klashStatusSchema = z.enum(Constants.public.Enums.klash_status)
 export type KlashStatus = z.infer<typeof klashStatusSchema>
 
 // `klashes_public` (and the `klashes_in_bbox` RPC built on it) is a Postgres

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   klashCategorySchema,
+  klashImportanceSchema,
   klashStatusSchema,
   type Klash,
   type KlashCategory,
@@ -35,7 +36,7 @@ export const MAP_STATUSES: KlashStatus[] = [...mapStatusSchema.options]
 // Derived from the zod schema rather than listed by hand, so a category
 // added there (the source of truth) doesn't also need updating here.
 export const ALL_CATEGORIES: KlashCategory[] = [...klashCategorySchema.options]
-export const ALL_IMPORTANCES: KlashImportance[] = ['low', 'medium', 'high']
+export const ALL_IMPORTANCES: KlashImportance[] = [...klashImportanceSchema.options]
 
 export const defaultFilters: KlashFilters = {
   categories: [],
