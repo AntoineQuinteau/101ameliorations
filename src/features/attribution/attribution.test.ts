@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { Constants } from '../../types/database'
 import {
   applyArrival,
   attributionFromLaunchParams,
@@ -113,9 +114,11 @@ describe('applyArrival', () => {
     })
   })
 
-  it('accepts the unspecified medium', () => {
-    const state = applyArrival(null, arrival('?utm_source=cpam&utm_medium=unspecified'))
-    expect(state.firstTouch).toMatchObject({ source: 'cpam', medium: 'unspecified' })
+  // Every value of the database enum must be accepted: a hand-written copy of
+  // the list that falls behind the enum would silently drop the touch.
+  it.each(Constants.public.Enums.campaign_medium)('accepts the %s medium', (medium) => {
+    const state = applyArrival(null, arrival(`?utm_source=cpam&utm_medium=${medium}`))
+    expect(state.firstTouch).toMatchObject({ source: 'cpam', medium })
   })
 
   it('drops values outside the convention', () => {

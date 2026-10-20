@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { Constants } from '../../../src/types/database'
 import { handleIosManifest } from './manifest'
 import type { Env } from './index'
 
@@ -46,11 +47,12 @@ describe('handleIosManifest', () => {
     expect(body.id).toBe('/')
   })
 
-  it('accepts the unspecified medium', async () => {
-    const { body } = await manifestFor('?ft=cpam_unspecified_x__')
-    expect(new URL(body.start_url, 'https://x.org').searchParams.get('ft')).toBe(
-      'cpam_unspecified_x__',
-    )
+  // Every value of the database enum must be accepted: a hand-written copy of
+  // the list that falls behind the enum would silently lose iOS attribution.
+  it.each(Constants.public.Enums.campaign_medium)('accepts the %s medium', async (medium) => {
+    const touch = `cpam_${medium}_x__`
+    const { body } = await manifestFor(`?ft=${touch}`)
+    expect(new URL(body.start_url, 'https://x.org').searchParams.get('ft')).toBe(touch)
   })
 
   it('accepts a referrer-only touch', async () => {
