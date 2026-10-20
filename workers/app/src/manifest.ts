@@ -17,7 +17,7 @@ const STATIC_MANIFEST_PATH = '/manifest.webmanifest'
 
 const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const HOST = /^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/
-const MEDIUMS = new Set(['social', 'email', 'print', 'press'])
+const MEDIUMS = new Set(['unspecified', 'social', 'email', 'print', 'press'])
 
 /** `source_medium_campaign_content_referrerHost`, empty parts allowed, or null
  * when the value is malformed or carries neither a source nor a host. */

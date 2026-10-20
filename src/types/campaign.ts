@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /** Closed list of media, mirrors the `campaign_medium` enum. */
-export const campaignMediumSchema = z.enum(['social', 'email', 'print', 'press'])
+export const campaignMediumSchema = z.enum(['unspecified', 'social', 'email', 'print', 'press'])
 export type CampaignMedium = z.infer<typeof campaignMediumSchema>
 
 export interface CampaignLink {

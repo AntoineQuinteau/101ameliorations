@@ -46,6 +46,13 @@ describe('handleIosManifest', () => {
     expect(body.id).toBe('/')
   })
 
+  it('accepts the unspecified medium', async () => {
+    const { body } = await manifestFor('?ft=cpam_unspecified_x__')
+    expect(new URL(body.start_url, 'https://x.org').searchParams.get('ft')).toBe(
+      'cpam_unspecified_x__',
+    )
+  })
+
   it('accepts a referrer-only touch', async () => {
     const { body } = await manifestFor('?ft=____www.sudouest.fr')
     expect(new URL(body.start_url, 'https://x.org').searchParams.get('ft')).toBe(
