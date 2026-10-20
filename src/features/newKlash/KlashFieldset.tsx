@@ -1,9 +1,9 @@
-import { CATEGORY_OTHER, klashCategorySchema, type KlashImportance } from '../../types/klash'
+import { CATEGORY_OTHER, klashCategorySchema, klashImportanceSchema } from '../../types/klash'
 import { fr } from '../../i18n/fr'
 import type { KlashFormDraft } from './newKlashSchemas'
 
 const CATEGORIES = klashCategorySchema.options
-const IMPORTANCES: KlashImportance[] = ['low', 'medium', 'high']
+const IMPORTANCES = klashImportanceSchema.options
 
 /** Red asterisk marking a required field's label, with a screen-reader-only
  * text equivalent (the asterisk itself is decorative to assistive tech). */

@@ -1,9 +1,9 @@
 import { z } from 'zod'
+import { Constants } from './database'
 
-// Mirrors the database enum (src/types/database.ts, generated from
-// supabase/migrations). Kept as a separate zod source of truth, same
-// rationale as klashCategorySchema etc. in src/types/klash.ts.
-export const userRoleSchema = z.enum(['user', 'moderator', 'authority', 'admin'])
+// Built from the generated database enum (src/types/database.ts), same
+// rationale as klashStatusSchema etc. in src/types/klash.ts.
+export const userRoleSchema = z.enum(Constants.public.Enums.user_role)
 export type UserRole = z.infer<typeof userRoleSchema>
 
 export const profileSchema = z.object({
