@@ -1,7 +1,9 @@
 import { z } from 'zod'
+import { Constants } from './database'
 
-/** Closed list of media, mirrors the `campaign_medium` enum. */
-export const campaignMediumSchema = z.enum(['unspecified', 'social', 'email', 'print', 'press'])
+/** Closed list of media, derived from the generated `campaign_medium` enum
+ * (the Postgres type is the single source of truth). */
+export const campaignMediumSchema = z.enum(Constants.public.Enums.campaign_medium)
 export type CampaignMedium = z.infer<typeof campaignMediumSchema>
 
 export interface CampaignLink {
