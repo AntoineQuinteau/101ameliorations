@@ -1,6 +1,11 @@
 import { fr } from '../../i18n/fr'
-import type { CampaignStat } from '../../types/campaign'
+import type { CampaignMedium, CampaignStat } from '../../types/campaign'
 import { useCampaignSources } from './useCampaigns'
+
+/** French label of every campaign medium. Typed as a complete record, so a
+ * value added to the `campaign_medium` enum without its label in
+ * src/i18n/fr.ts fails the typecheck here. */
+export const MEDIUM_LABELS: Readonly<Record<CampaignMedium, string>> = fr.campaigns.medium
 
 /** Display label of a source: the French label of src/i18n/fr.ts first (so the
  * historical and synthetic sources never change), then the label typed when
@@ -23,7 +28,7 @@ export function useSourceLabel(): (source: string) => string {
 /** One line saying what a link is: emitter · medium · campaign · precision. */
 export function linkDescription(row: CampaignStat, labelOf: (source: string) => string): string {
   const medium = row.medium
-    ? ((fr.campaigns.medium as Record<string, string>)[row.medium] ?? row.medium)
+    ? ((MEDIUM_LABELS as Record<string, string>)[row.medium] ?? row.medium)
     : null
   return [labelOf(row.source), medium, row.campaign, row.content || fr.campaigns.list.noContent]
     .filter(Boolean)

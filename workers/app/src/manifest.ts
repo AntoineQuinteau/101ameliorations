@@ -10,6 +10,7 @@
 // convention as the database) and anything that fails is simply dropped. With
 // no valid parameter the static manifest is returned unchanged.
 
+import { Constants } from '../../../src/types/database'
 import type { Env } from './index'
 
 const MANIFEST_PATH = '/ios-manifest.webmanifest'
@@ -17,7 +18,8 @@ const STATIC_MANIFEST_PATH = '/manifest.webmanifest'
 
 const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const HOST = /^[a-z0-9]([a-z0-9.-]{0,251}[a-z0-9])?$/
-const MEDIUMS = new Set(['unspecified', 'social', 'email', 'print', 'press'])
+// Derived from the generated enum so a new medium needs no change here.
+const MEDIUMS: ReadonlySet<string> = new Set(Constants.public.Enums.campaign_medium)
 
 /** `source_medium_campaign_content_referrerHost`, empty parts allowed, or null
  * when the value is malformed or carries neither a source nor a host. */

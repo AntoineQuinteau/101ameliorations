@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { fr } from '../../i18n/fr'
 import { campaignMediumSchema, type CampaignLink, type CampaignMedium } from '../../types/campaign'
-import { useSourceLabel } from './campaignLabels'
+import { MEDIUM_LABELS, useSourceLabel } from './campaignLabels'
 import {
   RESERVED_SOURCES,
   buildCampaignKey,
@@ -141,7 +141,7 @@ export function CampaignLinkForm({
           >
             {MEDIUMS.map((value) => (
               <option key={value} value={value}>
-                {fr.campaigns.medium[value]}
+                {MEDIUM_LABELS[value]}
               </option>
             ))}
           </select>
