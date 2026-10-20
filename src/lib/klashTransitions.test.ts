@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { Constants } from '../types/database'
 import { allowedNextStatuses, canChangeKlashStatus } from './klashTransitions'
 
 describe('canChangeKlashStatus', () => {
@@ -68,5 +71,36 @@ describe('allowedNextStatuses', () => {
   it('is empty when there is no arrow out of a status for that role', () => {
     expect(allowedNextStatuses('moderator', 'acknowledged')).toEqual([])
     expect(allowedNextStatuses('authority', 'duplicate')).toEqual([])
+  })
+})
+
+// The database function can_change_klash_status() is the authority. Its
+// exhaustive matrix lives in supabase/tests/status_transitions_matrix_test.sql
+// (checked against the real function by `supabase test db`); reading the same
+// list here keeps this UI mirror from drifting, with a single copy of it.
+describe('UI mirror of can_change_klash_status()', () => {
+  const sql = readFileSync(
+    resolve(__dirname, '../../supabase/tests/status_transitions_matrix_test.sql'),
+    'utf8',
+  )
+  const block = sql.split('-- BEGIN allowed transitions')[1]?.split('-- END allowed transitions')[0]
+  const allowed = new Set(
+    [...(block ?? '').matchAll(/\('(\w+)',\s*'(\w+)',\s*'(\w+)'\)/g)].map(
+      ([, role, from, to]) => `${role}:${from}>${to}`,
+    ),
+  )
+
+  it('reads the matrix from the database test', () => {
+    expect(allowed.size).toBe(16)
+  })
+
+  const cases = Constants.public.Enums.user_role.flatMap((role) =>
+    Constants.public.Enums.klash_status.flatMap((from) =>
+      Constants.public.Enums.klash_status.map((to) => [role, from, to] as const),
+    ),
+  )
+
+  it.each(cases)('%s: %s -> %s matches the database', (role, from, to) => {
+    expect(canChangeKlashStatus(role, from, to)).toBe(allowed.has(`${role}:${from}>${to}`))
   })
 })
