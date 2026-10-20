@@ -1,6 +1,9 @@
 import { shouldShowIosInstallHint } from './iosInstall'
 
-export type InstallPlatform = 'android' | 'ios' | 'desktop'
+/** Platforms the app reports. The database also stores 'other' (the fallback
+ * for anything else), see install_events.platform. */
+export const INSTALL_PLATFORMS = ['android', 'ios', 'desktop'] as const
+export type InstallPlatform = (typeof INSTALL_PLATFORMS)[number]
 
 /** True when the app runs as an installed PWA. 'standalone' is Safari-only
  * and not in TS's Navigator type. */
