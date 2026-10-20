@@ -7,12 +7,12 @@ confidentialité, déjà à jour dans `src/i18n/fr.ts`).
 
 ## Convention de nommage
 
-| Champ      | Sens                               | Exemple                             |
-| ---------- | ---------------------------------- | ----------------------------------- |
-| `source`   | qui communique (liste extensible)  | `txdo`, `presse`, `cpam`            |
-| `medium`   | type de support, **liste fermée**  | `social`, `email`, `print`, `press` |
-| `campaign` | l'opération et sa date             | `lancement-2026-10`                 |
-| `content`  | le support précis (peut être vide) | `papillon-velo`                     |
+| Champ      | Sens                               | Exemple                                                                          |
+| ---------- | ---------------------------------- | -------------------------------------------------------------------------------- |
+| `source`   | qui communique (liste extensible)  | `txdo`, `presse`, `cpam`                                                         |
+| `medium`   | type de support, **liste fermée**  | `unspecified` (« Non précisé », par défaut), `social`, `email`, `print`, `press` |
+| `campaign` | l'opération et sa date             | `lancement-2026-10`                                                              |
+| `content`  | le support précis (peut être vide) | `papillon-velo`                                                                  |
 
 Toutes les valeurs : minuscules, sans accents, sans espaces, mots séparés par des
 tirets (`^[a-z0-9]+(-[a-z0-9]+)*$`, 64 caractères au plus). La règle est vérifiée **en

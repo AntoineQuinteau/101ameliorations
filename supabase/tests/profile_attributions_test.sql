@@ -3,7 +3,7 @@
 -- default, immutability and privacy. Run with `npx supabase test db`.
 -- UUID range dddddddd-....
 begin;
-select plan(15);
+select plan(16);
 
 create function pg_temp.new_user(n int, meta jsonb) returns void
 language sql as $$
@@ -72,6 +72,12 @@ select pg_temp.new_user(6, jsonb_build_object('attribution', jsonb_build_object(
   'first_touch', jsonb_build_object('source','cpam','medium','email'))));
 select is((select last_source || '/' || last_medium::text from pg_temp.attr(6)), 'cpam/email',
   'a missing last touch defaults to the first');
+
+-- 11: the "unspecified" medium is kept (20261020090000_campaign_medium_unspecified.sql).
+select pg_temp.new_user(11, jsonb_build_object('attribution', jsonb_build_object(
+  'first_touch', jsonb_build_object('source','cpam','medium','unspecified'))));
+select is((select first_medium::text from pg_temp.attr(11)), 'unspecified',
+  'an unspecified medium is stored as such');
 
 -- 7: garbage shapes never break the sign-up.
 select lives_ok($$ select pg_temp.new_user(7, '{"attribution":"oops"}'::jsonb) $$,

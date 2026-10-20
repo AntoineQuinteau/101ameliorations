@@ -972,7 +972,7 @@ export type Database = {
       }
     }
     Enums: {
-      campaign_medium: 'social' | 'email' | 'print' | 'press'
+      campaign_medium: 'unspecified' | 'social' | 'email' | 'print' | 'press'
       klash_category:
         | 'category_1'
         | 'category_2'
@@ -1099,7 +1099,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      campaign_medium: ['social', 'email', 'print', 'press'],
+      campaign_medium: ['unspecified', 'social', 'email', 'print', 'press'],
       klash_category: [
         'category_1',
         'category_2',

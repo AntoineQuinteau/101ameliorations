@@ -5,7 +5,7 @@
 -- Self-contained, like the other files here: own fixtures, UUID range
 -- cccccccc-... (disjoint from the other tests and the seed).
 begin;
-select plan(52);
+select plan(53);
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -152,6 +152,10 @@ select is(
   (select slug from public.create_campaign_link('presse', 'press', 'autre-2026-12', '')),
   'presse-2',
   'empty content: source alone, then suffix');
+select is(
+  (select medium::text from public.create_campaign_link('presse', 'unspecified', 'autre-2026-12', 'divers')),
+  'unspecified',
+  'a link can be created with an unspecified medium');
 select throws_ok(
   $$ select public.create_campaign_link('unknown', 'print', 'x-2026-10', 'a') $$,
   'unknown campaign source', 'unknown source rejected');

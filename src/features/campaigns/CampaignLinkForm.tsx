@@ -39,7 +39,7 @@ export function CampaignLinkForm({
   const labelOf = useSourceLabel()
 
   const [source, setSource] = useState('')
-  const [medium, setMedium] = useState<CampaignMedium>('print')
+  const [medium, setMedium] = useState<CampaignMedium>('unspecified')
   const [content, setContent] = useState('')
   const [campaignChoice, setCampaignChoice] = useState('')
   const [newName, setNewName] = useState('')

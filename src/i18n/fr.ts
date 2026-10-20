@@ -488,6 +488,7 @@ export const fr = {
       referral: 'Site référent',
     },
     medium: {
+      unspecified: 'Non précisé',
       social: 'Réseaux sociaux',
       email: 'Email',
       print: 'Support imprimé',

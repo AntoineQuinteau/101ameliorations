@@ -113,6 +113,11 @@ describe('applyArrival', () => {
     })
   })
 
+  it('accepts the unspecified medium', () => {
+    const state = applyArrival(null, arrival('?utm_source=cpam&utm_medium=unspecified'))
+    expect(state.firstTouch).toMatchObject({ source: 'cpam', medium: 'unspecified' })
+  })
+
   it('drops values outside the convention', () => {
     const bad = applyArrival(null, arrival('?utm_source=CPAM&utm_medium=print'))
     expect(bad.firstTouch).toBeNull()
