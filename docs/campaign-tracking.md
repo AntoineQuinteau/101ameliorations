@@ -29,6 +29,25 @@ la base interdit de la modifier, même par migration. Seul son **libellé** (ce 
 l'on voit dans les listes) peut se corriger, par une migration
 (`update campaign_sources set label = …`).
 
+## Ajouter un type de support
+
+La liste des supports est le type Postgres `public.campaign_medium`, et lui seul : la
+validation SQL de l'attribution (`sanitize_attribution_touch`), le formulaire, la lecture
+des `utm_*` à l'arrivée et le Worker du manifeste iOS la lisent depuis le type généré
+(`src/types/database.ts`). Pour ajouter un support :
+
+1. Une migration d'une ligne, avec `before` ou `after` pour fixer sa place dans la liste
+   déroulante (l'ordre du formulaire est celui du type) :
+   `alter type public.campaign_medium add value 'video' after 'print';`
+2. `npx supabase db reset` puis `npm run gen:types`.
+3. Le libellé dans `fr.campaigns.medium` (`src/i18n/fr.ts`). Un libellé oublié fait
+   échouer `npm run typecheck` (`MEDIUM_LABELS`, `src/features/campaigns/campaignLabels.ts`).
+
+Déploiement : appliquer la migration en production (`npx supabase db push`) **avant** de
+fusionner, sinon le front connaîtrait une valeur que la base refuse. Dans l'autre sens,
+un lien créé avec la nouvelle valeur avant le déploiement du front ferait échouer
+l'affichage de `/campaigns` tant que l'ancien front est en ligne.
+
 ## Créer une campagne et un lien
 
 Réservé aux comptes qui ont le droit « Peut créer et suivre les liens de campagne »
