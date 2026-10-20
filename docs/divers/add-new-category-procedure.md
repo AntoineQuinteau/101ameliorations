@@ -34,9 +34,10 @@ npm run gen:types
 
 Manually edit `src/types/klash.ts`:
 
-- Add the new value to the `klashCategorySchema` array.
-- Position it wherever you want it to appear in the UI.
+- Add the new value to `CATEGORY_DISPLAY_ORDER`, wherever you want it to appear in the UI.
 - **Important:** Always keep `category_7` last, as it is the special _"Autre"_ option.
+- You cannot forget this step: `npm run typecheck` fails (`CategoriesAllListed`) and so does
+  `src/types/klash.test.ts` while the list and the generated enum disagree.
 
 ### 5. Add Translations
 
