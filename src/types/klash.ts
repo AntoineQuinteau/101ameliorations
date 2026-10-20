@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Constants } from './database'
+import { Constants, type Database } from './database'
 import { userRoleSchema } from './profile'
 import { fr } from '../i18n/fr'
 
@@ -8,7 +8,12 @@ import { fr } from '../i18n/fr'
 // from the generated enums (src/types/database.ts, generated from
 // supabase/migrations): the Postgres type is the single source of truth.
 // The category list keeps a hand-written display order, see below.
-export const klashCategorySchema = z.enum([
+// Display order of the categories (picker, filters), which is not the enum
+// order: 'category_7' ("Autre") stays last although 'category_8' was added
+// after it, and a Postgres enum cannot be reordered. A new category is placed
+// here by hand; the checks below make the typecheck fail (and a unit test
+// too) when this list and the database enum disagree in either direction.
+export const CATEGORY_DISPLAY_ORDER = [
   'category_1',
   'category_2',
   'category_3',
@@ -17,7 +22,22 @@ export const klashCategorySchema = z.enum([
   'category_6',
   'category_8',
   'category_7',
-])
+] as const
+
+type DatabaseCategory = Database['public']['Enums']['klash_category']
+type Assert<T extends true> = T
+export type CategoriesAllListed = Assert<
+  [Exclude<DatabaseCategory, (typeof CATEGORY_DISPLAY_ORDER)[number]>] extends [never]
+    ? true
+    : false
+>
+export type CategoriesAllKnown = Assert<
+  [Exclude<(typeof CATEGORY_DISPLAY_ORDER)[number], DatabaseCategory>] extends [never]
+    ? true
+    : false
+>
+
+export const klashCategorySchema = z.enum(CATEGORY_DISPLAY_ORDER)
 export type KlashCategory = z.infer<typeof klashCategorySchema>
 
 // The special "Autre (préciser)" category: the only one paired with a
