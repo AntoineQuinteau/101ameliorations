@@ -9,15 +9,22 @@ cache client. Ce document couvre le levier restant, celui qui change réellement
 l'ordre de grandeur pour l'ouverture au public — **conception seulement, aucun code
 n'a été écrit pour ce point**.
 
-Aujourd'hui chaque navigateur va chercher ses tuiles lui-même auprès de MapTiler : 1000
-personnes qui ouvrent la carte = ~10 000 requêtes MapTiler (voir la mesure d'ouverture
-de carte dans le commit ci-dessus : 8-12 tuiles par ouverture). Derrière un cache edge
-Cloudflare, la même tuile n'est demandée à MapTiler qu'une fois par point de présence,
-puis servie localement à tout le monde.
+Aujourd'hui chaque navigateur va chercher ses tuiles lui-même auprès de MapTiler. Mesure
+d'ouverture de la carte (couche plan, via le proxy de dev, depuis le retrait de
+`detectRetina` sur cette couche) : 4 tuiles sur téléphone (390×844, quelle que soit la
+densité d'écran), 8 sur desktop (1280×720) ; une courte session (ouverture, 3 zooms,
+4 déplacements) en demande ~24. 1000 personnes qui ouvrent la carte = ~4 000 à 8 000
+requêtes MapTiler, plusieurs fois plus dès qu'elles s'en servent. Sur écran haute
+densité chaque requête est une tuile `@2x` (1024 px), probablement facturée davantage
+qu'une tuile standard. Derrière un cache edge Cloudflare, la même tuile n'est demandée
+à MapTiler qu'une fois par point de présence, puis servie localement à tout le monde.
 
 Le « working set » est petit, parce que l'app est géographiquement bornée. Nombre de
 tuiles couvrant la bbox de la zone de service (`SERVICE_AREA_BBOX`,
-`src/config/serviceArea.ts` : 42.7/-2.3 → 45.0/0.5) :
+`src/config/serviceArea.ts` : 42.7/-2.3 → 45.0/0.5). Le zoom du tableau est celui de
+l'URL des tuiles : la couche plan (grille 512 px, `zoomOffset -1`) demande au zoom carte
+N des tuiles zN-1 — la vue d'ouverture (zoom carte 10) charge donc des tuiles z9. Chaque
+tuile plan existe en deux variantes (standard et `@2x`), soit deux entrées de cache :
 
 | Zoom | Tuiles à ce niveau | Cumul depuis z8 |
 | ---- | ------------------ | --------------- |
@@ -29,7 +36,7 @@ tuiles couvrant la bbox de la zone de service (`SERVICE_AREA_BBOX`,
 | 15   | 74 496             | 99 662          |
 
 Autrement dit : toute la zone de service jusqu'au zoom 13 tient en 6 478 tuiles, et la
-vue d'ouverture (z10) en 124. Un cache edge chaud rend l'ouverture de l'app
+vue d'ouverture (tuiles z9) dans les 124 des niveaux 8-10. Un cache edge chaud rend l'ouverture de l'app
 essentiellement gratuite, quel que soit le nombre d'utilisateurs. Seul le zoom profond
 (z16+) reste une longue traîne peu mutualisée entre utilisateurs.
 
