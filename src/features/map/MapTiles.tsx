@@ -43,9 +43,11 @@ const TILE_LAYER_MAX_ZOOM = 24
  * blocks rather than one with ternary props: the satellite imagery is served from a
  * different path (`/tiles/`, not `/maps/` — the "wrong" URL 404s), the grid is 256px with
  * no `tileSize`/`zoomOffset` override (unlike the streets style's 512px grid), and it has
- * no `@2x` retina variant — `detectRetina` on that layer would blank every tile on a
- * high-density screen (i.e. most phones). A single ternary-per-prop block is exactly
- * where a stray `{r}` or `detectRetina` would leak from one layer to the other. */
+ * no `@2x` retina variant — `{r}` or `detectRetina` on that layer would blank every tile
+ * on a high-density screen (i.e. most phones). The streets layer gets its retina tiles
+ * from `{r}` alone, and must not set `detectRetina` either (see the comment on it below).
+ * A single ternary-per-prop block is exactly where a stray `{r}` or `detectRetina` would
+ * leak from one layer to the other. */
 export function MapTiles({ layer = 'plan' }: { layer?: MapLayer }) {
   if (layer === 'satellite') {
     return (
@@ -59,12 +61,16 @@ export function MapTiles({ layer = 'plan' }: { layer?: MapLayer }) {
     )
   }
 
+  // No `detectRetina`: Leaflet fills `{r}` with `@2x` on any `devicePixelRatio > 1` on its
+  // own, so a high-density screen already gets 1024px images on this 512px grid — exactly
+  // its pixel density. `detectRetina` would additionally halve the grid to 256px CSS tiles
+  // (TileLayer.initialize), requesting 4x as many tiles — each billed by MapTiler — for
+  // over-sampled images whose labels render at half their intended size.
   return (
     <TileLayer
       key="plan"
       url={buildTileUrlTemplate('plan', TILE_BASE_URL, TILE_KEY)}
       attribution={ATTRIBUTION}
-      detectRetina
       tileSize={512}
       zoomOffset={-1}
       maxZoom={TILE_LAYER_MAX_ZOOM}
