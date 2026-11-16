@@ -215,9 +215,14 @@ activité). Si la copie des photos refuse de tourner parce que trop de photos on
 disparu d'un coup (plus de 100), vérifier que c'est voulu, puis relancer le workflow à
 la main (**Actions → Backup → Run workflow**) avec un seuil plus élevé.
 
-Si le contrôle de restauration échoue sur des colonnes d'`auth` ou de `storage`, la
-version des services Supabase hébergés a probablement dépassé celle de la CLI épinglée :
-la mettre à jour (`npm install -D -E supabase@<version>`). Le dump, lui, a déjà été
+Supabase met à jour Auth et Storage en prod avant que la CLI n'embarque les mêmes
+versions : le dump enregistre donc celles de la prod (`versions/`, aussi dans
+`manifest.txt`), et le contrôle de restauration démarre sa stack avec elles plutôt
+qu'avec les images de la CLI. Une version illisible (avertissement `could not read
+the project's … version` au dump) ou une stack qui ne démarre pas avec elles
+(avertissement `retrying with the CLI's images`) font retomber le contrôle sur les
+images de la CLI. S'il échoue alors sur des colonnes d'`auth` ou de `storage`, mettre à
+jour la CLI épinglée (`npm install -D -E supabase@<version>`). Le dump, lui, a déjà été
 envoyé.
 
 ### Restaurer

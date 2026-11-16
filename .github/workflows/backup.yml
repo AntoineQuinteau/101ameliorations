@@ -58,6 +58,13 @@ jobs:
           supabase start
           -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,postgrest
       - name: Dump
+        env:
+          # Production's Auth/Storage versions (read-only public endpoints; not
+          # secrets, the front end ships them), as the nightly job records
+          # them: the restore below then runs them rather than the CLI's own
+          # images, the path where the two differ. Empty on forks: CLI images.
+          BACKUP_PROJECT_URL: ${{ vars.VITE_SUPABASE_URL }}
+          BACKUP_PROJECT_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: >-
           scripts/backup/dump.sh
           postgresql://postgres:postgres@127.0.0.1:54322/postgres "$RUNNER_TEMP/dump"
@@ -98,6 +105,10 @@ jobs:
         env:
           # Session pooler connection string — see ci.yml, migrate-staging.
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Not secrets (the front end ships them): to record production's
+          # Auth/Storage versions, which the restore check below runs.
+          BACKUP_PROJECT_URL: ${{ vars.VITE_SUPABASE_URL }}
+          BACKUP_PROJECT_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: scripts/backup/dump.sh "$SUPABASE_DB_URL" "$RUNNER_TEMP/dump"
       - name: Encrypt and upload the dump
         env:
