@@ -25,6 +25,16 @@ sed -E \
 cp -r supabase/templates "$work/supabase/"
 db_url='postgresql://postgres:postgres@127.0.0.1:55322/postgres?sslmode=disable'
 
+# Auth and Storage at the versions the dumped project ran (see dump.sh), where
+# the CLI picks them up for `supabase start`, as after a `supabase link`.
+# Without them (a dump from before they were recorded, or a local one), the
+# CLI's own images.
+if [ -d "$dir/versions" ]; then
+  mkdir -p "$work/supabase/.temp"
+  cp "$dir"/versions/*-version "$work/supabase/.temp/"
+  echo "Service versions from the dump: $(cd "$dir/versions" && grep -H . ./*-version | sed 's|^\./||; s|-version:|=|' | tr '\n' ' ')"
+fi
+
 stop_stack() {
   supabase stop --workdir "$work" --no-backup > /dev/null
   rm -rf "$work"

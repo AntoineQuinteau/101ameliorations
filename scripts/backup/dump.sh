@@ -5,6 +5,8 @@
 # schemas. Photos are not in here: see sync-photos.sh.
 #
 # Usage: scripts/backup/dump.sh <db-url> <out-dir>
+# Optional: BACKUP_PROJECT_URL and BACKUP_PROJECT_KEY, the project's API URL and
+# publishable key, to record its Auth and Storage versions (see below).
 # Needs the pinned Supabase CLI on PATH (it runs pg_dump in Docker, at the
 # server's Postgres version), psql, and the repo root as working directory.
 set -euo pipefail
@@ -39,12 +41,38 @@ psql_at -f "$here/platform-hooks.sql" > "$out/platform-hooks.sql"
 psql_at -f "$here/fingerprint.sql" > "$out/fingerprint.txt"
 row_counts "$out/data.sql" "$out/history-data.sql" > "$out/row-counts.txt"
 
+# The Auth and Storage versions the project runs, in the files `supabase link`
+# writes to supabase/.temp. Their migrations create the auth and storage tables
+# data.sql loads into, and the hosted platform upgrades them ahead of the CLI's
+# local images: restore-check.sh starts its stack at these versions, so a
+# column production gained doesn't fail the restore. Best effort: without
+# them, the restore runs on the CLI's own images, and a failure here must not
+# cost the backup.
+service_version() { # <api-path> <jq-args>...
+  local path=$1
+  shift
+  curl -fsS -m 10 --retry 3 -H "apikey: $BACKUP_PROJECT_KEY" "$BACKUP_PROJECT_URL$path" \
+    | jq "$@" | grep -xE 'v?[0-9]+\.[0-9]+\.[0-9]+' | sed 's/^v*/v/'
+}
+if [ -n "${BACKUP_PROJECT_URL:-}" ] && [ -n "${BACKUP_PROJECT_KEY:-}" ]; then
+  mkdir -p "$out/versions"
+  # Auth answers JSON ({"version": "v2.198.0", ...}), Storage a bare "1.94.2".
+  if ! { service_version /auth/v1/health -r .version > "$out/versions/gotrue-version" \
+    && service_version /storage/v1/version -Rr . > "$out/versions/storage-version"; }; then
+    echo "::warning::could not read the project's Auth/Storage versions; the restore check will use the CLI's"
+    rm -rf "$out/versions"
+  fi
+fi
+
 {
   echo "created_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "latest_migration: $(psql_at -c 'select max(version) from supabase_migrations.schema_migrations')"
   echo "server_version: $(psql_at -c 'show server_version')"
   echo "supabase_cli: $(supabase --version 2> /dev/null)"
   echo "git_commit: $(git rev-parse HEAD 2> /dev/null || echo unknown)"
+  for f in "$out"/versions/*-version; do
+    if [ -e "$f" ]; then echo "$(basename "$f" -version): $(cat "$f")"; fi
+  done
 } > "$out/manifest.txt"
 
 echo "Dump written to $out:"

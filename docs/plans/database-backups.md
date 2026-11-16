@@ -237,6 +237,11 @@ depuis le miroir et comparées octet par octet. Écarts par rapport à la concep
   n'existe pas dans le Storage plus ancien de la stack locale : la vérification de
   restauration échouait chaque nuit dessus. Vide ici (aucune règle de cycle de vie),
   elle est exclue du dump elle aussi.
+- **Versions d'Auth et de Storage** : le 16/11/2026, la restauration a de nouveau échoué,
+  sur `auth.one_time_tokens.link_token_hash` (Auth v2.198.0, pas encore dans la CLI).
+  Le dump enregistre désormais les versions d'Auth et de Storage de la prod (endpoints
+  `/auth/v1/health` et `/storage/v1/version`, clé publishable), et `restore-check.sh`
+  les écrit dans le `supabase/.temp` de sa stack, comme le ferait `supabase link`.
 - **`roles.sql`** contient des réglages de plateforme que `postgres` ne peut pas
   rejouer : il est appliqué en « meilleur effort », une erreur sur `log_min_messages`
   est attendue.

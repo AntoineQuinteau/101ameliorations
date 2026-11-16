@@ -311,6 +311,10 @@ jobs:
       - name: Back up production before migrating
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          # Production's Auth/Storage versions, for a later restore check of
+          # this dump (see backup.yml).
+          BACKUP_PROJECT_URL: ${{ vars.VITE_SUPABASE_URL }}
+          BACKUP_PROJECT_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
           BACKUP_R2_BUCKET: ${{ vars.BACKUP_R2_BUCKET }}
           R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
