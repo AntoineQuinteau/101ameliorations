@@ -235,8 +235,9 @@ depuis le miroir et comparées octet par octet. Écarts par rapport à la concep
   elles sont exclues du dump, et sont toujours vides ici.
 - **`storage.bucket_lifecycle_states`**, apparue sur le projet hébergé le 05/11/2026,
   n'existe pas dans le Storage plus ancien de la stack locale : la vérification de
-  restauration échouait chaque nuit dessus. Vide ici (aucune règle de cycle de vie),
-  elle est exclue du dump elle aussi.
+  restauration échouait chaque nuit dessus. Exclue du dump le temps de régler la cause
+  (voir le point suivant), elle y est revenue depuis que la restauration tourne à la
+  version de Storage de la prod.
 - **Versions d'Auth et de Storage** : le 16/11/2026, la restauration a de nouveau échoué,
   sur `auth.one_time_tokens.link_token_hash` (Auth v2.198.0, que la CLI n'a embarqué
   qu'à partir de la 3.2.0, sortie le jour même). Pour ne plus dépendre d'une sortie de
