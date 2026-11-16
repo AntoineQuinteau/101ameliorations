@@ -59,10 +59,12 @@ jobs:
           -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,postgrest
       - name: Dump
         env:
-          # The local stack's API and its fixed publishable key: records its
-          # Auth/Storage versions, as the nightly job does for production's.
-          BACKUP_PROJECT_URL: http://127.0.0.1:54321
-          BACKUP_PROJECT_KEY: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+          # Production's Auth/Storage versions (read-only public endpoints; not
+          # secrets, the front end ships them), as the nightly job records
+          # them: the restore below then runs them rather than the CLI's own
+          # images, the path where the two differ. Empty on forks: CLI images.
+          BACKUP_PROJECT_URL: ${{ vars.VITE_SUPABASE_URL }}
+          BACKUP_PROJECT_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: >-
           scripts/backup/dump.sh
           postgresql://postgres:postgres@127.0.0.1:54322/postgres "$RUNNER_TEMP/dump"

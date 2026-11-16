@@ -8,7 +8,8 @@
 # Optional: BACKUP_PROJECT_URL and BACKUP_PROJECT_KEY, the project's API URL and
 # publishable key, to record its Auth and Storage versions (see below).
 # Needs the pinned Supabase CLI on PATH (it runs pg_dump in Docker, at the
-# server's Postgres version), psql, and the repo root as working directory.
+# server's Postgres version), psql, curl and jq, and the repo root as working
+# directory.
 set -euo pipefail
 
 db_url=$1
@@ -45,23 +46,25 @@ row_counts "$out/data.sql" "$out/history-data.sql" > "$out/row-counts.txt"
 # writes to supabase/.temp. Their migrations create the auth and storage tables
 # data.sql loads into, and the hosted platform upgrades them ahead of the CLI's
 # local images: restore-check.sh starts its stack at these versions, so a
-# column production gained doesn't fail the restore. Best effort: without
-# them, the restore runs on the CLI's own images, and a failure here must not
-# cost the backup.
-service_version() { # <api-path> <jq-args>...
-  local path=$1
-  shift
-  curl -fsS -m 10 --retry 3 -H "apikey: $BACKUP_PROJECT_KEY" "$BACKUP_PROJECT_URL$path" \
-    | jq "$@" | grep -xE 'v?[0-9]+\.[0-9]+\.[0-9]+' | sed 's/^v*/v/'
+# column production gained doesn't fail the restore. Best effort, one service
+# at a time: a service whose version can't be read runs on the CLI's own
+# image, and a failure here must not cost the backup.
+record_version() { # <service> <api-path> <jq-args>...
+  local service=$1 path=$2 version
+  shift 2
+  if version=$(curl -fsS -m 10 --retry 3 -H "apikey: $BACKUP_PROJECT_KEY" \
+    "$BACKUP_PROJECT_URL$path" | jq "$@" | grep -xE 'v?[0-9]+\.[0-9]+\.[0-9]+' | sed 's/^v*/v/'); then
+    echo "$version" > "$out/versions/$service-version"
+  else
+    echo "::warning::could not read the project's $service version; the restore check will use the CLI's"
+  fi
 }
 if [ -n "${BACKUP_PROJECT_URL:-}" ] && [ -n "${BACKUP_PROJECT_KEY:-}" ]; then
   mkdir -p "$out/versions"
   # Auth answers JSON ({"version": "v2.198.0", ...}), Storage a bare "1.94.2".
-  if ! { service_version /auth/v1/health -r .version > "$out/versions/gotrue-version" \
-    && service_version /storage/v1/version -Rr . > "$out/versions/storage-version"; }; then
-    echo "::warning::could not read the project's Auth/Storage versions; the restore check will use the CLI's"
-    rm -rf "$out/versions"
-  fi
+  record_version gotrue /auth/v1/health -r .version
+  record_version storage /storage/v1/version -Rr .
+  rmdir "$out/versions" 2> /dev/null || true # nothing recorded
 fi
 
 {

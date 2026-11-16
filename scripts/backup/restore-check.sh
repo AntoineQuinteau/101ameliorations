@@ -25,15 +25,6 @@ sed -E \
 cp -r supabase/templates "$work/supabase/"
 db_url='postgresql://postgres:postgres@127.0.0.1:55322/postgres?sslmode=disable'
 
-# Auth and Storage at the versions the dumped project ran (see dump.sh), where
-# the CLI picks them up for `supabase start`, as after a `supabase link`.
-# Without them (a dump from before they were recorded, or a local one), the
-# CLI's own images.
-if [ -d "$dir/versions" ]; then
-  mkdir -p "$work/supabase/.temp"
-  cp "$dir"/versions/*-version "$work/supabase/.temp/"
-  echo "Service versions from the dump: $(cd "$dir/versions" && grep -H . ./*-version | sed 's|^\./||; s|-version:|=|' | tr '\n' ' ')"
-fi
 
 stop_stack() {
   supabase stop --workdir "$work" --no-backup > /dev/null
@@ -45,11 +36,33 @@ else
   trap stop_stack EXIT
 fi
 
+# Auth and Storage at the versions the dumped project ran (see dump.sh), where
+# the CLI picks them up for `supabase start`, as after a `supabase link`.
+# Without them (a dump from before they were recorded, or a local one), the
+# CLI's own images.
+if compgen -G "$dir/versions/*-version" > /dev/null; then
+  mkdir -p "$work/supabase/.temp"
+  cp "$dir"/versions/*-version "$work/supabase/.temp/"
+  echo "Service versions from the dump: $(grep -E '^(gotrue|storage): ' "$dir/manifest.txt" | tr '\n' ' ')"
+fi
+
 # Only what a restore needs: Postgres, plus Auth and Storage, whose own
 # migrations create the auth and storage schemas the dump's data goes into.
-supabase start --workdir "$work" \
-  -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,postgrest \
-  > /dev/null
+start_stack() {
+  supabase start --workdir "$work" \
+    -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor,postgrest \
+    > /dev/null
+}
+# A pinned version that can't start (its image not published yet, or needing
+# a setting the CLI doesn't provide) falls back to the CLI's images: the check
+# still runs, as it did before versions were pinned, and says so.
+if ! start_stack; then
+  [ -d "$work/supabase/.temp" ] || exit 1
+  echo "::warning::the stack did not start at the dumped service versions; retrying with the CLI's images"
+  supabase stop --workdir "$work" --no-backup > /dev/null || true
+  rm -rf "$work/supabase/.temp"
+  start_stack
+fi
 
 "$here/restore.sh" "$dir" "$db_url"
 "$here/verify.sh" "$dir" "$db_url"
