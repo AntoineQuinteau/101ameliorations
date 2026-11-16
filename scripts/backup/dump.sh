@@ -17,10 +17,13 @@ source "$here/lib.sh"
 
 mkdir -p "$out"
 
-# Supabase's vector-bucket tables: a paid-plan feature, always empty here, and
-# not writable by the postgres role on a fresh project, so the restore would
-# fail on them.
-exclude=storage.buckets_vectors,storage.vector_indexes
+# Storage tables the restore cannot replay, all unused and empty here:
+# - the vector-bucket tables, a paid-plan feature, not writable by the postgres
+#   role on a fresh project;
+# - bucket_lifecycle_states, added to hosted projects in November 2026 (we set
+#   no lifecycle rules), missing from the local stack's older Storage, so the
+#   nightly restore check failed on it.
+exclude=storage.buckets_vectors,storage.vector_indexes,storage.bucket_lifecycle_states
 
 supabase db dump --db-url "$db_url" --role-only -f "$out/roles.sql"
 supabase db dump --db-url "$db_url" -f "$out/schema.sql"
