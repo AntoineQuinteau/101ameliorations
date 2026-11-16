@@ -12,8 +12,8 @@ export const klashPhotoSchema = z.object({
 export type KlashPhoto = z.infer<typeof klashPhotoSchema>
 
 // Raw shape returned by Supabase (snake_case). klash_photos is a plain
-// table, not a view, so unlike klashes_public these columns are only
-// nullable where the schema actually allows it (width/height).
+// table, so these columns are only nullable where the schema allows it
+// (width/height).
 const klashPhotoRowSchema = z.object({
   id: z.string(),
   klash_id: z.string(),

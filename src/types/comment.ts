@@ -13,8 +13,7 @@ export const commentSchema = z.object({
 export type Comment = z.infer<typeof commentSchema>
 
 // Raw shape returned by Supabase (snake_case). `comments` is a plain table,
-// not a view, so unlike klashes_public these columns are only nullable
-// where the schema actually allows it. `author_display_name` comes from a
+// so these columns are only nullable where the schema allows it. `author_display_name` comes from a
 // PostgREST embed of profiles (comments_author_id_fkey), not a column on
 // comments itself — profiles_select_all is `using (true)` and profiles
 // holds no email, so no dedicated view is needed to expose it safely.

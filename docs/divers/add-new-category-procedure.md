@@ -63,8 +63,7 @@ git commit -m "db: add category_8 (manque de stationnement)"
 
 ### 8. Production Deployment
 
-Deploy the database changes to production (refer to `README` § _Base de données_):
-
-```bash
-npx supabase db push
-```
+Nothing to run by hand: once the PR is merged into `main`, the CI's
+`deploy-production` job applies the migration to production before deploying the
+front end (see `README` § _Promotion STAGING → production_). Never run a bare
+`npx supabase db push`: since CLI v3 it targets the local database.

@@ -25,13 +25,13 @@ mkdir -p "$out"
 #   nightly restore check failed on it.
 exclude=storage.buckets_vectors,storage.vector_indexes,storage.bucket_lifecycle_states
 
-supabase db dump --db-url "$db_url" --role-only -f "$out/roles.sql"
-supabase db dump --db-url "$db_url" -f "$out/schema.sql"
-supabase db dump --db-url "$db_url" --data-only --use-copy -x "$exclude" -f "$out/data.sql"
+supabase db dump --remote="$db_url" --role-only -f "$out/roles.sql"
+supabase db dump --remote="$db_url" -f "$out/schema.sql"
+supabase db dump --remote="$db_url" --data-only --use-copy -x "$exclude" -f "$out/data.sql"
 # The migration history lives in a schema the default dumps skip. Without it,
 # `supabase db push` on the restored project would replay every migration.
-supabase db dump --db-url "$db_url" -s supabase_migrations -f "$out/history-schema.sql"
-supabase db dump --db-url "$db_url" -s supabase_migrations --data-only --use-copy \
+supabase db dump --remote="$db_url" -s supabase_migrations -f "$out/history-schema.sql"
+supabase db dump --remote="$db_url" -s supabase_migrations --data-only --use-copy \
   -f "$out/history-data.sql"
 
 psql_at() { psql -X -q -At -v ON_ERROR_STOP=1 -d "$db_url" "$@"; }

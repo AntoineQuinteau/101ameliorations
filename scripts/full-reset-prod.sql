@@ -19,7 +19,8 @@
 -- empty, including your own admin account — see the "recreate your admin
 -- account" steps in the accompanying message/runbook.
 --
--- Usage: npx supabase db query --linked -f scripts/full-reset-prod.sql
+-- Usage: npx supabase db query --remote=<prod-ref> -f scripts/full-reset-prod.sql
+-- (always name the project: a bare --remote targets whichever one is linked)
 
 begin;
 

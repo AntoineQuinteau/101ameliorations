@@ -647,29 +647,29 @@ export type Database = {
       klashes_public: {
         Row: {
           author_display_name: string | null
-          author_id: string | null
+          author_id: string
           author_organization: string | null
-          author_role: Database['public']['Enums']['user_role'] | null
-          category: Database['public']['Enums']['klash_category'] | null
+          author_role: Database['public']['Enums']['user_role']
+          category: Database['public']['Enums']['klash_category']
           category_other: string | null
-          comments_count: number | null
+          comments_count: number
           commune_name: string | null
-          confirmations_count: number | null
-          created_at: string | null
+          confirmations_count: number
+          created_at: string
           description: string | null
           duplicate_of: string | null
           epci_name: string | null
           epci_siren: string | null
-          id: string | null
-          importance: Database['public']['Enums']['klash_importance'] | null
+          id: string
+          importance: Database['public']['Enums']['klash_importance']
           insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
           resolved_at: string | null
-          status: Database['public']['Enums']['klash_status'] | null
-          title: string | null
-          updated_at: string | null
+          status: Database['public']['Enums']['klash_status']
+          title: string
+          updated_at: string
         }
         ComputedFields: never
         Relationships: [
@@ -731,29 +731,29 @@ export type Database = {
         }
         Returns: {
           author_display_name: string | null
-          author_id: string | null
+          author_id: string
           author_organization: string | null
-          author_role: Database['public']['Enums']['user_role'] | null
-          category: Database['public']['Enums']['klash_category'] | null
+          author_role: Database['public']['Enums']['user_role']
+          category: Database['public']['Enums']['klash_category']
           category_other: string | null
-          comments_count: number | null
+          comments_count: number
           commune_name: string | null
-          confirmations_count: number | null
-          created_at: string | null
+          confirmations_count: number
+          created_at: string
           description: string | null
           duplicate_of: string | null
           epci_name: string | null
           epci_siren: string | null
-          id: string | null
-          importance: Database['public']['Enums']['klash_importance'] | null
+          id: string
+          importance: Database['public']['Enums']['klash_importance']
           insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
           resolved_at: string | null
-          status: Database['public']['Enums']['klash_status'] | null
-          title: string | null
-          updated_at: string | null
+          status: Database['public']['Enums']['klash_status']
+          title: string
+          updated_at: string
         }
         SetofOptions: {
           from: '*'
@@ -814,29 +814,29 @@ export type Database = {
         }
         Returns: {
           author_display_name: string | null
-          author_id: string | null
+          author_id: string
           author_organization: string | null
-          author_role: Database['public']['Enums']['user_role'] | null
-          category: Database['public']['Enums']['klash_category'] | null
+          author_role: Database['public']['Enums']['user_role']
+          category: Database['public']['Enums']['klash_category']
           category_other: string | null
-          comments_count: number | null
+          comments_count: number
           commune_name: string | null
-          confirmations_count: number | null
-          created_at: string | null
+          confirmations_count: number
+          created_at: string
           description: string | null
           duplicate_of: string | null
           epci_name: string | null
           epci_siren: string | null
-          id: string | null
-          importance: Database['public']['Enums']['klash_importance'] | null
+          id: string
+          importance: Database['public']['Enums']['klash_importance']
           insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
           resolved_at: string | null
-          status: Database['public']['Enums']['klash_status'] | null
-          title: string | null
-          updated_at: string | null
+          status: Database['public']['Enums']['klash_status']
+          title: string
+          updated_at: string
         }
         SetofOptions: {
           from: '*'
@@ -876,29 +876,29 @@ export type Database = {
         Args: { max_lat: number; max_lng: number; min_lat: number; min_lng: number }
         Returns: {
           author_display_name: string | null
-          author_id: string | null
+          author_id: string
           author_organization: string | null
-          author_role: Database['public']['Enums']['user_role'] | null
-          category: Database['public']['Enums']['klash_category'] | null
+          author_role: Database['public']['Enums']['user_role']
+          category: Database['public']['Enums']['klash_category']
           category_other: string | null
-          comments_count: number | null
+          comments_count: number
           commune_name: string | null
-          confirmations_count: number | null
-          created_at: string | null
+          confirmations_count: number
+          created_at: string
           description: string | null
           duplicate_of: string | null
           epci_name: string | null
           epci_siren: string | null
-          id: string | null
-          importance: Database['public']['Enums']['klash_importance'] | null
+          id: string
+          importance: Database['public']['Enums']['klash_importance']
           insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
           resolved_at: string | null
-          status: Database['public']['Enums']['klash_status'] | null
-          title: string | null
-          updated_at: string | null
+          status: Database['public']['Enums']['klash_status']
+          title: string
+          updated_at: string
         }[]
         SetofOptions: {
           from: '*'
@@ -911,29 +911,29 @@ export type Database = {
         Args: { origin_lat: number; origin_lng: number; radius_m: number }
         Returns: {
           author_display_name: string | null
-          author_id: string | null
+          author_id: string
           author_organization: string | null
-          author_role: Database['public']['Enums']['user_role'] | null
-          category: Database['public']['Enums']['klash_category'] | null
+          author_role: Database['public']['Enums']['user_role']
+          category: Database['public']['Enums']['klash_category']
           category_other: string | null
-          comments_count: number | null
+          comments_count: number
           commune_name: string | null
-          confirmations_count: number | null
-          created_at: string | null
+          confirmations_count: number
+          created_at: string
           description: string | null
           duplicate_of: string | null
           epci_name: string | null
           epci_siren: string | null
-          id: string | null
-          importance: Database['public']['Enums']['klash_importance'] | null
+          id: string
+          importance: Database['public']['Enums']['klash_importance']
           insee_code: string | null
           lat: number | null
           lng: number | null
           proposed_solution: string | null
           resolved_at: string | null
-          status: Database['public']['Enums']['klash_status'] | null
-          title: string | null
-          updated_at: string | null
+          status: Database['public']['Enums']['klash_status']
+          title: string
+          updated_at: string
         }[]
         SetofOptions: {
           from: '*'
