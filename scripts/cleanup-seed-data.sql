@@ -10,7 +10,8 @@
 -- the auth.users delete below for any row a seed user appears in — as
 -- looked_up_by or as author_id — regardless of which klash it references.
 --
--- Usage: npx supabase db query --remote -f scripts/cleanup-seed-data.sql
+-- Usage: npx supabase db query --remote=<project-ref> -f scripts/cleanup-seed-data.sql
+-- (always name the project: a bare --remote targets whichever one is linked)
 
 begin;
 

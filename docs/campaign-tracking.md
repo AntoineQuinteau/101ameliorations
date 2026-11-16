@@ -43,8 +43,10 @@ des `utm_*` à l'arrivée et le Worker du manifeste iOS la lisent depuis le type
 3. Le libellé dans `fr.campaigns.medium` (`src/i18n/fr.ts`). Un libellé oublié fait
    échouer `npm run typecheck` (`MEDIUM_LABELS`, `src/features/campaigns/campaignLabels.ts`).
 
-Déploiement : appliquer la migration en production (`npx supabase db push`) **avant** de
-fusionner, sinon le front connaîtrait une valeur que la base refuse. Dans l'autre sens,
+Déploiement : rien à faire à la main. Au merge sur `main`, le job `deploy-production`
+applique la migration en production **avant** de déployer le front, qui ne connaît donc
+jamais une valeur que la base refuse (voir README, « Promotion STAGING → production »).
+Dans l'autre sens,
 un lien créé avec la nouvelle valeur avant le déploiement du front ferait échouer
 l'affichage de `/campaigns` tant que l'ancien front est en ligne.
 

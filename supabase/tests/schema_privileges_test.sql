@@ -13,7 +13,7 @@
 -- exists; they document the expected state and would fail if `revoke`
 -- statements were ever added by mistake, but they are not a regression
 -- guard for the original bug. The actual regression guard is running
--- `supabase db reset --remote` against a hosted project (STAGING) and
+-- `supabase db reset --remote=<ref-staging>` against a hosted project (STAGING) and
 -- checking `pg_namespace.nspacl` / `has_schema_privilege` there directly —
 -- see the plan's verification steps.
 --
