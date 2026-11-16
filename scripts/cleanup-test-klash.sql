@@ -9,7 +9,7 @@
 --
 -- Usage (bare value, no quotes — psql's :'email' form quotes it for SQL;
 -- double-quoting here would pass the literal quote characters through):
---   psql "$(npx supabase status -o env --linked | grep DB_URL | cut -d= -f2-)" \
+--   psql "<STAGING session pooler connection string>" \
 --     -v email=your-test-address@example.com \
 --     -f scripts/cleanup-test-klash.sql
 

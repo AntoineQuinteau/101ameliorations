@@ -293,7 +293,7 @@ mode production, prioritaire sur `.env.local`) :
 ```bash
 # .env.production.local
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --project-ref <ref>
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_…   # npx supabase projects api-keys --remote=<ref>
 VITE_MAPTILER_KEY=…                              # même clé qu'en local
 VITE_TURNSTILE_SITE_KEY=0x4…                     # obligatoire, le build échoue sans
 VITE_SENTRY_DSN=…                                # facultative
@@ -317,9 +317,9 @@ Worker `workers/app/src/index.ts` sur `/k/*` seulement).
 
 Les migrations partent sur STAGING puis en prod **par la CI** (voir « Promotion STAGING
 → production » plus bas) — plus de `npx supabase db push` manuel en prod. Rejouer `seed.sql` en
-prod (données de test) : `npx supabase db query --linked -f supabase/seed.sql` — le
+prod (données de test) : `npx supabase db query --remote -f supabase/seed.sql` — le
 script est idempotent (voir son en-tête). Avant l'ouverture au public, supprimer ces
-données de test : `npx supabase db query --linked -f scripts/cleanup-seed-data.sql`.
+données de test : `npx supabase db query --remote -f scripts/cleanup-seed-data.sql`.
 
 ## CI (GitHub Actions)
 
@@ -425,7 +425,7 @@ production.
 
 STAGING suit les mêmes migrations et le même `seed.sql` que la production (voir
 `supabase/migrations/`) ; le lier avec `npx supabase link --project-ref
-<ref-staging>` avant tout `db push`/`db reset --linked` ciblé sur cet environnement,
+<ref-staging>` avant tout `db push`/`db reset --remote` ciblé sur cet environnement,
 et repasser sur le projet de production ensuite pour éviter un `db push` accidentel
 au mauvais endroit.
 
@@ -433,7 +433,7 @@ Après un test manuel de création sur STAGING (compte de test, ex.
 `test-<quelquechose>@<domaine que tu contrôles>`), nettoyer avec :
 
 ```bash
-psql "$(npx supabase status -o env --linked | grep DB_URL | cut -d= -f2-)" \
+psql "<chaîne Session pooler de STAGING>" \
   -v email=<email-utilise-pour-le-test> \
   -f scripts/cleanup-test-klash.sql
 ```
@@ -492,8 +492,8 @@ runners GitHub n'ont pas d'IPv6.
   ta branche n'a pas, `migrate-staging` échoue (« Remote migration versions not found
   in local migrations directory ») : rebaser sur `main` une fois l'autre PR mergée.
   Si cette autre PR est abandonnée, nettoyer STAGING à la main : défaire son effet en
-  SQL puis `npx supabase migration repair --status reverted <version> --linked` (lié à
-  STAGING), ou repartir de zéro avec `npx supabase db reset --linked`.
+  SQL puis `npx supabase migration repair --status reverted <version> --remote` (lié à
+  STAGING), ou repartir de zéro avec `npx supabase db reset --remote`.
 - **La config Auth n'est pas dans les migrations.** SMTP, templates, longueur d'OTP,
   captcha, URLs : réglés à la main dans chaque dashboard (checklist de la section Auth).
   Tout changement fait en prod doit être reporté sur STAGING, sinon la preview ne

@@ -19,7 +19,7 @@
 -- empty, including your own admin account — see the "recreate your admin
 -- account" steps in the accompanying message/runbook.
 --
--- Usage: npx supabase db query --linked -f scripts/full-reset-prod.sql
+-- Usage: npx supabase db query --remote -f scripts/full-reset-prod.sql
 
 begin;
 
