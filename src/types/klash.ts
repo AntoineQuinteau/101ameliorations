@@ -52,11 +52,11 @@ export const klashStatusSchema = z.enum(Constants.public.Enums.klash_status)
 export type KlashStatus = z.infer<typeof klashStatusSchema>
 
 // `klashes_public` (and the `klashes_in_bbox` RPC built on it) is a Postgres
-// view, so every column is nullable in the generated types even though only
-// `author_display_name`/`author_organization` can actually be null in
-// practice (author_id, category, etc. come from NOT NULL columns joined on
-// their primary key). This schema asserts and narrows that at the boundary
-// instead of trusting the loose generated type everywhere the data is used.
+// view. The generated types infer its nullability from the underlying
+// columns (author_id, category, etc. come from NOT NULL columns, joined on
+// their primary key), but that inference belongs to the typegen, not to a
+// contract: this schema asserts the shape at the boundary instead of
+// trusting the generated type everywhere the data is used.
 export const klashSchema = z.object({
   id: z.string(),
   authorId: z.string(),
@@ -82,7 +82,7 @@ export const klashSchema = z.object({
 })
 export type Klash = z.infer<typeof klashSchema>
 
-// Raw shape returned by Supabase (snake_case, all-nullable per the view).
+// Raw shape returned by Supabase (snake_case).
 // `klashFromRow` below maps and validates it into `Klash`.
 const klashRowSchema = z.object({
   id: z.string(),
