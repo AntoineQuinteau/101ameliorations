@@ -30,7 +30,7 @@
       "Bash(npx supabase db reset --no-seed)",
       "Bash(npx supabase test db)",
       "Bash(npx supabase migration new *)",
-      "Bash(npx supabase migration list --local)",
+      "Bash(npx supabase migration list)",
       "Bash(npx supabase db diff *)",
       "Bash(git status)",
       "Bash(git status *)",
@@ -46,6 +46,7 @@
       "Bash(docker logs *)"
     ],
     "ask": [
+      "Bash(npx supabase * --remote*)",
       "Bash(npx supabase * --linked*)",
       "Bash(npx supabase * --db-url*)",
       "Bash(git * --output*)",
