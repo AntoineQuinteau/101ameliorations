@@ -233,6 +233,10 @@ depuis le miroir et comparées octet par octet. Écarts par rapport à la concep
 - **Deux tables Storage** (`buckets_vectors`, `vector_indexes`, fonction réservée aux
   plans payants) ne sont pas inscriptibles par le rôle `postgres` sur un projet neuf :
   elles sont exclues du dump, et sont toujours vides ici.
+- **`storage.bucket_lifecycle_states`**, apparue sur le projet hébergé le 05/11/2026,
+  n'existe pas dans le Storage plus ancien de la stack locale : la vérification de
+  restauration échouait chaque nuit dessus. Vide ici (aucune règle de cycle de vie),
+  elle est exclue du dump elle aussi.
 - **`roles.sql`** contient des réglages de plateforme que `postgres` ne peut pas
   rejouer : il est appliqué en « meilleur effort », une erreur sur `log_min_messages`
   est attendue.
